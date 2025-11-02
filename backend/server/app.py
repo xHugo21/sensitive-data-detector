@@ -1,10 +1,13 @@
 # app.py
 import os
 import tempfile
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from .detector_gpt_oss_120b import detect_sensitive_data, compute_risk_level, read_document
+
+load_dotenv()
 
 # ===================== Configuración =====================
 PORT = int(os.getenv("PORT", "8000"))

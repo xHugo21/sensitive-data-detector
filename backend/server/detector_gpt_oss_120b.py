@@ -5,17 +5,19 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse, unquote
 import pdfplumber
+from dotenv import load_dotenv
 
 # === Cliente Groq (LLM) ===
 # pip install groq pdfplumber
 from groq import Groq
 
+load_dotenv()
+
 # Cliente Groq; requiere GROQ_API_KEY en el entorno
 _groq_api_key = os.getenv("GROQ_API_KEY")
 if not _groq_api_key:
     raise RuntimeError(
-        "Falta GROQ_API_KEY en el entorno. Exporta tu clave: "
-        "Linux/macOS: export GROQ_API_KEY='...' | Windows PowerShell: $env:GROQ_API_KEY='...'"
+        "Falta GROQ_API_KEY en el entorno. Asegurate de declararla en tu .env: "
     )
 groq_client = Groq(api_key=_groq_api_key)
 

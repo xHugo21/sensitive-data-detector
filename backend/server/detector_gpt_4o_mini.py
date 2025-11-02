@@ -5,7 +5,10 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse, unquote
 import pdfplumber
+from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()
 
 # ================== Cliente OpenAI ==================
 client = OpenAI()

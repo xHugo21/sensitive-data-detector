@@ -25,8 +25,8 @@ cd sensitive-data-detector
 ### 2. Install backend dependencies
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -36,7 +36,7 @@ Take a look at `backend/.env.example` and copy it to `backend/.env` with desired
 ### 4. Run uvicorn
 From backend folder run:
 ```bash
-uvicorn server.app:app --host 127.0.0.1 --port 8000 --reload
+python3 main.py
 ```
 
 ### 5. Load extension

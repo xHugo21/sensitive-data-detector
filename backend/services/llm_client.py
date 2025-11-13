@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-from ..core.config import LLM_PROVIDER
+from core.config import LLM_PROVIDER
 
 def create_llm_client():
     provider = LLM_PROVIDER

@@ -1,10 +1,10 @@
 import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Form
-from ...api.models.request import DetectReq
-from ...core.detector import detect_sensitive_data
-from ...core.risk import compute_risk_level
-from ...services.document_reader import read_document
+from api.models.request import DetectReq
+from core.detector import detect_sensitive_data
+from core.risk import compute_risk_level
+from services.document_reader import read_document
 
 router = APIRouter()
 

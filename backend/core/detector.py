@@ -1,8 +1,8 @@
 import re
 import json
-from ..services.llm_client import client
-from ..utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP
-from ..core.config import LLM_MODEL, LLM_PROVIDER
+from services.llm_client import client
+from utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP
+from core.config import LLM_MODEL, LLM_PROVIDER
 
 def safe_json_from_text(s: str) -> dict:
     if not s:

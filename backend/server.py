@@ -11,7 +11,7 @@ SERVER_DIR = os.path.join(BASE_DIR, "server")
 if SERVER_DIR not in sys.path:
     sys.path.append(SERVER_DIR)
 
-from detector_gpt_oss_120b import detect_sensitive_data, compute_risk_level
+from detector import detect_sensitive_data, compute_risk_level
 
 app = FastAPI()
 app.add_middleware(

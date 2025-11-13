@@ -1,13 +1,19 @@
 # 🛡️ LLM Guard 
 
+Browser extension designed to detect and prevent private data leakage in user - LLM interactions.
+
 > [!IMPORTANT]
 > This is a fork of the repository [guillecab/SensitiveDataDetector-ChatGPT-Extension](https://github.com/guillecab/SensitiveDataDetector-ChatGPT-Extension).
 
-Browser extension designed to detect and prevent private data leakage in user - LLM interactions.
+## ⚡ Exclusive features of this fork
+- Cleaner project structure
+- Easier backend server setup via `requirements.txt` and virtual environment
+- Better model support via API unification and easier to setup local `.env` file.
+- Local model support through Ollama
 
 ---
 
-## ⚙️ Installation guide
+## 🛠️ Setting up the extension
 
 ### 1. Clone repository
 
@@ -24,12 +30,11 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Set GROQ API key
-```bash
-echo "GROQ_API_KEY=<your-api-key>" > .env
-```
+### 3. Set .env file
+Take a look at `backend/.env.example` and copy it to `backend/.env` with desired provider and model
 
 ### 4. Run uvicorn
+From backend folder run:
 ```bash
 uvicorn server.app:app --host 127.0.0.1 --port 8000 --reload
 ```
@@ -38,6 +43,13 @@ uvicorn server.app:app --host 127.0.0.1 --port 8000 --reload
 1. Go to chrome://extensions/
 2. Toggle on "Developer mode"
 3. Click "Load unpacked" → choose sensitive-data-detector/extension/
+
+---
+
+## 🌐 Supported providers
+- OpenAI
+- Groq
+- Ollama
 
 ---
 

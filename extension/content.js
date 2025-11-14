@@ -603,67 +603,106 @@ function attachOnce() {
   ensurePanel();
   ensureHighlightCSS();
 
-  // Pre-análisis con debounce (USUARIO) + resaltado tipo marcador
-  let typingTimer;
-  const onInput = () => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(async () => {
-      if (suppressUserAlerts) return; // no relanzar panel de Usuario mientras esperamos la respuesta
-      const text = getComposerText(composer);
-      if (!text) { applyHighlights(composer, [], "user"); return; }
-      try {
-        const result = await callDetector(text);
-        applyHighlights(composer, result?.detected_fields || [], "user");
-        if (["Medium", "High"].includes(result?.risk_level)) renderPanel(result, "Usuario");
-      } catch {
-        applyHighlights(composer, [], "user");
-      }
-    }, 450);
-  };
-  composer.addEventListener("input", onInput);
-  composer.addEventListener("keyup", onInput);
-
-  // Intercepta Enter
+  // Listener to block automatic send on Enter key press
   composer.addEventListener("keydown", async (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      clearTimeout(typingTimer);
       const text = getComposerText(composer);
       if (!text) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
       try {
         const result = await callDetector(text);
         applyHighlights(composer, result?.detected_fields || [], "user");
+        
+        // HIGH RISK -> Trigger pop-up
         if (shouldBlock(result?.risk_level)) {
-          e.preventDefault(); e.stopPropagation();
           renderPanel(result, "Usuario");
         } else {
+          // SAFE -> Sends prompt
           pendingResponseAlert = true;
-          suppressUserAlerts = true;   // silencia paneles de Usuario hasta terminar análisis de respuesta
+          suppressUserAlerts = true;
           setTimeout(() => applyHighlights(composer, [], "user"), 50);
+          
+          const btn = findSendButton();
+          if (btn) {
+            btn.click();
+          } else {
+            const enterEvent = new KeyboardEvent("keydown", {
+              key: "Enter",
+              code: "Enter",
+              keyCode: 13,
+              which: 13,
+              bubbles: true,
+              cancelable: true
+            });
+            composer.dispatchEvent(enterEvent);
+          }
         }
-      } catch {}
+      } catch (err) { // On error allow send
+        console.error("[SG-LLM] Backend error, allowing send:", err);
+        
+        const enterEvent = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true
+        });
+        composer.dispatchEvent(enterEvent);
+      }
     }
   }, true);
 
-  // Intercepta botón enviar
+  // Intercepta botón enviar - BLOCK until backend responds
+  const interceptClick = async (e) => {
+    const text = getComposerText(composer);
+    if (!text) return;
+    
+    // ALWAYS prevent default - block ChatGPT send
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    
+    try {
+      // Wait for backend analysis
+      const result = await callDetector(text);
+      applyHighlights(composer, result?.detected_fields || [], "user");
+      
+      if (shouldBlock(result?.risk_level)) {
+        // HIGH RISK - show panel, don't send
+        renderPanel(result, "Usuario");
+      } else {
+        // SAFE - allow send to ChatGPT
+        pendingResponseAlert = true;
+        suppressUserAlerts = true;
+        setTimeout(() => applyHighlights(composer, [], "user"), 50);
+        
+        // Remove listener temporarily to avoid recursion
+        const btn = findSendButton();
+        if (btn) {
+          btn.removeEventListener("click", interceptClick, true);
+          btn.click();
+          // Re-attach after a brief delay
+          setTimeout(() => btn.addEventListener("click", interceptClick, true), 100);
+        }
+      }
+    } catch (err) {
+      console.error("[SG-LLM] Backend error, allowing send:", err);
+      // On error, allow send (fail-open)
+      const btn = findSendButton();
+      if (btn) {
+        btn.removeEventListener("click", interceptClick, true);
+        btn.click();
+        setTimeout(() => btn.addEventListener("click", interceptClick, true), 100);
+      }
+    }
+  };
+  
   const sendBtn = findSendButton();
   if (sendBtn) {
-    sendBtn.addEventListener("click", async (e) => {
-      clearTimeout(typingTimer);
-      const text = getComposerText(composer);
-      if (!text) return;
-      try {
-        const result = await callDetector(text);
-        applyHighlights(composer, result?.detected_fields || [], "user");
-        if (shouldBlock(result?.risk_level)) {
-          e.preventDefault(); e.stopImmediatePropagation();
-          renderPanel(result, "Usuario");
-        } else {
-          pendingResponseAlert = true;
-          suppressUserAlerts = true;   // silencia paneles de Usuario hasta terminar análisis de respuesta
-          setTimeout(() => applyHighlights(composer, [], "user"), 50);
-        }
-      } catch {}
-    }, true);
+    sendBtn.addEventListener("click", interceptClick, true);
   }
 }
 

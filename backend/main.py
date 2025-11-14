@@ -19,5 +19,15 @@ app.include_router(health_router)
 app.include_router(detect_router)
 
 if __name__ == "__main__":
+    import argparse
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=PORT, reload=True)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host interface to bind the API server.",
+    )
+    args = parser.parse_args()
+
+    uvicorn.run("main:app", host=args.host, port=PORT, reload=True)

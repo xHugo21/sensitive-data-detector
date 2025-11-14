@@ -129,8 +129,14 @@ function ensurePanel() {
     overrideOnce = true;
     const composer = findComposer();
     const btn = findSendButton();
-    if (btn) btn.click();
-    else if (composer) composer.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    if (btn) {
+      // Set bypass flag to skip our interceptor
+      btn.dataset.sgBypass = "true";
+      btn.click();
+      setTimeout(() => delete btn.dataset.sgBypass, 100);
+    } else if (composer) {
+      composer.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    }
     setTimeout(() => (overrideOnce = false), 1500);
     panel.style.display = "none";
   });
@@ -656,9 +662,22 @@ function attachOnce() {
     }
   }, true);
 
-  // Intercepta botón enviar - BLOCK until backend responds
-  const interceptClick = async (e) => {
-    const text = getComposerText(composer);
+  // Intercepta botón enviar usando event delegation - BLOCK until backend responds
+  document.addEventListener("click", async (e) => {
+    // Check if click target is a send button
+    const btn = e.target.closest('button[type="submit"], [data-testid="send-button"]');
+    if (!btn) return;
+    
+    // Skip if this is a bypass click (intentionally allowed)
+    if (btn.dataset.sgBypass === "true") {
+      return;
+    }
+    
+    // Verify we have a composer with text
+    const currentComposer = findComposer();
+    if (!currentComposer) return;
+    
+    const text = getComposerText(currentComposer);
     if (!text) return;
     
     // ALWAYS prevent default - block ChatGPT send
@@ -668,7 +687,7 @@ function attachOnce() {
     try {
       // Wait for backend analysis
       const result = await callDetector(text);
-      applyHighlights(composer, result?.detected_fields || [], "user");
+      applyHighlights(currentComposer, result?.detected_fields || [], "user");
       
       if (shouldBlock(result?.risk_level)) {
         // HIGH RISK - show panel, don't send
@@ -677,33 +696,25 @@ function attachOnce() {
         // SAFE - allow send to ChatGPT
         pendingResponseAlert = true;
         suppressUserAlerts = true;
-        setTimeout(() => applyHighlights(composer, [], "user"), 50);
+        setTimeout(() => applyHighlights(currentComposer, [], "user"), 50);
         
-        // Remove listener temporarily to avoid recursion
-        const btn = findSendButton();
-        if (btn) {
-          btn.removeEventListener("click", interceptClick, true);
+        // Create a synthetic click that bypasses our interceptor
+        btn.dataset.sgBypass = "true";
+        setTimeout(() => {
           btn.click();
-          // Re-attach after a brief delay
-          setTimeout(() => btn.addEventListener("click", interceptClick, true), 100);
-        }
+          delete btn.dataset.sgBypass;
+        }, 10);
       }
     } catch (err) {
       console.error("[SG-LLM] Backend error, allowing send:", err);
       // On error, allow send (fail-open)
-      const btn = findSendButton();
-      if (btn) {
-        btn.removeEventListener("click", interceptClick, true);
+      btn.dataset.sgBypass = "true";
+      setTimeout(() => {
         btn.click();
-        setTimeout(() => btn.addEventListener("click", interceptClick, true), 100);
-      }
+        delete btn.dataset.sgBypass;
+      }, 10);
     }
-  };
-  
-  const sendBtn = findSendButton();
-  if (sendBtn) {
-    sendBtn.addEventListener("click", interceptClick, true);
-  }
+  }, true);
 }
 
 function findAssistantContentEl(host) {

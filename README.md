@@ -7,6 +7,7 @@ Browser extension designed to detect and prevent private data leakage in user - 
 
 ## ⚡ Exclusive features of this fork
 - Cleaner project structure
+- Chromium extension blocks prompt sending until analysed and user explicitly allows it.
 - Easier backend server setup via `requirements.txt` and virtual environment
 - Better model support via API unification and easier to setup local `.env` file.
 - Local model support through Ollama

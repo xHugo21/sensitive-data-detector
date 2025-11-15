@@ -7,7 +7,20 @@
   "content_scripts": [
     {
       "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
-      "js": ["content.js"],
+      "js": [
+        "src/config.js",
+        "src/state/alertStore.js",
+        "src/services/detectorClient.js",
+        "src/services/riskUtils.js",
+        "src/services/pdfAnalyzer.js",
+        "src/ui/panel.js",
+        "src/ui/highlights.js",
+        "src/dom/chatSelectors.js",
+        "src/controllers/sendInterceptor.js",
+        "src/controllers/messageAnalyzer.js",
+        "src/controllers/fileInterceptor.js",
+        "src/main.js"
+      ],
       "run_at": "document_idle"
     }
   ],

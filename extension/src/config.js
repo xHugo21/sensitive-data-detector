@@ -2,7 +2,7 @@
   const sg = (root.SG = root.SG || {});
 
   const API_BASE = "http://127.0.0.1:8000";
-  const DEFAULT_MODE = "Zero-shot";
+  const MODE = "Zero-shot";
 
   const HIGH_FIELDS = new Set([
     "PASSWORD",
@@ -72,7 +72,7 @@
 
   sg.config = {
     API_BASE,
-    DEFAULT_MODE,
+    MODE,
     HIGH_FIELDS,
     MEDIUM_FIELDS,
   };

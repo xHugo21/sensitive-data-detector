@@ -4,7 +4,7 @@
   async function analyzePdfFile(file) {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("mode", sg.config.DEFAULT_MODE);
+    formData.append("mode", sg.config.MODE);
     return sg.detectorClient.detectFile(formData);
   }
 

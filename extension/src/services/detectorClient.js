@@ -1,7 +1,7 @@
 (function initDetectorClient(root) {
   const sg = (root.SG = root.SG || {});
 
-  async function detectText(text, mode = sg.config.DEFAULT_MODE) {
+  async function detectText(text, mode = sg.config.MODE) {
     const resp = await fetch(`${sg.config.API_BASE}/detect`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

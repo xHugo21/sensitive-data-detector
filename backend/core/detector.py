@@ -2,7 +2,7 @@ import re
 import json
 from services.llm_client import client
 from utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP
-from core.config import LLM_MODEL, LLM_PROVIDER
+from core.config import LLM_MODEL, LLM_PROVIDER, LLM_SUPPORTS_JSON_MODE
 
 def safe_json_from_text(s: str) -> dict:
     if not s:
@@ -27,7 +27,7 @@ def detect_sensitive_data(text: str, prompt: str | None = None, mode: str = "Few
 
         sys_msg = "You are to output a single valid JSON object only. No prose, no markdown."
 
-        supports_json_mode = LLM_PROVIDER in ["openai", "groq"]
+        supports_json_mode = LLM_SUPPORTS_JSON_MODE
 
         try:
             if supports_json_mode:

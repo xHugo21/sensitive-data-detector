@@ -9,7 +9,7 @@ Browser extension designed to detect and prevent private data leakage in user - 
 - Cleaner project structure
 - Chromium extension blocks prompt sending until analysed and user explicitly allows it.
 - Easier backend server setup via `requirements.txt` and Dockerfile
-- Better model support via API unification and easier to setup local `.env` file.
+- Unified LiteLLM integration for 100+ providers with simple `.env` overrides
 - Local model support through Ollama
 
 ---
@@ -24,7 +24,7 @@ cd sensitive-data-detector
 ```
 
 ### 2. Setup .env
-Take a look at `backend/.env.example` and copy it to `backend/.env` with desired provider and model
+Take a look at `backend/.env.example` and copy it to `backend/.env` with desired config options
 
 ### 3. Install dependencies and run
 ```bash
@@ -55,9 +55,8 @@ python3 main.py
 ---
 
 ## 🌐 Supported providers
-- OpenAI
-- Groq
-- Ollama
+- Any model reachable through the [LiteLLM](https://github.com/BerriAI/litellm) SDK (100+ vendors)
+- See more info in `backend/.env.example`
 
 ---
 
@@ -65,4 +64,3 @@ python3 main.py
 
 This project is under the MIT license.
 Check the file LICENSE for more details.
-

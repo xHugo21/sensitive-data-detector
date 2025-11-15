@@ -14,3 +14,15 @@ ALLOW_ORIGINS = [
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+
+
+def _str_to_bool(value: str | None, default: bool) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+LLM_SUPPORTS_JSON_MODE = _str_to_bool(
+    os.getenv("LLM_SUPPORTS_JSON_MODE"),
+    LLM_PROVIDER in {"openai", "groq"},
+)

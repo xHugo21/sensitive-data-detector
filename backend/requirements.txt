@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
-openai
+litellm
 pdfplumber
 PyPDF2
 pdfminer.six

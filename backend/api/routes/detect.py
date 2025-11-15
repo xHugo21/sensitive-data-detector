@@ -8,14 +8,23 @@ from services.document_reader import read_document
 
 router = APIRouter()
 
+
 @router.post("/detect")
 def detect(req: DetectReq):
-    result = detect_sensitive_data(req.text, prompt=req.prompt, mode=req.mode or "Zero-shot")
+    result = detect_sensitive_data(
+        req.text, prompt=req.prompt, mode=req.mode or "Zero-shot"
+    )
+    print(result)
     result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
     return result
 
+
 @router.post("/detect_file")
-async def detect_file(file: UploadFile = File(...), mode: str = Form("Zero-shot"), prompt: str = Form(None)):
+async def detect_file(
+    file: UploadFile = File(...),
+    mode: str = Form("Zero-shot"),
+    prompt: str = Form(None),
+):
     try:
         tmp_dir = tempfile.gettempdir()
         tmp_path = os.path.join(tmp_dir, file.filename or "uploaded_file")
@@ -31,7 +40,7 @@ async def detect_file(file: UploadFile = File(...), mode: str = Form("Zero-shot"
                 "detected_fields": [],
                 "risk_level": "Unknown",
                 "error": "No text extracted",
-                "extracted_snippet": ""
+                "extracted_snippet": "",
             }
 
         print("\n===== TEXTO EXTRAÍDO =====", flush=True)
@@ -50,5 +59,5 @@ async def detect_file(file: UploadFile = File(...), mode: str = Form("Zero-shot"
             "detected_fields": [],
             "risk_level": "Unknown",
             "error": str(e),
-            "extracted_snippet": ""
+            "extracted_snippet": "",
         }

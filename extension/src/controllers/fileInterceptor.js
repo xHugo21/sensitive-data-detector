@@ -1,5 +1,5 @@
 (function initFileInterceptor(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
   let attached = false;
 
   function attach() {

@@ -1,5 +1,5 @@
 (function initPanel(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   const sendListeners = new Set();
   const dismissListeners = new Set();
@@ -30,16 +30,24 @@
       display: "none",
       fontSize: "18px",
       lineHeight: "1.6",
-      borderLeft: "10px solid #666"
+      borderLeft: "10px solid #666",
     });
     panel.id = "sg-llm-panel";
 
     const titleRow = document.createElement("div");
-    Object.assign(titleRow.style, { display: "flex", justifyContent: "space-between", alignItems: "center" });
+    Object.assign(titleRow.style, {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    });
 
     const title = document.createElement("div");
     title.id = "sg-llm-title";
-    Object.assign(title.style, { fontWeight: "900", fontSize: "26px", marginBottom: "8px" });
+    Object.assign(title.style, {
+      fontWeight: "900",
+      fontSize: "26px",
+      marginBottom: "8px",
+    });
     title.textContent = "⚠️ CUIDADO: Riesgo Detectado";
     titleRow.appendChild(title);
 
@@ -47,44 +55,77 @@
     originBadge.id = "sg-llm-origin";
     originBadge.textContent = "Origen: Usuario";
     Object.assign(originBadge.style, {
-      background: "#2a2a2a", padding: "6px 10px", borderRadius: "999px",
-      fontSize: "14px", marginLeft: "12px"
+      background: "#2a2a2a",
+      padding: "6px 10px",
+      borderRadius: "999px",
+      fontSize: "14px",
+      marginLeft: "12px",
     });
     titleRow.appendChild(originBadge);
     panel.appendChild(titleRow);
 
     const policy = document.createElement("div");
     policy.id = "sg-llm-policy";
-    Object.assign(policy.style, { opacity: "0.95", fontSize: "15px", margin: "6px 0 12px" });
+    Object.assign(policy.style, {
+      opacity: "0.95",
+      fontSize: "15px",
+      margin: "6px 0 12px",
+    });
     panel.appendChild(policy);
 
     const header = document.createElement("div");
     header.id = "sg-llm-header";
-    Object.assign(header.style, { fontWeight: "800", margin: "12px 0 6px", fontSize: "18px" });
+    Object.assign(header.style, {
+      fontWeight: "800",
+      margin: "12px 0 6px",
+      fontSize: "18px",
+    });
     header.textContent = "Datos sensibles detectados:";
     panel.appendChild(header);
 
     const list = document.createElement("div");
     list.id = "sg-llm-list";
-    Object.assign(list.style, { fontSize: "16px", maxHeight: "360px", overflow: "auto" });
+    Object.assign(list.style, {
+      fontSize: "16px",
+      maxHeight: "360px",
+      overflow: "auto",
+    });
     panel.appendChild(list);
 
     const actions = document.createElement("div");
-    Object.assign(actions.style, { display: "flex", gap: "12px", marginTop: "16px" });
+    Object.assign(actions.style, {
+      display: "flex",
+      gap: "12px",
+      marginTop: "16px",
+    });
 
     const btnSendAnyway = document.createElement("button");
     btnSendAnyway.id = "sg-llm-override";
     btnSendAnyway.textContent = "Enviar de todos modos";
     Object.assign(btnSendAnyway.style, {
-      flex: 1, border: "none", borderRadius: "14px", padding: "14px 16px",
-      background: "#5a5a5a", color: "#fff", cursor: "pointer", fontSize: "16px", fontWeight: "700"
+      flex: 1,
+      border: "none",
+      borderRadius: "14px",
+      padding: "14px 16px",
+      background: "#5a5a5a",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: "16px",
+      fontWeight: "700",
     });
 
     const btnDismiss = document.createElement("button");
     btnDismiss.textContent = "Ocultar";
     Object.assign(btnDismiss.style, {
-      flex: 0, border: "none", borderRadius: "14px", padding: "14px 16px",
-      background: "#2a2a2a", color: "#fff", cursor: "pointer", fontSize: "16px", fontWeight: "700"
+      flex: 0,
+      border: "none",
+      borderRadius: "14px",
+      padding: "14px 16px",
+      background: "#2a2a2a",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: "16px",
+      fontWeight: "700",
     });
 
     actions.appendChild(btnSendAnyway);
@@ -94,16 +135,25 @@
 
     btnDismiss.addEventListener("click", () => {
       hidePanel();
-      dismissListeners.forEach(fn => fn());
+      dismissListeners.forEach((fn) => fn());
     });
     btnSendAnyway.addEventListener("click", () => {
-      sendListeners.forEach(fn => fn());
+      sendListeners.forEach((fn) => fn());
     });
 
     primePanelPosition(panel);
     enablePanelDrag(panel);
 
-    panel._els = { title, list, originBadge, policy, header, actions, btnSendAnyway, btnDismiss };
+    panel._els = {
+      title,
+      list,
+      originBadge,
+      policy,
+      header,
+      actions,
+      btnSendAnyway,
+      btnDismiss,
+    };
     return panel;
   }
 
@@ -141,7 +191,10 @@
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     const saveGeom = () => {
       const rect = panel.getBoundingClientRect();
-      localStorage.setItem("sgPanelGeom", JSON.stringify({ x: rect.left, y: rect.top }));
+      localStorage.setItem(
+        "sgPanelGeom",
+        JSON.stringify({ x: rect.left, y: rect.top }),
+      );
     };
 
     const onMove = (event) => {
@@ -156,7 +209,12 @@
         let ny = point.clientY - offY;
         nx = clamp(nx, 0, Math.max(0, window.innerWidth - rect.width));
         ny = clamp(ny, 0, Math.max(0, window.innerHeight - rect.height));
-        Object.assign(panel.style, { left: nx + "px", top: ny + "px", right: "unset", bottom: "unset" });
+        Object.assign(panel.style, {
+          left: nx + "px",
+          top: ny + "px",
+          right: "unset",
+          bottom: "unset",
+        });
       });
     };
 
@@ -199,23 +257,49 @@
 
     window.addEventListener("resize", () => {
       const rect = panel.getBoundingClientRect();
-      const nx = clamp(rect.left, 0, Math.max(0, window.innerWidth - rect.width));
-      const ny = clamp(rect.top, 0, Math.max(0, window.innerHeight - rect.height));
-      Object.assign(panel.style, { left: nx + "px", top: ny + "px", right: "unset", bottom: "unset" });
+      const nx = clamp(
+        rect.left,
+        0,
+        Math.max(0, window.innerWidth - rect.width),
+      );
+      const ny = clamp(
+        rect.top,
+        0,
+        Math.max(0, window.innerHeight - rect.height),
+      );
+      Object.assign(panel.style, {
+        left: nx + "px",
+        top: ny + "px",
+        right: "unset",
+        bottom: "unset",
+      });
       saveGeom();
     });
   }
 
   function renderPanel(result, origin = "Usuario", contextText = "") {
     const panel = ensurePanel();
-    const { title, list, originBadge, policy, header, btnSendAnyway, btnDismiss, actions } = panel._els;
+    const {
+      title,
+      list,
+      originBadge,
+      policy,
+      header,
+      btnSendAnyway,
+      btnDismiss,
+      actions,
+    } = panel._els;
     list.innerHTML = "";
 
     const { risk_level = "Unknown", detected_fields = [] } = result || {};
     const riskEs =
-      risk_level === "High" ? "Alto" :
-      risk_level === "Medium" ? "Medio" :
-      risk_level === "Low" ? "Bajo" : "Desconocido";
+      risk_level === "High"
+        ? "Alto"
+        : risk_level === "Medium"
+          ? "Medio"
+          : risk_level === "Low"
+            ? "Bajo"
+            : "Desconocido";
 
     title.textContent = `⚠️ CUIDADO: Riesgo ${riskEs} Detectado`;
     originBadge.textContent = `Origen: ${origin}`;
@@ -240,9 +324,13 @@
     policy.innerHTML = origin === "Respuesta" ? policyRespuesta : policyUsuario;
 
     const accentRisk =
-      risk_level === "High" ? "#ff4d4d" :
-      risk_level === "Medium" ? "#ffcc00" :
-      risk_level === "Low" ? "#66cc66" : "#666";
+      risk_level === "High"
+        ? "#ff4d4d"
+        : risk_level === "Medium"
+          ? "#ffcc00"
+          : risk_level === "Low"
+            ? "#66cc66"
+            : "#666";
     const accentOrigin = origin === "Respuesta" ? "#3fa9ff" : accentRisk;
     panel.style.borderLeft = `10px solid ${accentOrigin}`;
 
@@ -258,11 +346,18 @@
         const value = (detected.value || "").trim();
         if (!value) continue;
 
-        const pos = baseText ? baseText.indexOf(value) : Number.POSITIVE_INFINITY;
+        const pos = baseText
+          ? baseText.indexOf(value)
+          : Number.POSITIVE_INFINITY;
         const key = fieldName;
         let group = groups.get(key);
         if (!group) {
-          group = { field: fieldName, risk: sg.riskUtils.classifyField(fieldName), _seen: new Map(), minIdx: Number.POSITIVE_INFINITY };
+          group = {
+            field: fieldName,
+            risk: sg.riskUtils.classifyField(fieldName),
+            _seen: new Map(),
+            minIdx: Number.POSITIVE_INFINITY,
+          };
           groups.set(key, group);
         }
 
@@ -277,11 +372,15 @@
         group.items = Array.from(group._seen.entries())
           .map(([value, pos]) => ({ value, pos }))
           .sort((a, b) => a.pos - b.pos);
-        group.minIdx = group.items.length ? group.items[0].pos : Number.POSITIVE_INFINITY;
+        group.minIdx = group.items.length
+          ? group.items[0].pos
+          : Number.POSITIVE_INFINITY;
         delete group._seen;
       }
 
-      const ordered = Array.from(groups.values()).sort(sg.riskUtils.compareFieldGroups);
+      const ordered = Array.from(groups.values()).sort(
+        sg.riskUtils.compareFieldGroups,
+      );
 
       for (const group of ordered) {
         const item = document.createElement("div");
@@ -294,7 +393,11 @@
         head.style.textDecorationThickness = "2px";
         head.style.textUnderlineOffset = "2px";
         head.style.textDecorationColor =
-          group.risk === "high" ? "#ff4d4d" : (group.risk === "medium" ? "#ffcc00" : "#66cc66");
+          group.risk === "high"
+            ? "#ff4d4d"
+            : group.risk === "medium"
+              ? "#ffcc00"
+              : "#66cc66";
         head.style.color = head.style.textDecorationColor;
         head.textContent = group.field;
 
@@ -302,8 +405,10 @@
         body.style.opacity = "0.98";
         body.style.fontSize = "16px";
         body.style.marginTop = "2px";
-        const valuesOrdered = group.items.map(it => it.value);
-        body.textContent = valuesOrdered.slice(0, 4).join(", ") + (valuesOrdered.length > 4 ? "…" : "");
+        const valuesOrdered = group.items.map((it) => it.value);
+        body.textContent =
+          valuesOrdered.slice(0, 4).join(", ") +
+          (valuesOrdered.length > 4 ? "…" : "");
 
         item.appendChild(head);
         item.appendChild(body);
@@ -317,7 +422,8 @@
 
     if (actions && btnDismiss && btnSendAnyway) {
       if (origin === "Usuario") {
-        if (!actions.contains(btnSendAnyway)) actions.insertBefore(btnSendAnyway, btnDismiss);
+        if (!actions.contains(btnSendAnyway))
+          actions.insertBefore(btnSendAnyway, btnDismiss);
         btnSendAnyway.style.display = "inline-block";
         btnDismiss.style.display = "inline-block";
         btnSendAnyway.style.flex = "1";
@@ -354,6 +460,6 @@
     render: renderPanel,
     hide: hidePanel,
     onSendAnyway,
-    onDismiss
+    onDismiss,
   };
 })(typeof window !== "undefined" ? window : globalThis);

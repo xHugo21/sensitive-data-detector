@@ -1,11 +1,11 @@
 (function initDetectorClient(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   async function detectText(text, mode = sg.config.DEFAULT_MODE) {
     const resp = await fetch(`${sg.config.API_BASE}/detect`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, mode })
+      body: JSON.stringify({ text, mode }),
     });
     if (!resp.ok) throw new Error(`Detector HTTP ${resp.status}`);
     return resp.json();
@@ -14,7 +14,7 @@
   async function detectFile(formData) {
     const resp = await fetch(`${sg.config.API_BASE}/detect_file`, {
       method: "POST",
-      body: formData
+      body: formData,
     });
     if (!resp.ok) throw new Error(`Detector HTTP ${resp.status}`);
     return resp.json();
@@ -31,13 +31,17 @@
         obs.disconnect();
         resolve();
       }
-      obs.observe(node, { childList: true, subtree: true, characterData: true });
+      obs.observe(node, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
     });
   }
 
   sg.detectorClient = {
     detectText,
     detectFile,
-    waitForStableContent
+    waitForStableContent,
   };
 })(typeof window !== "undefined" ? window : globalThis);

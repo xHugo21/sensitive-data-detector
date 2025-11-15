@@ -1,5 +1,5 @@
 (function initSendInterceptor(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   let attached = false;
   let lastSendIntent = null;
@@ -32,7 +32,9 @@
   }
 
   function handleSendButtonClick(event) {
-    const btn = event.target.closest('button[type="submit"], [data-testid="send-button"]');
+    const btn = event.target.closest(
+      'button[type="submit"], [data-testid="send-button"]',
+    );
     if (!btn) return;
     if (btn.dataset.sgBypass === "true") return;
 
@@ -49,7 +51,11 @@
   async function analyzeBeforeSend({ composer, button = null, text }) {
     try {
       const result = await sg.detectorClient.detectText(text);
-      sg.highlights.applyHighlights(composer, result?.detected_fields || [], "user");
+      sg.highlights.applyHighlights(
+        composer,
+        result?.detected_fields || [],
+        "user",
+      );
 
       if (sg.riskUtils.shouldBlock(result?.risk_level)) {
         lastSendIntent = { composer, button };
@@ -89,7 +95,7 @@
       keyCode: 13,
       which: 13,
       bubbles: true,
-      cancelable: true
+      cancelable: true,
     });
     composer.dispatchEvent(enterEvent);
   }

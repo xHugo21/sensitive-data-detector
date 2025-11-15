@@ -1,5 +1,5 @@
 (function initPdfAnalyzer(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   async function analyzePdfFile(file) {
     const formData = new FormData();

@@ -1,5 +1,5 @@
 (function initHighlights(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   function ensureHighlightCSS() {
     const old = document.getElementById("sg-highlights-css");
@@ -26,8 +26,10 @@
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         if (parent.closest(rejectSel)) return NodeFilter.FILTER_REJECT;
-        return (node.nodeValue && node.nodeValue.trim()) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-      }
+        return node.nodeValue && node.nodeValue.trim()
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      },
     });
     const nodes = [];
     let current;
@@ -80,19 +82,22 @@
       seen.add(key);
 
       const bucket = sg.riskUtils.classifyField(field.field);
-      const target = bucket === "high" ? high : bucket === "medium" ? medium : low;
+      const target =
+        bucket === "high" ? high : bucket === "medium" ? medium : low;
       target.push(...rangesForValue(host, value));
     }
 
     const prefix = context === "assistant" ? "sg-assist" : "sg-user";
-    if (high.length) CSS.highlights.set(`${prefix}-high`, new Highlight(...high));
-    if (medium.length) CSS.highlights.set(`${prefix}-med`, new Highlight(...medium));
+    if (high.length)
+      CSS.highlights.set(`${prefix}-high`, new Highlight(...high));
+    if (medium.length)
+      CSS.highlights.set(`${prefix}-med`, new Highlight(...medium));
     if (low.length) CSS.highlights.set(`${prefix}-low`, new Highlight(...low));
   }
 
   sg.highlights = {
     ensureHighlightCSS,
     applyHighlights,
-    clearHighlights
+    clearHighlights,
   };
 })(typeof window !== "undefined" ? window : globalThis);

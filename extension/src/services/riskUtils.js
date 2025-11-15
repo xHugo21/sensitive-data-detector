@@ -1,5 +1,5 @@
 (function initRiskUtils(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   const RISK_ORDER = { high: 0, medium: 1, low: 2 };
 
@@ -14,7 +14,7 @@
   function compareFieldGroups(a, b) {
     const order = RISK_ORDER[a.risk] - RISK_ORDER[b.risk];
     if (order !== 0) return order;
-    return (a.minIdx - b.minIdx) || a.field.localeCompare(b.field);
+    return a.minIdx - b.minIdx || a.field.localeCompare(b.field);
   }
 
   function shouldBlock(riskLevel) {
@@ -24,6 +24,6 @@
   sg.riskUtils = {
     classifyField,
     compareFieldGroups,
-    shouldBlock
+    shouldBlock,
   };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -1,11 +1,11 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
+const test = require("node:test");
+const assert = require("node:assert/strict");
 
 globalThis.SG = {};
-require('../src/state/alertStore.js');
+require("../src/state/alertStore.js");
 const store = globalThis.SG.alertStore;
 
-test('override flag toggles', () => {
+test("override flag toggles", () => {
   store.setOverrideActive(false);
   assert.equal(store.isOverrideActive(), false);
   store.setOverrideActive(true);
@@ -14,7 +14,7 @@ test('override flag toggles', () => {
   assert.equal(store.isOverrideActive(), false);
 });
 
-test('pending response flag consumes', () => {
+test("pending response flag consumes", () => {
   store.setResponsePending(true);
   assert.equal(store.isResponsePending(), true);
   assert.equal(store.consumeResponsePending(), true);
@@ -22,7 +22,7 @@ test('pending response flag consumes', () => {
   assert.equal(store.consumeResponsePending(), false);
 });
 
-test('node tracking works via WeakSets', () => {
+test("node tracking works via WeakSets", () => {
   const node = {};
   assert.equal(store.hasAnalyzed(node), false);
   store.markAnalyzed(node);

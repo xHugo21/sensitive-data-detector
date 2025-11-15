@@ -1,10 +1,10 @@
 (function initAlertStore(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   const state = {
     overrideOnce: false,
     pendingResponseAlert: false,
-    suppressUserAlerts: false
+    suppressUserAlerts: false,
   };
 
   const analyzedNodes = new WeakSet();
@@ -48,6 +48,6 @@
     },
     endInFlight(node) {
       inFlightAnalyze.delete(node);
-    }
+    },
   };
 })(typeof window !== "undefined" ? window : globalThis);

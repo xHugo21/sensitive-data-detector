@@ -1,5 +1,5 @@
 (function initMain(root) {
-  const sg = root.SG = root.SG || {};
+  const sg = (root.SG = root.SG || {});
 
   function bootstrap() {
     sg.panel.ensure();
@@ -14,7 +14,10 @@
     setTimeout(bootstrap, 800);
   }
 
-  if (document.readyState === "complete" || document.readyState === "interactive") {
+  if (
+    document.readyState === "complete" ||
+    document.readyState === "interactive"
+  ) {
     startWithDelay();
   } else {
     window.addEventListener("load", startWithDelay);

@@ -64,3 +64,6 @@ TEST/**/*.csv
 # Secrets
 .env
 *.env
+
+# TODO file
+TODO.md

@@ -14,6 +14,7 @@ Provides the backend for detecting sensitive information exchange alonside an ex
 - Easier backend server setup via `requirements.txt` and Dockerfile
 - Unified LiteLLM integration for 100+ providers with simple `.env` overrides
 - Local model support through Ollama
+- Test suite on every package and CI workflow
 
 ---
 

@@ -37,8 +37,8 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-> [!INFO]
-> Alternatively you can run the backend by using the `Dockerfile`
+> [!NOTE]
+> Alternatively, you can run the backend using the `Dockerfile`
 > ```bash
 > docker build -t sensitive-data-detector .
 > docker run -p 8000:8000 --env-file .env sensitive-data-detector

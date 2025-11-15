@@ -50,8 +50,6 @@ def _maybe_prefix_model(model: str | None, provider: str) -> str | None:
         return model
     if model.startswith(f"{provider}/"):
         return model
-    if "/" in model:
-        return model
     return f"{provider}/{model}"
 
 

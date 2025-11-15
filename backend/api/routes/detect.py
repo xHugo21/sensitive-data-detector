@@ -14,7 +14,6 @@ def detect(req: DetectReq):
     result = detect_sensitive_data(
         req.text, prompt=req.prompt, mode=req.mode or "Zero-shot"
     )
-    print(result)
     result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
     return result
 

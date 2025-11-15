@@ -8,6 +8,7 @@ Provides the backend for detecting sensitive information exchange alonside an ex
 > This is a fork of the repository [guillecab/SensitiveDataDetector-ChatGPT-Extension](https://github.com/guillecab/SensitiveDataDetector-ChatGPT-Extension).
 
 ## ⚡ Exclusive features of this fork
+- Proxy server that acts as a MiTM to analyse and block all sensitive LLM API interactions
 - Cleaner project structure
 - Chromium extension blocks prompt sending until analysed and user explicitly allows it.
 - Easier backend server setup via `requirements.txt` and Dockerfile
@@ -55,7 +56,42 @@ python3 main.py
 > Ensure the host and port used for the extension match the ones defined on the `content.js` of the extension
 
 ---
+## 🧩 Proxy for LLM API calls
 
+Protect command-line clients, IDEs or applications by routing their HTTP calls through the standalone proxy located in `proxy/`:
+
+1. Run the backend server
+2. Set up proxy env varialbes. Copy `proxy/.env.example` to `proxy/.env` and adjust values.
+3. Install proxy dependencies and launch it:
+   ```bash
+   cd proxy
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   uvicorn main:app --host 127.0.0.1 --port 8787
+   ```
+4. Aim your tool at the proxy. Examples:
+   - Replace OpenAI's base URL with `http://127.0.0.1:8787/openai/v1/...`
+   - Point GitHub Copilot requests to `http://127.0.0.1:8787/copilot/v1/...`
+   - Send Groq traffic to `http://127.0.0.1:8787/groq/openai/v1/...`
+
+Every request is analysed by the backend first. When the configured risk level is reached the proxy returns `403` (with the detected fields in the payload and `X-LLM-Guard-*` headers); otherwise the call is transparently forwarded to the upstream API.
+
+Example Groq request:
+
+```bash
+curl http://127.0.0.1:8787/groq/openai/v1/chat/completions \
+  -H "Authorization: Bearer $GROQ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "model":"groq/llama-3.3-70b-versatile",
+        "messages":[{"role":"user","content":"My password is 32141fsaj"}],
+        "temperature":0.2,
+        "stream":false
+      }'
+```
+
+---
 ## 🌐 Supported providers
 - Any model reachable through the [LiteLLM](https://github.com/BerriAI/litellm) SDK (100+ vendors)
 - See more info in `backend/.env.example`

@@ -1,6 +1,8 @@
 # 🛡️ LLM Guard 
 
-Browser extension designed to detect and prevent private data leakage in user - LLM interactions.
+Detect and prevent private data leakage in user-LLM interactions.
+
+Provides the backend for detecting sensitive information exchange alonside an extension for Chromium based browsers that displays the detected sensitive data and warns users before any information is sent to an LLM.
 
 > [!IMPORTANT]
 > This is a fork of the repository [guillecab/SensitiveDataDetector-ChatGPT-Extension](https://github.com/guillecab/SensitiveDataDetector-ChatGPT-Extension).

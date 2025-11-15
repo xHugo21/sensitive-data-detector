@@ -65,5 +65,6 @@ TEST/**/*.csv
 .env
 *.env
 
-# TODO file
 TODO.md
+sensitive-pdf.typ
+sensitive-pdf.pdf

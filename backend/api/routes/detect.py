@@ -11,9 +11,15 @@ router = APIRouter()
 
 @router.post("/detect")
 def detect(req: DetectReq):
+    print("\n===== TEXTO EXTRAÍDO =====", flush=True)
+    print(req.text, flush=True)
+    print("========================================\n", flush=True)
     result = detect_sensitive_data(
         req.text, prompt=req.prompt, mode=req.mode or "Zero-shot"
     )
+    print("\n===== DETECTED FIELDS =====", flush=True)
+    print(result.get("detected_fields", []), flush=True)
+    print("========================================\n", flush=True)
     result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
     return result
 

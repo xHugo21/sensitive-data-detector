@@ -12,6 +12,7 @@ from config import (
     BACKEND_URL,
     BACKEND_DETECT_ENDPOINT,
     BACKEND_TIMEOUT_SECONDS,
+    BACKEND_DETECTION_MODE,
     COPILOT_API_BASE,
     GROQ_API_BASE,
     OPENAI_API_BASE,
@@ -91,7 +92,9 @@ def _extract_payload_text(payload: Dict[str, Any], full_path: str) -> str:
 async def _ask_backend(text: str) -> Dict[str, Any]:
     if not text.strip():
         return {"detected_fields": [], "risk_level": "None"}
-    data = {"text": text, "mode": "Zero-shot"}
+    data = {"text": text}
+    if BACKEND_DETECTION_MODE:
+        data["mode"] = BACKEND_DETECTION_MODE
     try:
         async with httpx.AsyncClient(timeout=BACKEND_TIMEOUT_SECONDS) as client:
             response = await client.post(DETECT_URL, json=data)

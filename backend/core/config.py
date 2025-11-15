@@ -14,6 +14,7 @@ ALLOW_ORIGINS = [
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+DETECTION_MODE = os.getenv("DETECTION_MODE", "zero-shot").strip() or "zero-shot"
 
 
 def _str_to_bool(value: str | None, default: bool) -> bool:

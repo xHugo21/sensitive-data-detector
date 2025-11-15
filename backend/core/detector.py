@@ -1,8 +1,12 @@
 import re
 import json
 from services.llm_client import client
-from utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP
-from core.config import LLM_MODEL, LLM_PROVIDER, LLM_SUPPORTS_JSON_MODE
+from utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP, resolve_mode
+from core.config import (
+    LLM_MODEL,
+    LLM_PROVIDER,
+    LLM_SUPPORTS_JSON_MODE,
+)
 
 def safe_json_from_text(s: str) -> dict:
     if not s:
@@ -15,15 +19,21 @@ def safe_json_from_text(s: str) -> dict:
     except Exception:
         return {}
 
-def detect_sensitive_data(text: str, prompt: str | None = None, mode: str = "Few-shot"):
+def detect_sensitive_data(
+    text: str,
+    prompt: str | None = None,
+    mode: str | None = None,
+):
     try:
+        mode_to_use = resolve_mode(mode)
         if prompt and prompt.strip():
             final_prompt = inject_text(prompt.strip(), text)
             prompt_info = "custom"
         else:
-            template = load_prompt(mode or "Few-shot")
+            template = load_prompt(mode_to_use)
             final_prompt = inject_text(template, text)
-            prompt_info = f"prompts/{PROMPT_MAP.get(mode or 'Few-shot', 'FS_prompt.txt')}"
+            prompt_filename = PROMPT_MAP[mode_to_use]
+            prompt_info = f"prompts/{prompt_filename}"
 
         sys_msg = "You are to output a single valid JSON object only. No prose, no markdown."
 

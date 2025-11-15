@@ -2,10 +2,12 @@
   const sg = (root.SG = root.SG || {});
 
   async function detectText(text, mode = sg.config.MODE) {
+    const payload = { text };
+    if (mode) payload.mode = mode;
     const resp = await fetch(`${sg.config.API_BASE}/detect`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, mode }),
+      body: JSON.stringify(payload),
     });
     if (!resp.ok) throw new Error(`Detector HTTP ${resp.status}`);
     return resp.json();

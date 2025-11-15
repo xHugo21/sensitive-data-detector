@@ -13,10 +13,10 @@ router = APIRouter()
 def detect(req: DetectReq):
     print("\n===== TEXTO EXTRAÍDO =====", flush=True)
     print(req.text, flush=True)
+    print("\n===== MODO =====", flush=True)
+    print(req.mode, flush=True)
     print("========================================\n", flush=True)
-    result = detect_sensitive_data(
-        req.text, prompt=req.prompt, mode=req.mode or "Zero-shot"
-    )
+    result = detect_sensitive_data(req.text, prompt=req.prompt, mode=req.mode)
     print("\n===== DETECTED FIELDS =====", flush=True)
     print(result.get("detected_fields", []), flush=True)
     print("========================================\n", flush=True)
@@ -27,7 +27,7 @@ def detect(req: DetectReq):
 @router.post("/detect_file")
 async def detect_file(
     file: UploadFile = File(...),
-    mode: str = Form("Zero-shot"),
+    mode: str | None = Form(None),
     prompt: str = Form(None),
 ):
     try:

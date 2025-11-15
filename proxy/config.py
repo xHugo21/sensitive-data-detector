@@ -24,6 +24,7 @@ def _parse_risk(value: str | None, default: str) -> str:
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
 BACKEND_DETECT_ENDPOINT = os.getenv("BACKEND_DETECT_ENDPOINT", "/detect")
 BACKEND_TIMEOUT_SECONDS = _parse_float(os.getenv("BACKEND_TIMEOUT_SECONDS"), 10.0)
+BACKEND_DETECTION_MODE = os.getenv("BACKEND_DETECTION_MODE", "").strip()
 
 PROXY_MIN_BLOCK_RISK = _parse_risk(os.getenv("PROXY_MIN_BLOCK_RISK"), "low")
 UPSTREAM_TIMEOUT_SECONDS = _parse_float(os.getenv("UPSTREAM_TIMEOUT_SECONDS"), 30.0)

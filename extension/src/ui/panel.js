@@ -7,30 +7,30 @@
   function ensurePanel() {
     let panel = document.getElementById("sg-llm-panel");
     if (panel) {
-      if (!panel.dataset.dragInit) {
-        primePanelPosition(panel);
-        enablePanelDrag(panel);
-      }
+      mountPanel(panel);
       return panel;
     }
 
     panel = document.createElement("div");
     Object.assign(panel.style, {
-      position: "fixed",
-      bottom: "40px",
-      right: "40px",
-      zIndex: 999999,
-      maxWidth: "680px",
-      background: "rgba(20,20,20,.98)",
-      color: "#fff",
-      borderRadius: "24px",
-      boxShadow: "0 16px 50px rgba(0,0,0,.7)",
-      padding: "28px",
-      fontFamily: "system-ui, sans-serif",
+      position: "relative",
+      zIndex: 10,
+      width: "100%",
+      maxWidth: "760px",
+      background: "rgba(32,33,35,0.97)",
+      color: "#ECECF1",
+      borderRadius: "18px",
+      boxShadow: "0 12px 35px rgba(0,0,0,0.35)",
+      padding: "20px 22px 24px",
+      fontFamily:
+        '"Sohne", "GT Walsheim", "Helvetica Neue", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       display: "none",
-      fontSize: "18px",
-      lineHeight: "1.6",
-      borderLeft: "10px solid #666",
+      fontSize: "16px",
+      lineHeight: "1.55",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderLeft: "4px solid #c5c5d2",
+      boxSizing: "border-box",
+      backdropFilter: "blur(6px)",
     });
     panel.id = "sg-llm-panel";
 
@@ -44,9 +44,10 @@
     const title = document.createElement("div");
     title.id = "sg-llm-title";
     Object.assign(title.style, {
-      fontWeight: "900",
-      fontSize: "26px",
-      marginBottom: "8px",
+      fontWeight: "700",
+      fontSize: "20px",
+      marginBottom: "4px",
+      letterSpacing: "-0.01em",
     });
     title.textContent = "⚠️ CUIDADO: Riesgo Detectado";
     titleRow.appendChild(title);
@@ -55,11 +56,12 @@
     originBadge.id = "sg-llm-origin";
     originBadge.textContent = "Origen: Usuario";
     Object.assign(originBadge.style, {
-      background: "#2a2a2a",
-      padding: "6px 10px",
+      background: "rgba(255,255,255,0.08)",
+      padding: "4px 10px",
       borderRadius: "999px",
-      fontSize: "14px",
+      fontSize: "13px",
       marginLeft: "12px",
+      color: "#ECECF1",
     });
     titleRow.appendChild(originBadge);
     panel.appendChild(titleRow);
@@ -67,18 +69,20 @@
     const policy = document.createElement("div");
     policy.id = "sg-llm-policy";
     Object.assign(policy.style, {
-      opacity: "0.95",
-      fontSize: "15px",
+      opacity: "0.9",
+      fontSize: "14px",
       margin: "6px 0 12px",
+      color: "#C5C5D2",
     });
     panel.appendChild(policy);
 
     const header = document.createElement("div");
     header.id = "sg-llm-header";
     Object.assign(header.style, {
-      fontWeight: "800",
-      margin: "12px 0 6px",
-      fontSize: "18px",
+      fontWeight: "600",
+      margin: "14px 0 6px",
+      fontSize: "16px",
+      color: "#ECECF1",
     });
     header.textContent = "Datos sensibles detectados:";
     panel.appendChild(header);
@@ -86,7 +90,7 @@
     const list = document.createElement("div");
     list.id = "sg-llm-list";
     Object.assign(list.style, {
-      fontSize: "16px",
+      fontSize: "15px",
       maxHeight: "360px",
       overflow: "auto",
     });
@@ -95,8 +99,9 @@
     const actions = document.createElement("div");
     Object.assign(actions.style, {
       display: "flex",
-      gap: "12px",
+      gap: "10px",
       marginTop: "16px",
+      flexWrap: "wrap",
     });
 
     const btnSendAnyway = document.createElement("button");
@@ -105,33 +110,33 @@
     Object.assign(btnSendAnyway.style, {
       flex: 1,
       border: "none",
-      borderRadius: "14px",
-      padding: "14px 16px",
-      background: "#5a5a5a",
+      borderRadius: "12px",
+      padding: "10px 16px",
+      background: "linear-gradient(120deg,#fa5555,#f23f5d)",
       color: "#fff",
       cursor: "pointer",
-      fontSize: "16px",
-      fontWeight: "700",
+      fontSize: "15px",
+      fontWeight: "600",
+      boxShadow: "0 6px 18px rgba(242,63,93,0.35)",
     });
 
     const btnDismiss = document.createElement("button");
     btnDismiss.textContent = "Ocultar";
     Object.assign(btnDismiss.style, {
       flex: 0,
-      border: "none",
-      borderRadius: "14px",
-      padding: "14px 16px",
-      background: "#2a2a2a",
-      color: "#fff",
+      borderRadius: "12px",
+      padding: "10px 16px",
+      background: "transparent",
+      color: "#ECECF1",
       cursor: "pointer",
-      fontSize: "16px",
-      fontWeight: "700",
+      fontSize: "15px",
+      fontWeight: "600",
+      border: "1px solid rgba(255,255,255,0.12)",
     });
 
     actions.appendChild(btnSendAnyway);
     actions.appendChild(btnDismiss);
     panel.appendChild(actions);
-    document.documentElement.appendChild(panel);
 
     btnDismiss.addEventListener("click", () => {
       hidePanel();
@@ -141,8 +146,7 @@
       sendListeners.forEach((fn) => fn());
     });
 
-    primePanelPosition(panel);
-    enablePanelDrag(panel);
+    mountPanel(panel);
 
     panel._els = {
       title,
@@ -157,128 +161,80 @@
     return panel;
   }
 
-  function primePanelPosition(panel) {
-    const r = panel.getBoundingClientRect();
-    panel.style.left = `${Math.max(0, Math.min(window.innerWidth - r.width, r.left))}px`;
-    panel.style.top = `${Math.max(0, Math.min(window.innerHeight - r.height, r.top))}px`;
-    panel.style.right = "unset";
-    panel.style.bottom = "unset";
+  function applyInlinePanelStyles(panel) {
+    Object.assign(panel.style, {
+      position: "relative",
+      margin: "0 auto",
+      width: "100%",
+      maxWidth: "760px",
+      left: "unset",
+      right: "unset",
+      top: "unset",
+      bottom: "unset",
+    });
   }
 
-  function enablePanelDrag(panel) {
-    if (panel.dataset.dragInit === "1") return;
-    panel.dataset.dragInit = "1";
+  function applyFloatingPanelStyles(panel) {
+    Object.assign(panel.style, {
+      position: "fixed",
+      bottom: "40px",
+      right: "40px",
+      margin: "0",
+      width: "auto",
+      maxWidth: "680px",
+      left: "unset",
+      top: "unset",
+    });
+  }
 
-    try {
-      const saved = JSON.parse(localStorage.getItem("sgPanelGeom") || "{}");
-      if (typeof saved.x === "number" && typeof saved.y === "number") {
-        panel.style.left = saved.x + "px";
-        panel.style.top = saved.y + "px";
-        panel.style.right = "unset";
-        panel.style.bottom = "unset";
-        panel.dataset.freed = "1";
-      }
-    } catch (_) {}
+  function mountPanel(panel) {
+    const composer = sg.chatSelectors?.findComposer?.();
+    const fallbackParent = document.body || document.documentElement;
+    if (!composer || !composer.parentElement) {
+      if (!panel.parentElement) fallbackParent.appendChild(panel);
+      applyFloatingPanelStyles(panel);
+      return;
+    }
 
-    const handle = panel.querySelector("#sg-llm-title") || panel;
-    handle.style.cursor = "grab";
+    const form = composer.closest?.("form");
+    const host = form?.parentElement || composer.parentElement;
+    if (!host) {
+      if (!panel.parentElement) fallbackParent.appendChild(panel);
+      applyFloatingPanelStyles(panel);
+      return;
+    }
 
-    let dragging = false;
-    let offX = 0;
-    let offY = 0;
-    let raf = null;
-
-    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-    const saveGeom = () => {
-      const rect = panel.getBoundingClientRect();
-      localStorage.setItem(
-        "sgPanelGeom",
-        JSON.stringify({ x: rect.left, y: rect.top }),
-      );
-    };
-
-    const onMove = (event) => {
-      if (!dragging) return;
-      if (raf) cancelAnimationFrame(raf);
-      const point = event.touches ? event.touches[0] : event;
-      if (!point) return;
-
-      raf = requestAnimationFrame(() => {
-        const rect = panel.getBoundingClientRect();
-        let nx = point.clientX - offX;
-        let ny = point.clientY - offY;
-        nx = clamp(nx, 0, Math.max(0, window.innerWidth - rect.width));
-        ny = clamp(ny, 0, Math.max(0, window.innerHeight - rect.height));
-        Object.assign(panel.style, {
-          left: nx + "px",
-          top: ny + "px",
-          right: "unset",
-          bottom: "unset",
-        });
+    let anchor = document.getElementById("sg-llm-panel-anchor");
+    if (anchor && anchor.parentElement && anchor.parentElement !== host) {
+      anchor.parentElement.removeChild(anchor);
+      anchor = null;
+    } else if (anchor && !anchor.parentElement) {
+      anchor = null;
+    }
+    if (!anchor) {
+      anchor = document.createElement("div");
+      anchor.id = "sg-llm-panel-anchor";
+      Object.assign(anchor.style, {
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        marginBottom: "16px",
+        marginTop: "4px",
+        padding: "0 8px",
+        boxSizing: "border-box",
       });
-    };
+      host.insertBefore(anchor, form || composer);
+    }
 
-    const endDrag = () => {
-      if (!dragging) return;
-      dragging = false;
-      document.body.style.userSelect = "";
-      handle.style.cursor = "grab";
-      saveGeom();
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchmove", onMove, { passive: false });
-    };
-
-    handle.addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return;
-      if (e.target.closest("button,a")) return;
-      const rect = panel.getBoundingClientRect();
-      dragging = true;
-      document.body.style.userSelect = "none";
-      handle.style.cursor = "grabbing";
-      offX = e.clientX - rect.left;
-      offY = e.clientY - rect.top;
-      panel.dataset.freed = "1";
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", endDrag, { once: true });
-    });
-
-    handle.addEventListener("touchstart", (e) => {
-      const t = e.touches && e.touches[0];
-      if (!t) return;
-      const rect = panel.getBoundingClientRect();
-      dragging = true;
-      document.body.style.userSelect = "none";
-      handle.style.cursor = "grabbing";
-      offX = t.clientX - rect.left;
-      offY = t.clientY - rect.top;
-      window.addEventListener("touchmove", onMove, { passive: false });
-      window.addEventListener("touchend", endDrag, { once: true });
-    });
-
-    window.addEventListener("resize", () => {
-      const rect = panel.getBoundingClientRect();
-      const nx = clamp(
-        rect.left,
-        0,
-        Math.max(0, window.innerWidth - rect.width),
-      );
-      const ny = clamp(
-        rect.top,
-        0,
-        Math.max(0, window.innerHeight - rect.height),
-      );
-      Object.assign(panel.style, {
-        left: nx + "px",
-        top: ny + "px",
-        right: "unset",
-        bottom: "unset",
-      });
-      saveGeom();
-    });
+    if (panel.parentElement !== anchor) {
+      anchor.appendChild(panel);
+    }
+    applyInlinePanelStyles(panel);
   }
 
   function renderPanel(result, origin = "Usuario", contextText = "") {
     const panel = ensurePanel();
+    mountPanel(panel);
     const {
       title,
       list,
@@ -325,14 +281,14 @@
 
     const accentRisk =
       risk_level === "High"
-        ? "#ff4d4d"
+        ? "#fa5a5a"
         : risk_level === "Medium"
-          ? "#ffcc00"
+          ? "#ffd369"
           : risk_level === "Low"
-            ? "#66cc66"
-            : "#666";
-    const accentOrigin = origin === "Respuesta" ? "#3fa9ff" : accentRisk;
-    panel.style.borderLeft = `10px solid ${accentOrigin}`;
+            ? "#10a37f"
+            : "#c5c5d2";
+    const accentOrigin = origin === "Respuesta" ? "#82b5ff" : accentRisk;
+    panel.style.borderLeft = `4px solid ${accentOrigin}`;
 
     header.textContent =
       origin === "Respuesta"
@@ -384,27 +340,31 @@
 
       for (const group of ordered) {
         const item = document.createElement("div");
-        item.style.margin = "12px 0";
+        item.style.margin = "10px 0";
+        item.style.padding = "10px 12px";
+        item.style.borderRadius = "12px";
+        item.style.background = "rgba(255,255,255,0.02)";
 
         const head = document.createElement("div");
-        head.style.fontWeight = "800";
-        head.style.fontSize = "18px";
-        head.style.textDecoration = "underline";
-        head.style.textDecorationThickness = "2px";
-        head.style.textUnderlineOffset = "2px";
-        head.style.textDecorationColor =
+        head.style.display = "flex";
+        head.style.justifyContent = "space-between";
+        head.style.alignItems = "center";
+        head.style.fontWeight = "600";
+        head.style.fontSize = "15px";
+        const accent =
           group.risk === "high"
-            ? "#ff4d4d"
+            ? "#ff8c8c"
             : group.risk === "medium"
-              ? "#ffcc00"
-              : "#66cc66";
-        head.style.color = head.style.textDecorationColor;
+              ? "#ffd666"
+              : "#7de6a3";
+        head.style.color = accent;
         head.textContent = group.field;
 
         const body = document.createElement("div");
-        body.style.opacity = "0.98";
-        body.style.fontSize = "16px";
-        body.style.marginTop = "2px";
+        body.style.opacity = "0.9";
+        body.style.fontSize = "14px";
+        body.style.marginTop = "4px";
+        body.style.color = "#ECECF1";
         const valuesOrdered = group.items.map((it) => it.value);
         body.textContent =
           valuesOrdered.slice(0, 4).join(", ") +
@@ -417,6 +377,10 @@
     } else {
       const empty = document.createElement("div");
       empty.textContent = "No se detectaron campos sensibles.";
+      empty.style.padding = "12px";
+      empty.style.borderRadius = "10px";
+      empty.style.background = "rgba(255,255,255,0.02)";
+      empty.style.color = "#9fa0b3";
       list.appendChild(empty);
     }
 

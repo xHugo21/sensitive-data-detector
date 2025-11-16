@@ -23,6 +23,8 @@ def _str_to_bool(value: str | None, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+DEBUG_MODE = _str_to_bool(os.getenv("DEBUG_MODE"), False)
+
 LLM_SUPPORTS_JSON_MODE = _str_to_bool(
     os.getenv("LLM_SUPPORTS_JSON_MODE"),
     LLM_PROVIDER in {"openai", "groq"},

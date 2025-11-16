@@ -5,21 +5,22 @@ from api.models.request import DetectReq
 from core.detector import detect_sensitive_data
 from core.risk import compute_risk_level
 from services.document_reader import read_document
+from utils.logger import debug_log
 
 router = APIRouter()
 
 
 @router.post("/detect")
 def detect(req: DetectReq):
-    print("\n===== TEXTO EXTRAÍDO =====", flush=True)
-    print(req.text, flush=True)
-    print("\n===== MODO =====", flush=True)
-    print(req.mode, flush=True)
-    print("========================================\n", flush=True)
+    debug_log("\n===== TEXTO EXTRAÍDO =====")
+    debug_log(req.text)
+    debug_log("\n===== MODO =====")
+    debug_log(req.mode)
+    debug_log("========================================\n")
     result = detect_sensitive_data(req.text, prompt=req.prompt, mode=req.mode)
-    print("\n===== DETECTED FIELDS =====", flush=True)
-    print(result.get("detected_fields", []), flush=True)
-    print("========================================\n", flush=True)
+    debug_log("\n===== DETECTED FIELDS =====")
+    debug_log(result.get("detected_fields", []))
+    debug_log("========================================\n")
     result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
     return result
 
@@ -36,11 +37,11 @@ async def detect_file(
         with open(tmp_path, "wb") as f:
             f.write(await file.read())
 
-        print(f"[detect_file] Guardado en {tmp_path}", flush=True)
+        debug_log(f"[detect_file] Guardado en {tmp_path}")
 
         text = read_document(tmp_path)
         if not text:
-            print("[detect_file] ❌ No se pudo extraer texto", flush=True)
+            debug_log("[detect_file] ❌ No se pudo extraer texto")
             return {
                 "detected_fields": [],
                 "risk_level": "Unknown",
@@ -48,9 +49,9 @@ async def detect_file(
                 "extracted_snippet": "",
             }
 
-        print("\n===== TEXTO EXTRAÍDO =====", flush=True)
-        print(text, flush=True)
-        print("========================================\n", flush=True)
+        debug_log("\n===== TEXTO EXTRAÍDO =====")
+        debug_log(text)
+        debug_log("========================================\n")
 
         result = detect_sensitive_data(text, prompt=prompt, mode=mode)
         result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
@@ -59,7 +60,7 @@ async def detect_file(
         return result
 
     except Exception as e:
-        print("[detect_file] ⚠️ Error:", e, flush=True)
+        debug_log("[detect_file] ⚠️ Error:", e)
         return {
             "detected_fields": [],
             "risk_level": "Unknown",

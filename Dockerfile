@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS runtime
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -14,13 +14,16 @@ RUN apt-get update && \
       libleptonica-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir uv
-
-COPY pyproject.toml .
+COPY pyproject.toml uv.lock ./
 COPY backend backend
 COPY multiagent-firewall multiagent-firewall
 
-RUN uv pip install --system ./multiagent-firewall ./backend
+# Limit syncing to the workspace members the backend depends on.
+# `--locked` is omitted here because the lock references other workspace members
+# that are intentionally not copied into the image (for example `proxy`).
+RUN uv sync --package multiagent-firewall --package backend
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app/backend
 

@@ -2,8 +2,7 @@ import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Form
 from api.models.request import DetectReq
-from core.detector import detect_sensitive_data
-from core.risk import compute_risk_level
+from guard import run_guard_pipeline
 from services.document_reader import read_document
 from utils.logger import debug_log
 
@@ -17,11 +16,15 @@ def detect(req: DetectReq):
     debug_log("\n===== MODO =====")
     debug_log(req.mode)
     debug_log("========================================\n")
-    result = detect_sensitive_data(req.text, prompt=req.prompt, mode=req.mode)
+    result = run_guard_pipeline(
+        req.text,
+        prompt=req.prompt,
+        mode=req.mode,
+        metadata={"source": "text"},
+    )
     debug_log("\n===== DETECTED FIELDS =====")
     debug_log(result.get("detected_fields", []))
     debug_log("========================================\n")
-    result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
     return result
 
 
@@ -53,8 +56,16 @@ async def detect_file(
         debug_log(text)
         debug_log("========================================\n")
 
-        result = detect_sensitive_data(text, prompt=prompt, mode=mode)
-        result["risk_level"] = compute_risk_level(result.get("detected_fields", []))
+        result = run_guard_pipeline(
+            text,
+            prompt=prompt,
+            mode=mode,
+            metadata={
+                "source": "file",
+                "filename": file.filename,
+                "content_type": file.content_type,
+            },
+        )
         result["extracted_snippet"] = text[:400]
 
         return result

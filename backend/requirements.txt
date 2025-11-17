@@ -9,3 +9,4 @@ pdfminer.six
 pdf2image
 pytesseract
 pillow
+-e ../multiagent-firewall

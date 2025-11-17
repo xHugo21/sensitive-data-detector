@@ -37,6 +37,7 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# installs backend deps + local multiagent-firewall package
 
 python3 main.py
 ```
@@ -57,6 +58,7 @@ python3 main.py
 > Ensure the host and port used for the extension match the ones defined on the `content.js` of the extension
 
 ---
+
 ## 🧩 Proxy for LLM API calls
 
 Protect command-line clients, IDEs or applications by routing their HTTP calls through the standalone proxy located in `proxy/`:
@@ -93,6 +95,7 @@ curl http://127.0.0.1:8787/groq/openai/v1/chat/completions \
 ```
 
 ---
+
 ## 🌐 Supported providers
 - Any model reachable through the [LiteLLM](https://github.com/BerriAI/litellm) SDK (100+ vendors)
 - See more info in `backend/.env.example`

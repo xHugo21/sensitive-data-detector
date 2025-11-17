@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proxy"
+version = "0.1.0"
+description = "Proxy that routes LLM API calls through the sensitive-data-detector backend"
+authors = [{ name = "Hugo Garcia" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "httpx",
+    "python-dotenv",
+]
+
+[dependency-groups]
+test = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+include = ["proxy*"]

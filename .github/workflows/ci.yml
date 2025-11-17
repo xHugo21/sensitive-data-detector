@@ -21,38 +21,32 @@ jobs:
 
   backend-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Cache pip
+      - uses: astral-sh/setup-uv@v2
+      - name: Cache uv
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-backend-${{ hashFiles('backend/requirements.txt') }}
-      - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt pytest
-      - run: PYTHONPATH=. pytest tests
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-backend-${{ hashFiles('uv.lock') }}
+      - run: uv sync --project backend --group test
+      - run: PYTHONPATH=backend uv run --project backend --group test pytest backend/tests
 
   proxy-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: proxy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Cache pip
+      - uses: astral-sh/setup-uv@v2
+      - name: Cache uv
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-proxy-${{ hashFiles('proxy/requirements.txt') }}
-      - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt pytest
-      - run: python -m pytest tests
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-proxy-${{ hashFiles('uv.lock') }}
+      - run: uv sync --project proxy --group test
+      - run: PYTHONPATH=proxy uv run --project proxy --group test pytest proxy/tests

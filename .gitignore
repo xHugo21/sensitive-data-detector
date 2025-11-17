@@ -5,11 +5,10 @@ __pycache__/
 *.pyd
 
 # Virtual environments
-.venv/
 venv/
 ENV/
 env/
-LLM_Guard_Extension/venv/
+**/.venv/
 
 # Distribution / packaging
 build/

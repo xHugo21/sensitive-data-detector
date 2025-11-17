@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "backend"
+version = "0.1.0"
+description = "FastAPI backend for the sensitive-data-detector project"
+authors = [{ name = "Hugo Garcia" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "python-dotenv",
+    "litellm",
+    "pdfplumber",
+    "PyPDF2",
+    "pdfminer.six",
+    "pdf2image",
+    "pytesseract",
+    "pillow",
+    "multiagent-firewall",
+]
+
+[dependency-groups]
+test = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+include = ["backend*"]

@@ -14,10 +14,15 @@ RUN apt-get update && \
       libleptonica-dev && \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir uv
 
-COPY . .
+COPY pyproject.toml .
+COPY backend backend
+COPY multiagent-firewall multiagent-firewall
+
+RUN uv pip install --system ./multiagent-firewall ./backend
+
+WORKDIR /app/backend
 
 EXPOSE 8000
 

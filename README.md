@@ -11,7 +11,7 @@ Provides the backend for detecting sensitive information exchange alonside an ex
 - Proxy server that acts as a MiTM to analyse and block all sensitive LLM API interactions
 - Cleaner project structure
 - Chromium extension blocks prompt sending until analysed and user explicitly allows it.
-- Easier backend server setup via `requirements.txt` and Dockerfile
+- Easier backend server setup via a shared `uv` workspace and Dockerfile
 - Unified LiteLLM integration for 100+ providers with simple `.env` overrides
 - Local model support through Ollama
 - Test suite on every package and CI workflow
@@ -31,19 +31,21 @@ cd sensitive-data-detector
 Take a look at `backend/.env.example` and copy it to `backend/.env` with desired config options
 
 ### 3. Install dependencies and run
+Install [uv](https://docs.astral.sh/uv/#installation):
 ```bash
-cd backend
+curl -LsSf https://astral.sh/uv/install.sh | sh`)
+```
 
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-# installs backend deps + local multiagent-firewall package
+```bash
+# Installs dependencies in a virtual environment
+uv sync --project backend
 
-python3 main.py
+# start the API with uv ensuring the env is activated
+uv run --project backend python main.py
 ```
 
 > [!NOTE]
-> Alternatively, you can run the backend using the `Dockerfile`
+> Alternatively, you can build the backend image using the provided Dockerfile:
 > ```bash
 > docker build -t sensitive-data-detector .
 > docker run -p 8000:8000 --env-file .env sensitive-data-detector
@@ -67,11 +69,8 @@ Protect command-line clients, IDEs or applications by routing their HTTP calls t
 2. Set up proxy env varialbes. Copy `proxy/.env.example` to `proxy/.env` and adjust values.
 3. Install proxy dependencies and launch it:
    ```bash
-   cd proxy
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   uvicorn main:app --host 127.0.0.1 --port 8787
+   uv sync --project proxy
+   uv run --project proxy uvicorn proxy.main:app --host 127.0.0.1 --port 8787
    ```
 4. Aim your tool at the proxy. Examples:
    - Replace OpenAI's base URL with `http://127.0.0.1:8787/openai/v1/...`
@@ -79,6 +78,13 @@ Protect command-line clients, IDEs or applications by routing their HTTP calls t
    - Send Groq traffic to `http://127.0.0.1:8787/groq/openai/v1/...`
 
 Every request is analysed by the backend first. When the configured risk level is reached the proxy returns `403` (with the detected fields in the payload and `X-LLM-Guard-*` headers); otherwise the call is transparently forwarded to the upstream API.
+
+To run proxy tests:
+
+```bash
+uv sync --project proxy --group test
+uv run --project proxy --group test pytest proxy/tests
+```
 
 Example Groq request:
 
@@ -101,6 +107,15 @@ curl http://127.0.0.1:8787/groq/openai/v1/chat/completions \
 - See more info in `backend/.env.example`
 
 ---
+
+## 🧪 Tests
+
+Each package has its own test suite that can be run with the following commands
+
+```bash
+uv sync --project <package> --group test
+uv run --project <package> --group test bash -lc "PYTHONPATH=<package> pytest <package>/tests"
+```
 
 ## 📜 License
 

@@ -1,0 +1,19 @@
+[project]
+name = "sensitive-data-detector"
+version = "0.1.0"
+description = "Architecture for sensitive data detection in LLM interactions"
+authors = [{ name = "Hugo Garcia" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "backend",
+    "multiagent-firewall",
+    "proxy",
+]
+
+[tool.uv.sources]
+multiagent-firewall = { workspace = true }
+backend = { workspace = true }
+proxy = { workspace = true }

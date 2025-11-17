@@ -18,7 +18,7 @@ Provides the backend for detecting sensitive information exchange alonside an ex
 
 ---
 
-## 🛠️ Setting up the extension
+## 🛠️ Set up and usage
 
 ### 1. Clone repository
 
@@ -33,7 +33,7 @@ Take a look at `backend/.env.example` and copy it to `backend/.env` with desired
 ### 3. Install dependencies and run
 Install [uv](https://docs.astral.sh/uv/#installation):
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh`)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ```bash
@@ -78,13 +78,6 @@ Protect command-line clients, IDEs or applications by routing their HTTP calls t
    - Send Groq traffic to `http://127.0.0.1:8787/groq/openai/v1/...`
 
 Every request is analysed by the backend first. When the configured risk level is reached the proxy returns `403` (with the detected fields in the payload and `X-LLM-Guard-*` headers); otherwise the call is transparently forwarded to the upstream API.
-
-To run proxy tests:
-
-```bash
-uv sync --project proxy --group test
-uv run --project proxy --group test pytest proxy/tests
-```
 
 Example Groq request:
 

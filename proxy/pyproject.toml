@@ -4,13 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "proxy"
-version = "0.1.0"
-description = "Proxy that routes LLM API calls through the sensitive-data-detector backend"
+version = "0.2.0"
+description = "Transparent proxy using mitmproxy that intercepts LLM API calls for sensitive data detection"
 authors = [{ name = "Hugo Garcia" }]
 requires-python = ">=3.10"
 dependencies = [
-    "fastapi",
-    "uvicorn[standard]",
+    "mitmproxy>=10.0.0",
     "httpx",
     "python-dotenv",
 ]

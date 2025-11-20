@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Dict
 
 import httpx
@@ -13,7 +14,7 @@ import config
 _RISK_ORDER = {"none": 0, "low": 1, "medium": 2, "high": 3}
 
 
-class SensitiveDataInterceptor:
+class SensitiveDataDetector:
     def __init__(self):
         self.intercepted_hosts = config.INTERCEPTED_HOSTS
         self.intercepted_paths = config.INTERCEPTED_PATHS
@@ -50,6 +51,15 @@ class SensitiveDataInterceptor:
             )
         return ""
 
+    def _clean_text(self, text: str) -> str:
+        text = re.sub(
+            r"<system-reminder>.*?</system-reminder>",  # Opencode CLI tags added inside user prompt
+            "",
+            text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        return text.strip()
+
     def _extract_payload_text(self, payload: Dict[str, Any], path: str) -> str:
         path_lower = path.lower()
         if "chat" in path_lower:
@@ -64,12 +74,12 @@ class SensitiveDataInterceptor:
                         continue
                     text = self._stringify(item.get("content"))
                     if text:
-                        chunks.append(text)
+                        chunks.append(self._clean_text(text))
                 if chunks:
                     return "\n\n".join(chunks)
         prompt = payload.get("prompt")
         if prompt is not None:
-            return self._stringify(prompt)
+            return self._clean_text(self._stringify(prompt))
         return ""
 
     def _ask_backend(self, text: str) -> Dict[str, Any] | None:
@@ -121,16 +131,14 @@ class SensitiveDataInterceptor:
     def _create_block_response(self, flow: HTTPFlow, result: Dict[str, Any]) -> None:
         detected = result.get("detected_fields", [])
         field_names = ", ".join(
-            item.get("field", "unknown")
-            for item in detected
-            if isinstance(item, dict)
+            item.get("field", "unknown") for item in detected if isinstance(item, dict)
         )
-        
+
         if field_names:
             message = f"[SensitiveDataDetectionProxy] Sensitive data detected: {field_names}. Request blocked."
         else:
             message = "[SensitiveDataDetectionProxy] Sensitive data detected. Request blocked."
-        
+
         payload = {
             "error": {
                 "message": message,
@@ -139,7 +147,7 @@ class SensitiveDataInterceptor:
             },
             "detected_fields": detected,
             "risk_level": result.get("risk_level", "Unknown"),
-            "remediation": result.get("remediation", "")
+            "remediation": result.get("remediation", ""),
         }
 
         flow.response = http.Response.make(
@@ -182,4 +190,4 @@ class SensitiveDataInterceptor:
             flow.response.headers[key] = value
 
 
-addons = [SensitiveDataInterceptor()]
+addons = [SensitiveDataDetector()]

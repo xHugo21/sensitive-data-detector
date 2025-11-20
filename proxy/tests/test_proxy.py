@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import pytest
 
-from addon import SensitiveDataInterceptor
+from sensitive_data_detector import SensitiveDataInterceptor
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def test_extract_payload_text_prefers_chat_messages(
 
     text = interceptor._extract_payload_text(payload, "/v1/chat/completions")
 
-    assert text == "setup\n\nhello\nworld"
+    assert text == "hello\nworld"
 
 
 def test_extract_payload_text_uses_prompt_for_non_chat_path(
@@ -146,7 +146,7 @@ def test_ask_backend_includes_mode_if_configured(
     mock_response.status_code = 200
     mock_response.json.return_value = {"risk_level": "None", "detected_fields": []}
 
-    with patch("addon.httpx.Client") as mock_client:
+    with patch("sensitive_data_detector.httpx.Client") as mock_client:
         mock_client.return_value.__enter__.return_value.post.return_value = (
             mock_response
         )

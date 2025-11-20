@@ -10,6 +10,9 @@ A transparent HTTP/HTTPS proxy built with `mitmproxy` that intercepts LLM API re
 - **Risk-Based Blocking**: Configure minimum risk level to block requests
 - **Zero Code Changes**: No need to modify application code or API endpoints
 
+> [!NOTE]
+> Proxy only analyses prompt data from the role: 'user'. This avoids having false positives from system prompts included by external apps.
+
 ## Installation
 
 ```bash

@@ -60,7 +60,7 @@ class SensitiveDataInterceptor:
                     if not isinstance(item, dict):
                         continue
                     role = item.get("role")
-                    if role not in {"user", "system"}:
+                    if role != "user":
                         continue
                     text = self._stringify(item.get("content"))
                     if text:
@@ -119,14 +119,27 @@ class SensitiveDataInterceptor:
         return headers
 
     def _create_block_response(self, flow: HTTPFlow, result: Dict[str, Any]) -> None:
+        detected = result.get("detected_fields", [])
+        field_names = ", ".join(
+            item.get("field", "unknown")
+            for item in detected
+            if isinstance(item, dict)
+        )
+        
+        if field_names:
+            message = f"[SensitiveDataDetectionProxy] Sensitive data detected: {field_names}. Request blocked."
+        else:
+            message = "[SensitiveDataDetectionProxy] Sensitive data detected. Request blocked."
+        
         payload = {
             "error": {
-                "message": "Sensitive data detected. Request blocked.",
+                "message": message,
                 "type": "sensitive_data_detected",
                 "code": "sensitive_data",
             },
-            "detected_fields": result.get("detected_fields", []),
+            "detected_fields": detected,
             "risk_level": result.get("risk_level", "Unknown"),
+            "remediation": result.get("remediation", "")
         }
 
         flow.response = http.Response.make(

@@ -1,29 +1,25 @@
 from __future__ import annotations
 
 import json
-import main as proxy_main
-
-import httpx
 import pytest
-from fastapi.testclient import TestClient
-from starlette.requests import Request
+
+from sensitive_data_detector import SensitiveDataDetector
 
 
-@pytest.fixture()
-def client() -> TestClient:
-    return TestClient(proxy_main.app)
+@pytest.fixture
+def interceptor() -> SensitiveDataDetector:
+    return SensitiveDataDetector()
 
 
-def test_stringify_handles_nested_structures():
+def test_stringify_handles_nested_structures(interceptor: SensitiveDataDetector):
     payload = ["alpha", 42, {"text": "nested"}, None]
 
-    assert (
-        proxy_main._stringify(payload)  # pylint: disable=protected-access
-        == "alpha\n42\nnested"
-    )
+    assert interceptor._stringify(payload) == "alpha\n42\nnested"
 
 
-def test_extract_payload_text_prefers_chat_messages():
+def test_extract_payload_text_prefers_chat_messages(
+    interceptor: SensitiveDataDetector,
+):
     payload = {
         "messages": [
             {"role": "system", "content": "setup"},
@@ -33,35 +29,37 @@ def test_extract_payload_text_prefers_chat_messages():
         "prompt": "fallback",
     }
 
-    text = proxy_main._extract_payload_text(
-        payload, "v1/chat/completions"
-    )  # pylint: disable=protected-access
+    text = interceptor._extract_payload_text(payload, "/v1/chat/completions")
 
-    assert text == "setup\n\nhello\nworld"
+    assert text == "hello\nworld"
 
 
-def test_extract_payload_text_uses_prompt_for_non_chat_path():
+def test_extract_payload_text_uses_prompt_for_non_chat_path(
+    interceptor: SensitiveDataDetector,
+):
     payload = {"prompt": {"text": "linear"}}
 
-    text = proxy_main._extract_payload_text(
-        payload, "v1/completions"
-    )  # pylint: disable=protected-access
+    text = interceptor._extract_payload_text(payload, "/v1/completions")
 
     assert text == "linear"
 
 
-def test_should_block_respects_threshold(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(proxy_main, "PROXY_MIN_BLOCK_RISK", "medium")
+def test_should_block_respects_threshold(
+    interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
+):
+    import config
 
-    assert proxy_main._should_block(
-        {"risk_level": "High"}
-    )  # pylint: disable=protected-access
-    assert not proxy_main._should_block(
-        {"risk_level": "Low"}
-    )  # pylint: disable=protected-access
+    monkeypatch.setattr(config, "PROXY_MIN_BLOCK_RISK", "medium")
+
+    interceptor_high_threshold = SensitiveDataDetector()
+
+    assert interceptor_high_threshold._should_block({"risk_level": "High"})
+    assert not interceptor_high_threshold._should_block({"risk_level": "Low"})
 
 
-def test_detection_headers_include_detected_fields():
+def test_detection_headers_include_detected_fields(
+    interceptor: SensitiveDataDetector,
+):
     result = {
         "risk_level": "High",
         "detected_fields": [
@@ -70,119 +68,91 @@ def test_detection_headers_include_detected_fields():
         ],
     }
 
-    headers = proxy_main._detection_headers(result)  # pylint: disable=protected-access
+    headers = interceptor._detection_headers(result)
 
     assert headers["X-LLM-Guard-Risk-Level"] == "High"
     assert "password" in headers["X-LLM-Guard-Detected-Fields"]
     assert "api_key" in headers["X-LLM-Guard-Detected-Fields"]
 
 
-def test_proxy_error_response_contains_expected_payload():
-    result = {"risk_level": "Medium", "detected_fields": [{"field": "ssn"}]}
-
-    response = proxy_main._proxy_error_response(
-        result
-    )  # pylint: disable=protected-access
-
-    assert response.status_code == 403
-    body = json.loads(response.body)
-    assert body["error"]["code"] == "sensitive_data"
-    assert body["risk_level"] == "Medium"
-
-
-def test_forward_headers_drops_hop_headers():
-    scope = {
-        "type": "http",
-        "headers": [
-            (b"host", b"example"),
-            (b"x-token", b"abc"),
-            (b"content-length", b"123"),
-        ],
-    }
-
-    request = Request(scope)
-
-    headers = proxy_main._forward_headers(request)  # pylint: disable=protected-access
-
-    assert "x-token" in {k.lower(): v for k, v in headers.items()}
-    assert "host" not in {k.lower(): v for k, v in headers.items()}
-    assert "content-length" not in {k.lower(): v for k, v in headers.items()}
-
-
-def test_proxy_request_blocks_when_detection_triggers(
-    monkeypatch: pytest.MonkeyPatch, client: TestClient
+def test_should_intercept_matches_configured_endpoints(
+    interceptor: SensitiveDataDetector,
 ):
-    async def fake_ask_backend(_: str):
-        return {
-            "risk_level": "High",
-            "detected_fields": [{"field": "password"}],
-        }
+    from unittest.mock import Mock
 
-    async def fake_forward_request(
-        *_args, **_kwargs
-    ):  # pragma: no cover - should not be called
-        raise AssertionError("Upstream call should not happen when blocked")
+    flow = Mock()
+    flow.request.method = "POST"
+    flow.request.host = "api.openai.com"
+    flow.request.path = "/v1/chat/completions"
 
-    monkeypatch.setattr(
-        proxy_main, "_ask_backend", fake_ask_backend
-    )  # pylint: disable=protected-access
-    monkeypatch.setattr(
-        proxy_main, "_forward_request", fake_forward_request
-    )  # pylint: disable=protected-access
-
-    response = client.post(
-        "/openai/v1/chat/completions",
-        json={"messages": [{"role": "user", "content": "secret"}]},
-    )
-
-    assert response.status_code == 403
-    assert response.headers["X-LLM-Guard-Risk-Level"] == "High"
-    assert response.json()["error"]["code"] == "sensitive_data"
+    assert interceptor._should_intercept(flow)
 
 
-def test_proxy_request_forwards_when_clear(
-    monkeypatch: pytest.MonkeyPatch, client: TestClient
+def test_should_intercept_ignores_non_post_requests(
+    interceptor: SensitiveDataDetector,
 ):
-    async def fake_ask_backend(text: str):
-        assert "hello" in text
-        return {"risk_level": "None", "detected_fields": []}
+    from unittest.mock import Mock
 
-    async def fake_forward_request(*_args, **_kwargs):
-        request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
-        return httpx.Response(
-            status_code=201,
-            content=b'{"echo": true}',
-            headers={
-                "content-type": "application/json",
-                "x-upstream": "value",
-                "connection": "keep-alive",
-            },
-            request=request,
+    flow = Mock()
+    flow.request.method = "GET"
+    flow.request.host = "api.openai.com"
+    flow.request.path = "/v1/chat/completions"
+
+    assert not interceptor._should_intercept(flow)
+
+
+def test_should_intercept_ignores_non_configured_hosts(
+    interceptor: SensitiveDataDetector,
+):
+    from unittest.mock import Mock
+
+    flow = Mock()
+    flow.request.method = "POST"
+    flow.request.host = "example.com"
+    flow.request.path = "/v1/chat/completions"
+
+    assert not interceptor._should_intercept(flow)
+
+
+def test_should_intercept_ignores_non_configured_paths(
+    interceptor: SensitiveDataDetector,
+):
+    from unittest.mock import Mock
+
+    flow = Mock()
+    flow.request.method = "POST"
+    flow.request.host = "api.openai.com"
+    flow.request.path = "/v1/models"
+
+    assert not interceptor._should_intercept(flow)
+
+
+def test_ask_backend_handles_empty_text(interceptor: SensitiveDataDetector):
+    result = interceptor._ask_backend("")
+
+    assert result["risk_level"] == "None"
+    assert result["detected_fields"] == []
+
+
+def test_ask_backend_includes_mode_if_configured(
+    interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
+):
+    import config
+    from unittest.mock import Mock, patch
+
+    monkeypatch.setattr(config, "BACKEND_DETECTION_MODE", "enriched-zero-shot")
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"risk_level": "None", "detected_fields": []}
+
+    with patch("sensitive_data_detector.httpx.Client") as mock_client:
+        mock_client.return_value.__enter__.return_value.post.return_value = (
+            mock_response
         )
 
-    monkeypatch.setattr(
-        proxy_main, "_ask_backend", fake_ask_backend
-    )  # pylint: disable=protected-access
-    monkeypatch.setattr(
-        proxy_main, "_forward_request", fake_forward_request
-    )  # pylint: disable=protected-access
+        interceptor_with_mode = SensitiveDataDetector()
+        result = interceptor_with_mode._ask_backend("test text")
 
-    response = client.post(
-        "/openai/v1/chat/completions",
-        json={"prompt": "hello"},
-        headers={"Authorization": "Bearer test"},
-    )
-
-    assert response.status_code == 201
-    assert response.json() == {"echo": True}
-    assert response.headers["x-upstream"] == "value"
-
-
-def test_proxy_request_rejects_streaming(client: TestClient):
-    response = client.post(
-        "/openai/v1/chat/completions",
-        json={"stream": True},
-    )
-
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Streaming requests are not supported."
+        call_args = mock_client.return_value.__enter__.return_value.post.call_args
+        assert call_args[1]["json"]["mode"] == "enriched-zero-shot"

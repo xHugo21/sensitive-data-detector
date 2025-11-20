@@ -3,22 +3,22 @@ from __future__ import annotations
 import json
 import pytest
 
-from sensitive_data_detector import SensitiveDataInterceptor
+from sensitive_data_detector import SensitiveDataDetector
 
 
 @pytest.fixture
-def interceptor() -> SensitiveDataInterceptor:
-    return SensitiveDataInterceptor()
+def interceptor() -> SensitiveDataDetector:
+    return SensitiveDataDetector()
 
 
-def test_stringify_handles_nested_structures(interceptor: SensitiveDataInterceptor):
+def test_stringify_handles_nested_structures(interceptor: SensitiveDataDetector):
     payload = ["alpha", 42, {"text": "nested"}, None]
 
     assert interceptor._stringify(payload) == "alpha\n42\nnested"
 
 
 def test_extract_payload_text_prefers_chat_messages(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     payload = {
         "messages": [
@@ -35,7 +35,7 @@ def test_extract_payload_text_prefers_chat_messages(
 
 
 def test_extract_payload_text_uses_prompt_for_non_chat_path(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     payload = {"prompt": {"text": "linear"}}
 
@@ -45,20 +45,20 @@ def test_extract_payload_text_uses_prompt_for_non_chat_path(
 
 
 def test_should_block_respects_threshold(
-    interceptor: SensitiveDataInterceptor, monkeypatch: pytest.MonkeyPatch
+    interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
 ):
     import config
 
     monkeypatch.setattr(config, "PROXY_MIN_BLOCK_RISK", "medium")
-    
-    interceptor_high_threshold = SensitiveDataInterceptor()
+
+    interceptor_high_threshold = SensitiveDataDetector()
 
     assert interceptor_high_threshold._should_block({"risk_level": "High"})
     assert not interceptor_high_threshold._should_block({"risk_level": "Low"})
 
 
 def test_detection_headers_include_detected_fields(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     result = {
         "risk_level": "High",
@@ -76,7 +76,7 @@ def test_detection_headers_include_detected_fields(
 
 
 def test_should_intercept_matches_configured_endpoints(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     from unittest.mock import Mock
 
@@ -89,7 +89,7 @@ def test_should_intercept_matches_configured_endpoints(
 
 
 def test_should_intercept_ignores_non_post_requests(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     from unittest.mock import Mock
 
@@ -102,7 +102,7 @@ def test_should_intercept_ignores_non_post_requests(
 
 
 def test_should_intercept_ignores_non_configured_hosts(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     from unittest.mock import Mock
 
@@ -115,7 +115,7 @@ def test_should_intercept_ignores_non_configured_hosts(
 
 
 def test_should_intercept_ignores_non_configured_paths(
-    interceptor: SensitiveDataInterceptor,
+    interceptor: SensitiveDataDetector,
 ):
     from unittest.mock import Mock
 
@@ -127,7 +127,7 @@ def test_should_intercept_ignores_non_configured_paths(
     assert not interceptor._should_intercept(flow)
 
 
-def test_ask_backend_handles_empty_text(interceptor: SensitiveDataInterceptor):
+def test_ask_backend_handles_empty_text(interceptor: SensitiveDataDetector):
     result = interceptor._ask_backend("")
 
     assert result["risk_level"] == "None"
@@ -135,7 +135,7 @@ def test_ask_backend_handles_empty_text(interceptor: SensitiveDataInterceptor):
 
 
 def test_ask_backend_includes_mode_if_configured(
-    interceptor: SensitiveDataInterceptor, monkeypatch: pytest.MonkeyPatch
+    interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
 ):
     import config
     from unittest.mock import Mock, patch
@@ -150,8 +150,8 @@ def test_ask_backend_includes_mode_if_configured(
         mock_client.return_value.__enter__.return_value.post.return_value = (
             mock_response
         )
-        
-        interceptor_with_mode = SensitiveDataInterceptor()
+
+        interceptor_with_mode = SensitiveDataDetector()
         result = interceptor_with_mode._ask_backend("test text")
 
         call_args = mock_client.return_value.__enter__.return_value.post.call_args

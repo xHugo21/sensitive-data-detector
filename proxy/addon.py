@@ -75,20 +75,22 @@ class SensitiveDataInterceptor:
     def _ask_backend(self, text: str) -> Dict[str, Any] | None:
         if not text.strip():
             return {"detected_fields": [], "risk_level": "None"}
-        
+
         data = {"text": text}
         if config.BACKEND_DETECTION_MODE:
             data["mode"] = config.BACKEND_DETECTION_MODE
-        
-        detect_url = f"{config.BACKEND_URL}/{config.BACKEND_DETECT_ENDPOINT.lstrip('/')}"
-        
+
+        detect_url = (
+            f"{config.BACKEND_URL}/{config.BACKEND_DETECT_ENDPOINT.lstrip('/')}"
+        )
+
         try:
             with httpx.Client(timeout=config.BACKEND_TIMEOUT_SECONDS) as client:
                 response = client.post(detect_url, json=data)
-            
+
             if response.status_code >= 400:
                 return None
-            
+
             return response.json()
         except Exception:
             return None
@@ -126,7 +128,7 @@ class SensitiveDataInterceptor:
             "detected_fields": result.get("detected_fields", []),
             "risk_level": result.get("risk_level", "Unknown"),
         }
-        
+
         flow.response = http.Response.make(
             status_code=403,
             content=json.dumps(payload).encode("utf-8"),
@@ -146,20 +148,6 @@ class SensitiveDataInterceptor:
         except (UnicodeDecodeError, json.JSONDecodeError):
             return
 
-        if bool(payload.get("stream")):
-            flow.response = http.Response.make(
-                status_code=400,
-                content=json.dumps({
-                    "error": {
-                        "message": "Streaming requests are not supported.",
-                        "type": "invalid_request_error",
-                        "code": "streaming_not_supported",
-                    }
-                }).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-            )
-            return
-
         text_to_check = self._extract_payload_text(payload, flow.request.path)
         result = self._ask_backend(text_to_check)
 
@@ -168,6 +156,7 @@ class SensitiveDataInterceptor:
 
         if self._should_block(result):
             self._create_block_response(flow, result)
+            return
 
     def response(self, flow: HTTPFlow) -> None:
         if not self._should_intercept(flow):

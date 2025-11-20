@@ -99,19 +99,18 @@ The proxy adds detection metadata to response headers:
 
 ## Limitations
 
-- **Streaming Not Supported**: Streaming requests (`"stream": true`) are currently blocked
 - **Performance**: Each request incurs latency from backend detection call
 
 ## Architecture
 
 ```
 ┌──────────────┐         ┌──────────────┐         ┌──────────────┐
-│  Your App    │────────▶│   Proxy      │────────▶│   OpenAI     │
-│              │         │  (mitmproxy) │         │   API        │
+│  Local App   │────────▶│   Proxy      │────────▶│   LLM API    │
+│              │         │              │         │              │
 └──────────────┘         └──────────────┘         └──────────────┘
-                               │
-                               │ detection
-                               ▼
+                               │  ▲
+                               │  |
+                               ▼  |
                          ┌──────────────┐
                          │   Backend    │
                          │   Detector   │

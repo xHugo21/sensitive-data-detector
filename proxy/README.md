@@ -47,7 +47,7 @@ First, ensure the sensitive-data-detector backend is running
 ### 2. Start the Proxy
 
 ```bash
-uv run main.py
+uv run python -m app.main
 ```
 
 ### 3. Configure Your Environment

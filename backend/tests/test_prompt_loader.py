@@ -1,4 +1,4 @@
-from utils import prompt_loader
+from app.utils import prompt_loader
 
 
 def test_resolve_mode_prefers_detection_mode_default(monkeypatch):

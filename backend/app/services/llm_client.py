@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict
 
 import litellm
-from core.config import LLM_PROVIDER
+from app.core.config import LLM_PROVIDER
 
 
 def _json_env(var_name: str) -> Dict[str, Any]:

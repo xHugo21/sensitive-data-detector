@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from core.config import DETECTION_MODE
+from app.core.config import DETECTION_MODE
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_PROMPT_DIR = BASE_DIR / "prompts"

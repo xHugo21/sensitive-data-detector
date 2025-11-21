@@ -13,8 +13,5 @@ dependencies = [
     "typing_extensions>=4.7",
 ]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-
 [tool.setuptools.packages.find]
-where = ["src"]
+include = ["multiagent_firewall*"]

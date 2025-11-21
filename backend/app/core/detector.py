@@ -1,8 +1,8 @@
 import re
 import json
-from services.llm_client import client
-from utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP, resolve_mode
-from core.config import (
+from app.services.llm_client import client
+from app.utils.prompt_loader import load_prompt, inject_text, PROMPT_MAP, resolve_mode
+from app.core.config import (
     LLM_MODEL,
     LLM_PROVIDER,
     LLM_SUPPORTS_JSON_MODE,

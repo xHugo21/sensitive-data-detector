@@ -2,10 +2,21 @@
 
 Detect and prevent private data leakage in user-LLM interactions.
 
-Provides the backend for detecting sensitive information exchange alonside an extension for Chromium based browsers that displays the detected sensitive data and warns users before any information is sent to an LLM.
+## 📦 Packages
 
-> [!IMPORTANT]
-> This is a fork of the repository [guillecab/SensitiveDataDetector-ChatGPT-Extension](https://github.com/guillecab/SensitiveDataDetector-ChatGPT-Extension).
+### 🧱 Multiagent Firewall
+Implements a LangGraph-based multiagent firewall for advanced policy enforcement and detection.
+
+### 🔌 Backend
+Provides a FastAPI server for analyzing and detecting sensitive data in LLM interactions
+
+### Extension
+Chromium based extension that analyzes user and LLM interactions to detect sensitive data and provide feedback to the user within the browser.
+
+### 🧩 Proxy
+Protect user and LLM interactions via command-line clients, IDEs or applications by routing their LLM API calls through our multiagent firewall.
+
+---
 
 ## ⚡ Exclusive features of this fork
 - Proxy server that acts as a MiTM to analyse and block all sensitive LLM API interactions
@@ -20,32 +31,29 @@ Provides the backend for detecting sensitive information exchange alonside an ex
 
 ## 🛠️ Set up and usage
 
-### 1. Clone repository
+### 1. uv
+Install [uv](https://docs.astral.sh/uv/#installation) (modern Python package manager):
 
-```bash
-git clone https://github.com/xHugo21/sensitive-data-detector.git
-cd sensitive-data-detector
-```
-
-### 2. Setup .env
-Take a look at `backend/.env.example` and copy it to `backend/.env` with desired config options
-
-### 3. Install dependencies and run
-Install [uv](https://docs.astral.sh/uv/#installation):
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-```bash
-# Installs dependencies in a virtual environment
-uv sync --project backend
+### 2. Set up environment variables
+- `backend`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
+- `proxy`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
+- `extension`: Modify `extension/src/config.js`
 
-# start the API with uv ensuring the env is activated
-uv run --project backend python -m app.main
+### 3. Install dependencies and run
+From the directory of the desired package (either `backend` or `proxy`):
+
+```bash
+uv sync
+
+uv run python -m app.main
 ```
 
 > [!NOTE]
-> Alternatively, you can build the backend image using the provided Dockerfile:
+> Alternatively, you can build the `backend` image using the provided Dockerfile:
 > ```bash
 > docker build -t sensitive-data-detector .
 > docker run -p 8000:8000 --env-file .env sensitive-data-detector
@@ -54,34 +62,24 @@ uv run --project backend python -m app.main
 ### 4. Load extension
 1. Go to chrome://extensions/
 2. Toggle on "Developer mode"
-3. Click "Load unpacked" → choose sensitive-data-detector/extension/
+3. Click "Load unpacked" → choose path to `sensitive-data-detector/extension/`
 
 > [!IMPORTANT]
-> Ensure the host and port used for the extension match the ones defined on the `content.js` of the extension
-
----
-
-## 🧩 Proxy for LLM API calls
-
-Protect command-line clients, IDEs or applications by routing their HTTP calls through the standalone proxy located in `proxy/`:
-
-For setup and more information see `proxy/README.md`
-
----
-
-## 🌐 Supported providers
-- Any model reachable through the [LiteLLM](https://github.com/BerriAI/litellm) SDK (100+ vendors)
-- See more info in `backend/.env.example`
+> Ensure the host and ports of each package don't overlap with any other opened ports on your machine and that each package properly points to the backend port
 
 ---
 
 ## 🧪 Tests
-
 Each package has its own test suite that can be run with the following commands
-
 ```bash
 uv sync --project <package> --group test
 uv run --project <package> --group test bash -lc "PYTHONPATH=<package> pytest <package>/tests"
+```
+
+Or, from each package directory:
+```bash
+uv sync
+uv run pytest
 ```
 
 ## 📜 License

@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from mitmproxy.tools import main as mitmproxy_main
 
-from config import PROXY_HOST, PROXY_PORT
+from app.config import PROXY_HOST, PROXY_PORT
 
 
 def run_proxy():
@@ -20,7 +20,7 @@ def run_proxy():
         "--set",
         "confdir=~/.mitmproxy",
         "--scripts",
-        "sensitive_data_detector.py",
+        "app.sensitive_data_detector",
     ]
 
     print(f"Starting mitmproxy on {PROXY_HOST}:{PROXY_PORT}")

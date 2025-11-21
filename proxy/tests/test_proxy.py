@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from sensitive_data_detector import SensitiveDataDetector
+from app.sensitive_data_detector import SensitiveDataDetector
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def test_extract_payload_text_uses_prompt_for_non_chat_path(
 def test_should_block_respects_threshold(
     interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
 ):
-    import config
+    from app import config
 
     monkeypatch.setattr(config, "PROXY_MIN_BLOCK_RISK", "medium")
 
@@ -136,7 +136,7 @@ def test_ask_backend_handles_empty_text(interceptor: SensitiveDataDetector):
 def test_ask_backend_includes_mode_if_configured(
     interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
 ):
-    import config
+    from app import config
     from unittest.mock import Mock, patch
 
     monkeypatch.setattr(config, "BACKEND_DETECTION_MODE", "enriched-zero-shot")
@@ -145,7 +145,7 @@ def test_ask_backend_includes_mode_if_configured(
     mock_response.status_code = 200
     mock_response.json.return_value = {"risk_level": "None", "detected_fields": []}
 
-    with patch("sensitive_data_detector.httpx.Client") as mock_client:
+    with patch("app.sensitive_data_detector.httpx.Client") as mock_client:
         mock_client.return_value.__enter__.return_value.post.return_value = (
             mock_response
         )

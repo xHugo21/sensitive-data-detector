@@ -8,7 +8,7 @@ import httpx
 from mitmproxy import http
 from mitmproxy.http import HTTPFlow
 
-import config
+from app import config
 
 
 _RISK_ORDER = {"none": 0, "low": 1, "medium": 2, "high": 3}

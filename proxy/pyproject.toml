@@ -20,4 +20,4 @@ test = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["proxy*"]
+include = ["app*"]

@@ -1,6 +1,6 @@
 import pytest
 
-from services import llm_client
+from app.services import llm_client
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):

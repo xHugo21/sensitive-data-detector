@@ -1,10 +1,10 @@
 import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Form
-from api.models.request import DetectReq
-from guard import run_guard_pipeline
-from services.document_reader import read_document
-from utils.logger import debug_log
+from app.api.models.request import DetectReq
+from app.guard import run_guard_pipeline
+from app.services.document_reader import read_document
+from app.utils.logger import debug_log
 
 router = APIRouter()
 

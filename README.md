@@ -41,7 +41,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync --project backend
 
 # start the API with uv ensuring the env is activated
-uv run --project backend python main.py
+uv run --project backend python -m app.main
 ```
 
 > [!NOTE]

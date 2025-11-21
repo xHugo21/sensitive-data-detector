@@ -1,6 +1,6 @@
 import os
 
-from services import document_reader
+from app.services import document_reader
 
 
 def test_sanitize_file_path_decodes_file_uri():

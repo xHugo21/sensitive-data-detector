@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from core import detector
+from app.core import detector
 
 
 def _response(payload: str):

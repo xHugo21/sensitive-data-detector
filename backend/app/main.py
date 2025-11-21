@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from core.config import PORT, ALLOW_ORIGINS
-from api.routes.health import router as health_router
-from api.routes.detect import router as detect_router
+from app.core.config import PORT, ALLOW_ORIGINS
+from app.api.routes.health import router as health_router
+from app.api.routes.detect import router as detect_router
 
 app = FastAPI(title="Sensitive LLM Detector", version="1.1.0")
 
@@ -30,4 +30,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    uvicorn.run("main:app", host=args.host, port=PORT, reload=True)
+    uvicorn.run("app.main:app", host=args.host, port=PORT, reload=True)

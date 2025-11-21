@@ -29,4 +29,4 @@ WORKDIR /app/backend
 
 EXPOSE 8000
 
-CMD ["python3", "main.py", "--host", "0.0.0.0"]
+CMD ["python3", "-m", "app.main", "--host", "0.0.0.0"]

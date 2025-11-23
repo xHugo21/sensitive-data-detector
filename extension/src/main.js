@@ -5,7 +5,6 @@
     sg.panel.ensure();
     sg.highlights.ensureHighlightCSS();
     sg.sendInterceptor.attach();
-    sg.messageAnalyzer.scanExistingMessages();
     sg.messageAnalyzer.start();
     sg.fileInterceptor.attach();
   }

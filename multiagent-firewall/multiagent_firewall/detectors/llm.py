@@ -10,7 +10,7 @@ from typing import Any, Dict
 from langchain_litellm import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate
 
-from .prompts import PROMPT_MAP, inject_text, load_prompt, resolve_mode
+from ..prompts import PROMPT_MAP, inject_text, load_prompt, resolve_mode
 
 
 def safe_json_from_text(s: str) -> dict:

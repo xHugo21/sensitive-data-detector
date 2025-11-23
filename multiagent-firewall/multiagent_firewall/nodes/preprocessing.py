@@ -36,5 +36,6 @@ def merge_detections(state: GuardState) -> GuardState:
 
 
 def _append(state: GuardState, key: str, value: Any) -> None:
-    state.setdefault(key, [])
+    if key not in state:
+        state[key] = []
     state[key].append(value)

@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import re
-from typing import Mapping, Sequence
+from typing import Any, Callable, Dict, List, Mapping, Sequence
 
-from ..types import (
-    DLPDetector,
-    FieldList,
-    GuardState,
-    LLMDetector,
-    OCRDetector,
-)
+from ..types import FieldList, GuardState
+
+DetectorResult = Mapping[str, Any]
+LLMDetector = Callable[[str, str | None, str | None], DetectorResult]
+DLPDetector = Callable[[str], FieldList]
+OCRDetector = Callable[[GuardState], FieldList]
 
 
 def run_llm_detector(
@@ -82,5 +81,6 @@ def run_ocr_detector(
 
 
 def _append_error(state: GuardState, message: str) -> None:
-    state.setdefault("errors", [])
+    if "errors" not in state:
+        state["errors"] = []
     state["errors"].append(message)

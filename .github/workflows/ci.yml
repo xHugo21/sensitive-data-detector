@@ -50,3 +50,19 @@ jobs:
           key: ${{ runner.os }}-uv-proxy-${{ hashFiles('uv.lock') }}
       - run: uv sync --project proxy --group test
       - run: PYTHONPATH=proxy uv run --project proxy --group test pytest proxy/tests
+
+  multiagent-firewall-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@v2
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-multiagent-${{ hashFiles('uv.lock') }}
+      - run: uv sync --project multiagent-firewall --group test
+      - run: PYTHONPATH=multiagent-firewall uv run --project multiagent-firewall --group test pytest multiagent-firewall/tests

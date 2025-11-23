@@ -4,11 +4,9 @@ from typing import Any, Dict
 
 from multiagent_firewall import GuardOrchestrator
 
-from app.core.detector import detect_sensitive_data
 from app.core.risk import compute_risk_level
 
 _orchestrator = GuardOrchestrator(
-    llm_detector=detect_sensitive_data,
     risk_evaluator=compute_risk_level,
 )
 

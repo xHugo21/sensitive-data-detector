@@ -10,8 +10,17 @@ authors = [{name = "Hugo Garcia"}]
 requires-python = ">=3.10"
 dependencies = [
     "langgraph",
+    "langchain-litellm",
     "typing_extensions>=4.7",
 ]
+
+[dependency-groups]
+test = [
+    "pytest",
+]
+
+[tool.setuptools.package-data]
+"multiagent_firewall" = ["prompts/*.txt"]
 
 [tool.setuptools.packages.find]
 include = ["multiagent_firewall*"]

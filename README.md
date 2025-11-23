@@ -10,13 +10,13 @@ Implements a LangGraph-based multiagent firewall for advanced policy enforcement
 ### 🔌 Backend
 Provides a FastAPI server for analyzing and detecting sensitive data in LLM interactions
 
-### Extension
+### 🌐 Extension
 Chromium based extension that analyzes user and LLM interactions to detect sensitive data and provide feedback to the user within the browser.
 
 ### 🧩 Proxy
 Protect user and LLM interactions via command-line clients, IDEs or applications by routing their LLM API calls through our multiagent firewall.
 
-## 🔄 Package Flow
+## 🔄 Architecture
 
 ```mermaid
 flowchart LR

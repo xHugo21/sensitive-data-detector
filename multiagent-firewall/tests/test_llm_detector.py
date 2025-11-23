@@ -1,34 +1,34 @@
 import pytest
 
-from multiagent_firewall import llm
+from multiagent_firewall import llm_detector
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):
     monkeypatch.delenv("TEST_JSON_ENV", raising=False)
-    assert llm._json_env("TEST_JSON_ENV") == {}
+    assert llm_detector._json_env("TEST_JSON_ENV") == {}
 
 
 def test_json_env_parses_valid_json(monkeypatch):
     monkeypatch.setenv("TEST_JSON_ENV", '{"timeout": 30, "retries": 1}')
-    assert llm._json_env("TEST_JSON_ENV") == {"timeout": 30, "retries": 1}
+    assert llm_detector._json_env("TEST_JSON_ENV") == {"timeout": 30, "retries": 1}
 
 
 def test_json_env_errors_on_invalid_payload(monkeypatch):
     monkeypatch.setenv("TEST_JSON_ENV", "{not-valid json")
     with pytest.raises(RuntimeError):
-        llm._json_env("TEST_JSON_ENV")
+        llm_detector._json_env("TEST_JSON_ENV")
 
 
 def test_json_env_requires_object_payload(monkeypatch):
     monkeypatch.setenv("TEST_JSON_ENV", '["a", "b"]')
     with pytest.raises(RuntimeError):
-        llm._json_env("TEST_JSON_ENV")
+        llm_detector._json_env("TEST_JSON_ENV")
 
 
 def test_config_from_env_requires_api_key(monkeypatch):
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
-        llm.LiteLLMConfig.from_env()
+        llm_detector.LiteLLMConfig.from_env()
 
 
 def test_config_from_env_includes_optional_fields(monkeypatch):
@@ -40,7 +40,7 @@ def test_config_from_env_includes_optional_fields(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "sonnet")
     monkeypatch.setenv("LLM_SUPPORTS_JSON_MODE", "false")
 
-    config = llm.LiteLLMConfig.from_env()
+    config = llm_detector.LiteLLMConfig.from_env()
 
     assert config.provider == "anthropic"
     assert config.model == "sonnet"
@@ -53,10 +53,13 @@ def test_config_from_env_includes_optional_fields(monkeypatch):
 
 
 def test_maybe_prefix_model_handles_providers():
-    assert llm._maybe_prefix_model(None, "openai") is None
-    assert llm._maybe_prefix_model("gpt-4o", "openai") == "gpt-4o"
-    assert llm._maybe_prefix_model("claude-3", "anthropic") == "anthropic/claude-3"
+    assert llm_detector._maybe_prefix_model(None, "openai") is None
+    assert llm_detector._maybe_prefix_model("gpt-4o", "openai") == "gpt-4o"
     assert (
-        llm._maybe_prefix_model("anthropic/claude-3", "anthropic")
+        llm_detector._maybe_prefix_model("claude-3", "anthropic")
+        == "anthropic/claude-3"
+    )
+    assert (
+        llm_detector._maybe_prefix_model("anthropic/claude-3", "anthropic")
         == "anthropic/claude-3"
     )

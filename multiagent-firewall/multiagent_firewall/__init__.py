@@ -1,4 +1,4 @@
-from .llm import LiteLLMConfig, LiteLLMDetector
+from .llm_detector import LiteLLMConfig, LiteLLMDetector
 from .orchestrator import GuardOrchestrator
 from .types import GuardState
 

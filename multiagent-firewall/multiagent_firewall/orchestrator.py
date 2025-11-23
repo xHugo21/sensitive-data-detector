@@ -6,7 +6,7 @@ from typing import Any, Dict, Mapping, Sequence
 from langgraph.graph import END, StateGraph
 
 from . import nodes
-from .llm import LiteLLMDetector
+from .llm_detector import LiteLLMDetector
 from .types import (
     DLPDetector,
     GuardState,

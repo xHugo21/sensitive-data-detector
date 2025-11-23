@@ -11,9 +11,9 @@ router = APIRouter()
 
 @router.post("/detect")
 def detect(req: DetectReq):
-    debug_log("\n===== TEXTO EXTRAÍDO =====")
+    debug_log("\n===== EXTRACTED TEXT =====")
     debug_log(req.text)
-    debug_log("\n===== MODO =====")
+    debug_log("\n===== MODE =====")
     debug_log(req.mode)
     debug_log("========================================\n")
     result = run_guard_pipeline(
@@ -40,11 +40,11 @@ async def detect_file(
         with open(tmp_path, "wb") as f:
             f.write(await file.read())
 
-        debug_log(f"[detect_file] Guardado en {tmp_path}")
+        debug_log(f"[detect_file] Saved to {tmp_path}")
 
         text = read_document(tmp_path)
         if not text:
-            debug_log("[detect_file] ❌ No se pudo extraer texto")
+            debug_log("[detect_file] ❌ Could not extract text")
             return {
                 "detected_fields": [],
                 "risk_level": "Unknown",
@@ -52,7 +52,7 @@ async def detect_file(
                 "extracted_snippet": "",
             }
 
-        debug_log("\n===== TEXTO EXTRAÍDO =====")
+        debug_log("\n===== EXTRACTED TEXT =====")
         debug_log(text)
         debug_log("========================================\n")
 

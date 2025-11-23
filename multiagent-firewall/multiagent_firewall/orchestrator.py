@@ -5,17 +5,12 @@ from typing import Any, Dict, Mapping, Sequence
 
 from langgraph.graph import END, StateGraph
 
-from .compute_risk_level import compute_risk_level
 from . import nodes
-from .llm_detector import LiteLLMDetector
-from .types import (
-    DLPDetector,
-    GuardState,
-    LLMDetector,
-    OCRDetector,
-    RiskEvaluator,
-    default_regex_patterns,
-)
+from .detectors import LiteLLMDetector
+from .detectors.dlp import default_regex_patterns
+from .nodes.detection import DLPDetector, LLMDetector, OCRDetector
+from .nodes.risk import compute_risk_level
+from .types import GuardState, RiskEvaluator
 
 
 class GuardOrchestrator:

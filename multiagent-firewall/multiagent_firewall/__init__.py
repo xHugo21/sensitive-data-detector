@@ -1,5 +1,5 @@
-from .compute_risk_level import compute_risk_level
-from .llm_detector import LiteLLMConfig, LiteLLMDetector
+from .detectors import LiteLLMConfig, LiteLLMDetector
+from .nodes.risk import compute_risk_level
 from .orchestrator import GuardOrchestrator
 from .types import GuardState
 

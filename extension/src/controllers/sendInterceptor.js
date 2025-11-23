@@ -49,6 +49,8 @@
   }
 
   async function analyzeBeforeSend({ composer, button = null, text }) {
+    const loadingTarget = button || sg.chatSelectors.findSendButton();
+    sg.loadingState.show(loadingTarget);
     try {
       const result = await sg.detectorClient.detectText(text);
       sg.highlights.applyHighlights(
@@ -70,6 +72,8 @@
         err,
       );
       allowSend(composer, button);
+    } finally {
+      sg.loadingState.hide(loadingTarget);
     }
   }
 

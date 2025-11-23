@@ -20,11 +20,11 @@
       mutation.addedNodes &&
         mutation.addedNodes.forEach((node) => {
           if (sg.chatSelectors.isMessageNode(node))
-            analyzeMessageNode(node, "Respuesta");
+            analyzeMessageNode(node, "Response");
           if (node.querySelectorAll) {
             node
               .querySelectorAll("[data-message-author-role]")
-              .forEach((host) => analyzeMessageNode(host, "Respuesta"));
+              .forEach((host) => analyzeMessageNode(host, "Response"));
           }
         });
     }
@@ -33,11 +33,11 @@
       const lastAssistant = [
         ...document.querySelectorAll('[data-message-author-role="assistant"]'),
       ].pop();
-      if (lastAssistant) analyzeMessageNode(lastAssistant, "Respuesta");
+      if (lastAssistant) analyzeMessageNode(lastAssistant, "Response");
     }
   }
 
-  async function analyzeMessageNode(node, originGuess = "Desconocido") {
+  async function analyzeMessageNode(node, originGuess = "Unknown") {
     if (!node) return;
     const store = sg.alertStore;
     const host = node.closest?.("[data-message-author-role]") || node;
@@ -67,7 +67,7 @@
       try {
         const result = await sg.detectorClient.detectText(text);
         if (["Medium", "High"].includes(result?.risk_level)) {
-          sg.panel.render(result, "Respuesta", text);
+          sg.panel.render(result, "Response", text);
           sg.highlights.applyHighlights(
             contentEl,
             result?.detected_fields || [],
@@ -75,7 +75,7 @@
           );
         }
       } catch (err) {
-        console.warn("[SG-LLM] analyze assistant error:", err);
+        console.warn("[SensitiveDataDetector] analyze assistant error:", err);
       } finally {
         store.markAnalyzed(host);
         store.endInFlight(host);
@@ -85,18 +85,18 @@
       return;
     }
 
-    if (isUser || originGuess === "Usuario") {
+    if (isUser || originGuess === "User") {
       if (store.shouldSuppressUserAlerts()) return;
       const textUser = sg.chatSelectors.extractMessageText(host);
       if (!textUser) return;
       try {
         const result = await sg.detectorClient.detectText(textUser);
         if (["Medium", "High"].includes(result?.risk_level)) {
-          sg.panel.render(result, "Usuario", textUser);
+          sg.panel.render(result, "User", textUser);
         }
         store.markAnalyzed(host);
       } catch (err) {
-        console.warn("[SG-LLM] analyze user error:", err);
+        console.warn("[SensitiveDataDetector] analyze user error:", err);
       }
     }
   }
@@ -105,7 +105,7 @@
     const nodes = document.querySelectorAll(
       '[data-message-author-role], [data-testid="conversation-turn"], .markdown',
     );
-    nodes.forEach((n) => analyzeMessageNode(n, "Respuesta"));
+    nodes.forEach((n) => analyzeMessageNode(n, "Response"));
   }
 
   sg.messageAnalyzer = {

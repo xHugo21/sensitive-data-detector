@@ -59,13 +59,16 @@
 
       if (sg.riskUtils.shouldBlock(result?.risk_level)) {
         lastSendIntent = { composer, button };
-        sg.panel.render(result, "Usuario", text);
+        sg.panel.render(result, "User", text);
         return;
       }
 
       allowSend(composer, button);
     } catch (err) {
-      console.error("[SG-LLM] Backend error, allowing send:", err);
+      console.error(
+        "[SensitiveDataDetector] Backend error, allowing send:",
+        err,
+      );
       allowSend(composer, button);
     }
   }

@@ -49,12 +49,12 @@
       marginBottom: "4px",
       letterSpacing: "-0.01em",
     });
-    title.textContent = "⚠️ CUIDADO: Riesgo Detectado";
+    title.textContent = "⚠️ WARNING: Risk Detected";
     titleRow.appendChild(title);
 
     const originBadge = document.createElement("div");
     originBadge.id = "sg-llm-origin";
-    originBadge.textContent = "Origen: Usuario";
+    originBadge.textContent = "Source: User";
     Object.assign(originBadge.style, {
       background: "rgba(255,255,255,0.08)",
       padding: "4px 10px",
@@ -84,7 +84,7 @@
       fontSize: "16px",
       color: "#ECECF1",
     });
-    header.textContent = "Datos sensibles detectados:";
+    header.textContent = "Sensitive data detected:";
     panel.appendChild(header);
 
     const list = document.createElement("div");
@@ -106,7 +106,7 @@
 
     const btnSendAnyway = document.createElement("button");
     btnSendAnyway.id = "sg-llm-override";
-    btnSendAnyway.textContent = "Enviar de todos modos";
+    btnSendAnyway.textContent = "Send anyway";
     Object.assign(btnSendAnyway.style, {
       flex: 1,
       border: "none",
@@ -121,7 +121,7 @@
     });
 
     const btnDismiss = document.createElement("button");
-    btnDismiss.textContent = "Ocultar";
+    btnDismiss.textContent = "Dismiss";
     Object.assign(btnDismiss.style, {
       flex: 0,
       borderRadius: "12px",
@@ -232,7 +232,7 @@
     applyInlinePanelStyles(panel);
   }
 
-  function renderPanel(result, origin = "Usuario", contextText = "") {
+  function renderPanel(result, origin = "User", contextText = "") {
     const panel = ensurePanel();
     mountPanel(panel);
     const {
@@ -248,36 +248,36 @@
     list.innerHTML = "";
 
     const { risk_level = "Unknown", detected_fields = [] } = result || {};
-    const riskEs =
+    const riskLabel =
       risk_level === "High"
-        ? "Alto"
+        ? "High"
         : risk_level === "Medium"
-          ? "Medio"
+          ? "Medium"
           : risk_level === "Low"
-            ? "Bajo"
-            : "Desconocido";
+            ? "Low"
+            : "Unknown";
 
-    title.textContent = `⚠️ CUIDADO: Riesgo ${riskEs} Detectado`;
-    originBadge.textContent = `Origen: ${origin}`;
+    title.textContent = `⚠️ WARNING: ${riskLabel} Risk Detected`;
+    originBadge.textContent = `Source: ${origin}`;
 
     const baseText = contextText || "";
 
-    const policyUsuario = `
+    const policyUser = `
       <div style="margin-bottom:6px;">
-        Según la <b>política de privacidad de OpenAI</b>, tus datos sensibles pueden compartirse con 
-        <b>proveedores</b>, <b>afiliadas</b>, <b>autoridades</b> o en <b>transferencias de negocio</b>. 
-        También pueden acceder <b>administradores corporativos</b> y los <b>terceros</b> con los que decidas compartir. 
-        Parte del contenido puede conservarse y usarse para <b>mejorar los servicios/modelos</b>. 
-        Consulta la política completa 
-        <a href="https://openai.com/es-ES/policies/row-privacy-policy/" target="_blank" style="color:#3fa9ff;text-decoration:underline;">aquí</a>.
+        According to the <b>OpenAI privacy policy</b>, your sensitive data may be shared with
+        <b>vendors</b>, <b>affiliates</b>, <b>authorities</b>, or during <b>business transfers</b>.
+        <b>Corporate administrators</b> and the <b>third parties</b> you choose to share with can also access it.
+        Some content may be retained and used to <b>improve services/models</b>.
+        Read the full policy
+        <a href="https://openai.com/policies/row-privacy-policy/" target="_blank" style="color:#3fa9ff;text-decoration:underline;">here</a>.
       </div>`;
-    const policyRespuesta = `
+    const policyResponse = `
       <div style="margin-bottom:6px;">
-        ⚠️ <b>Se han detectado campos sensibles en la respuesta del modelo.</b><br>
-        Si decides usar esta información fuera de ChatGPT, ten en cuenta los riesgos de compartirla. 
-        Consulta la <a href="https://openai.com/es-ES/policies/row-privacy-policy/" target="_blank" style="color:#3fa9ff;text-decoration:underline;">política de privacidad aquí</a>.
+        ⚠️ <b>Sensitive fields were detected in the model response.</b><br>
+        If you use this information outside ChatGPT, be aware of the risks of sharing it.
+        Read the <a href="https://openai.com/policies/row-privacy-policy/" target="_blank" style="color:#3fa9ff;text-decoration:underline;">privacy policy here</a>.
       </div>`;
-    policy.innerHTML = origin === "Respuesta" ? policyRespuesta : policyUsuario;
+    policy.innerHTML = origin === "Response" ? policyResponse : policyUser;
 
     const accentRisk =
       risk_level === "High"
@@ -287,13 +287,13 @@
           : risk_level === "Low"
             ? "#10a37f"
             : "#c5c5d2";
-    const accentOrigin = origin === "Respuesta" ? "#82b5ff" : accentRisk;
+    const accentOrigin = origin === "Response" ? "#82b5ff" : accentRisk;
     panel.style.borderLeft = `4px solid ${accentOrigin}`;
 
     header.textContent =
-      origin === "Respuesta"
-        ? "Campos sensibles detectados en la respuesta del modelo:"
-        : "Datos sensibles detectados:";
+      origin === "Response"
+        ? "Sensitive fields detected in the model response:"
+        : "Sensitive data detected:";
 
     if (detected_fields.length) {
       const groups = new Map();
@@ -376,7 +376,7 @@
       }
     } else {
       const empty = document.createElement("div");
-      empty.textContent = "No se detectaron campos sensibles.";
+      empty.textContent = "No sensitive fields detected.";
       empty.style.padding = "12px";
       empty.style.borderRadius = "10px";
       empty.style.background = "rgba(255,255,255,0.02)";
@@ -385,7 +385,7 @@
     }
 
     if (actions && btnDismiss && btnSendAnyway) {
-      if (origin === "Usuario") {
+      if (origin === "User") {
         if (!actions.contains(btnSendAnyway))
           actions.insertBefore(btnSendAnyway, btnDismiss);
         btnSendAnyway.style.display = "inline-block";

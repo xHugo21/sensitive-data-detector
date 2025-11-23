@@ -17,13 +17,16 @@
     try {
       const result = await sg.pdfAnalyzer.analyzePdfFile(file);
       if (!sg.alertStore.shouldSuppressUserAlerts()) {
-        sg.panel.render(result, "Usuario", `PDF: ${file.name}`);
+        sg.panel.render(result, "User", `PDF: ${file.name}`);
       }
       if (result?.extracted_snippet) {
-        console.log("[SG-LLM] Snippet PDF extraído:", result.extracted_snippet);
+        console.log(
+          "[SensitiveDataDetector] Extracted PDF snippet:",
+          result.extracted_snippet,
+        );
       }
     } catch (err) {
-      console.error("[SG-LLM] Error analizando PDF:", err);
+      console.error("[SensitiveDataDetector] Error analyzing PDF:", err);
     }
   }
 

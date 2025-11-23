@@ -11,20 +11,15 @@ router = APIRouter()
 
 @router.post("/detect")
 def detect(req: DetectReq):
-    debug_log("\n===== EXTRACTED TEXT =====")
-    debug_log(req.text)
-    debug_log("\n===== MODE =====")
-    debug_log(req.mode)
-    debug_log("========================================\n")
+    debug_log("Extracted text:", req.text)
+    debug_log("Mode:", req.mode)
     result = run_guard_pipeline(
         req.text,
         prompt=req.prompt,
         mode=req.mode,
         metadata={"source": "text"},
     )
-    debug_log("\n===== DETECTED FIELDS =====")
-    debug_log(result.get("detected_fields", []))
-    debug_log("========================================\n")
+    debug_log("Detected fields:", result.get("detected_fields", []))
     return result
 
 
@@ -44,7 +39,7 @@ async def detect_file(
 
         text = read_document(tmp_path)
         if not text:
-            debug_log("[detect_file] ❌ Could not extract text")
+            debug_log("[detect_file] Could not extract text")
             return {
                 "detected_fields": [],
                 "risk_level": "Unknown",
@@ -52,9 +47,7 @@ async def detect_file(
                 "extracted_snippet": "",
             }
 
-        debug_log("\n===== EXTRACTED TEXT =====")
-        debug_log(text)
-        debug_log("========================================\n")
+        debug_log("Extracted text from file:", text)
 
         result = run_guard_pipeline(
             text,
@@ -71,7 +64,7 @@ async def detect_file(
         return result
 
     except Exception as e:
-        debug_log("[detect_file] ⚠️ Error:", e)
+        debug_log("[detect_file] Error:", e)
         return {
             "detected_fields": [],
             "risk_level": "Unknown",

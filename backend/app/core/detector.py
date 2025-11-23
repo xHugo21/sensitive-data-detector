@@ -66,7 +66,7 @@ def detect_sensitive_data(
             resp = client.chat.completions.create(
                 model=LLM_MODEL,
                 messages=[
-                    {"role": "system", "content": "Devuelve únicamente un objeto JSON válido. Sin texto adicional."},
+                    {"role": "system", "content": "Return only a valid JSON object. No additional text."},
                     {"role": "user", "content": final_prompt},
                 ],
                 temperature=0,

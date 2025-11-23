@@ -1,12 +1,15 @@
 {
-  "name": "ChatGPT Sensitive Guard (LLM)",
-  "description": "Advierte si tu mensaje a ChatGPT contiene datos sensibles (detección via LLM).",
+  "name": "Sensitive Data Detector",
+  "description": "Analyses and warns you if your interaction with ChatGPT contains sensitive data",
   "version": "1.0.0",
   "manifest_version": 3,
   "icons": { "128": "icon128.png" },
   "content_scripts": [
     {
-      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*"
+      ],
       "js": [
         "src/config.js",
         "src/state/alertStore.js",
@@ -25,5 +28,8 @@
     }
   ],
   "permissions": ["storage"],
-  "host_permissions": ["http://127.0.0.1:8000/*", "http://localhost:8000/*"]
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
+  ]
 }

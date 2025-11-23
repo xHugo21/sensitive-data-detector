@@ -2,14 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from multiagent_firewall import GuardOrchestrator, LiteLLMDetector
+from multiagent_firewall import GuardOrchestrator
 
 from app.core.risk import compute_risk_level
 
-_llm_detector = LiteLLMDetector.from_env()
-
 _orchestrator = GuardOrchestrator(
-    llm_detector=_llm_detector,
     risk_evaluator=compute_risk_level,
 )
 

@@ -5,9 +5,9 @@ from typing import Any, Dict, Mapping, Sequence
 
 from langgraph.graph import END, StateGraph
 
+from .compute_risk_level import compute_risk_level
 from . import nodes
 from .llm_detector import LiteLLMDetector
-from .risk import compute_risk_level
 from .types import (
     DLPDetector,
     GuardState,

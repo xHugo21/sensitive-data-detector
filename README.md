@@ -16,6 +16,35 @@ Chromium based extension that analyzes user and LLM interactions to detect sensi
 ### 🧩 Proxy
 Protect user and LLM interactions via command-line clients, IDEs or applications by routing their LLM API calls through our multiagent firewall.
 
+## 🔄 Package Flow
+
+```mermaid
+flowchart LR
+  subgraph Backend["Backend"]
+    B[FastAPI Backend]
+    B --> O[multiagent-firewall]
+    O -->|regex + LLM + OCR detectors| B
+  end
+
+  subgraph Browser
+    U[User in browser] --> E[Extension]
+    E -->|/detect or /detect_file| B
+
+    E -->|allows prompt only when safe| S[LLM website/provider]
+  end
+
+  subgraph Proxy["Proxy"]
+    A[User in CLI/IDE/App] -->|LLM requests via HTTP or HTTPS proxy| P[Proxy]
+    P -->|LLM HTTP payloads| B
+    P -->|forwards when safe| L[LLM API provider]
+    P -.blocked 403 response.- A
+  end
+
+  B -->|risk, detected fields, remediation| E
+  B -->|risk headers or 403 block| P
+
+```
+
 ---
 
 ## ⚡ Exclusive features of this fork

@@ -2,9 +2,9 @@ import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Form
 from app.api.models.request import DetectReq
-from app.guard import run_guard_pipeline
 from app.services.document_reader import read_document
 from app.utils.logger import debug_log
+from multiagent_firewall import GuardOrchestrator
 
 router = APIRouter()
 
@@ -13,7 +13,7 @@ router = APIRouter()
 def detect(req: DetectReq):
     debug_log("Extracted text:", req.text)
     debug_log("Mode:", req.mode)
-    result = run_guard_pipeline(
+    result = GuardOrchestrator().run(
         req.text,
         prompt=req.prompt,
         mode=req.mode,
@@ -49,7 +49,7 @@ async def detect_file(
 
         debug_log("Extracted text from file:", text)
 
-        result = run_guard_pipeline(
+        result = GuardOrchestrator().run(
             text,
             prompt=prompt,
             mode=mode,

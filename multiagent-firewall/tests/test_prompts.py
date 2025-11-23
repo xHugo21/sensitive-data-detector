@@ -2,12 +2,12 @@ from multiagent_firewall import prompts
 
 
 def test_resolve_mode_prefers_detection_mode_default(monkeypatch):
-    monkeypatch.setattr(prompts, "DETECTION_MODE", "few-shot", raising=False)
+    monkeypatch.setenv("DETECTION_MODE", "few-shot")
     assert prompts.resolve_mode(None) == "few-shot"
 
 
 def test_resolve_mode_falls_back_for_unknown(monkeypatch):
-    monkeypatch.setattr(prompts, "DETECTION_MODE", "", raising=False)
+    monkeypatch.delenv("DETECTION_MODE", raising=False)
     resolved = prompts.resolve_mode("unknown-mode")
     assert resolved == prompts._FALLBACK_PROMPT_MODE
 

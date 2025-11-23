@@ -16,7 +16,7 @@ DETECTION_MODE = os.getenv("DETECTION_MODE", "zero-shot").strip() or "zero-shot"
 
 
 def resolve_mode(mode: str | None) -> str:
-    candidate = (mode or DETECTION_MODE or "").strip()
+    candidate = (mode or os.getenv("DETECTION_MODE") or DETECTION_MODE or "").strip()
     if not candidate:
         return _FALLBACK_PROMPT_MODE
     if candidate in PROMPT_MAP:

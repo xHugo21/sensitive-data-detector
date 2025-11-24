@@ -65,7 +65,9 @@ def orchestrator():
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "test_id,prompt,expected_sensitive,expected_entities,description", load_test_cases()
+    "test_id,prompt,expected_sensitive,expected_entities,description", 
+    load_test_cases(),
+    ids=[case[0] for case in load_test_cases()]
 )
 def test_sensitive_detection(
     orchestrator, test_id, prompt, expected_sensitive, expected_entities, description

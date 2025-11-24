@@ -6,7 +6,7 @@ from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patt
 from ..types import FieldList, GuardState
 
 DetectorResult = Mapping[str, Any]
-LLMDetector = Callable[[str, str | None, str | None], DetectorResult]
+LLMDetector = Callable[[str, str | None], DetectorResult]
 OCRDetector = Callable[[GuardState], FieldList]
 
 
@@ -21,7 +21,6 @@ def run_llm_detector(
     try:
         result = llm_detector(
             text,
-            state.get("prompt"),
             state.get("mode"),
         )
         fields = [

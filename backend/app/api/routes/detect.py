@@ -15,9 +15,7 @@ def detect(req: DetectReq):
     debug_log("Mode:", req.mode)
     result = GuardOrchestrator().run(
         req.text,
-        prompt=req.prompt,
         mode=req.mode,
-        metadata={"source": "text"},
     )
     debug_log("Detected fields:", result.get("detected_fields", []))
     return result
@@ -27,7 +25,6 @@ def detect(req: DetectReq):
 async def detect_file(
     file: UploadFile = File(...),
     mode: str | None = Form(None),
-    prompt: str = Form(None),
 ):
     try:
         tmp_dir = tempfile.gettempdir()
@@ -51,13 +48,7 @@ async def detect_file(
 
         result = GuardOrchestrator().run(
             text,
-            prompt=prompt,
             mode=mode,
-            metadata={
-                "source": "file",
-                "filename": file.filename,
-                "content_type": file.content_type,
-            },
         )
         result["extracted_snippet"] = text[:400]
 

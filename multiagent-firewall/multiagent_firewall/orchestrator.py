@@ -13,6 +13,19 @@ from .nodes.risk import compute_risk_level
 from .types import GuardState, RiskEvaluator
 
 
+def _should_run_ocr(state: GuardState) -> str:
+    if state.get("has_image", False):
+        return "ocr_detector"
+    return "dlp_detector"
+
+
+def _should_run_llm(state: GuardState) -> str:
+    risk_level = (state.get("risk_level") or "").lower()
+    if risk_level in {"low", "none"}:
+        return "llm_detector"
+    return "remediation"
+
+
 class GuardOrchestrator:
 
     def __init__(
@@ -35,15 +48,14 @@ class GuardOrchestrator:
         self,
         text: str,
         *,
-        prompt: str | None = None,
         mode: str | None = None,
-        metadata: Dict[str, Any] | None = None,
+        has_image: bool = False,
     ) -> GuardState:
         initial_state: GuardState = {
             "raw_text": text or "",
-            "prompt": prompt,
             "mode": mode,
-            "metadata": metadata or {},
+            "metadata": {},
+            "has_image": has_image,
             "warnings": [],
             "errors": [],
         }
@@ -53,8 +65,8 @@ class GuardOrchestrator:
         graph = StateGraph(GuardState)
         graph.add_node("normalize", nodes.normalize)
         graph.add_node(
-            "llm_detector",
-            partial(nodes.run_llm_detector, llm_detector=self._llm_detector),
+            "ocr_detector",
+            partial(nodes.run_ocr_detector, ocr_detector=self._ocr_detector),
         )
         graph.add_node(
             "dlp_detector",
@@ -64,25 +76,34 @@ class GuardOrchestrator:
                 keywords=self._keywords,
             ),
         )
+        graph.add_node("merge_dlp", nodes.merge_detections)
         graph.add_node(
-            "ocr_detector",
-            partial(nodes.run_ocr_detector, ocr_detector=self._ocr_detector),
-        )
-        graph.add_node("merge", nodes.merge_detections)
-        graph.add_node(
-            "risk",
+            "risk_dlp",
             partial(nodes.evaluate_risk, risk_evaluator=self._risk_evaluator),
         )
-        graph.add_node("policy", nodes.apply_policy)
+        graph.add_node("policy_dlp", nodes.apply_policy)
+        graph.add_node(
+            "llm_detector",
+            partial(nodes.run_llm_detector, llm_detector=self._llm_detector),
+        )
+        graph.add_node("merge_final", nodes.merge_detections)
+        graph.add_node(
+            "risk_final",
+            partial(nodes.evaluate_risk, risk_evaluator=self._risk_evaluator),
+        )
+        graph.add_node("policy_final", nodes.apply_policy)
         graph.add_node("remediation", nodes.generate_remediation)
 
         graph.set_entry_point("normalize")
-        graph.add_edge("normalize", "llm_detector")
-        graph.add_edge("llm_detector", "dlp_detector")
-        graph.add_edge("dlp_detector", "ocr_detector")
-        graph.add_edge("ocr_detector", "merge")
-        graph.add_edge("merge", "risk")
-        graph.add_edge("risk", "policy")
-        graph.add_edge("policy", "remediation")
+        graph.add_conditional_edges("normalize", _should_run_ocr)
+        graph.add_edge("ocr_detector", "dlp_detector")
+        graph.add_edge("dlp_detector", "merge_dlp")
+        graph.add_edge("merge_dlp", "risk_dlp")
+        graph.add_edge("risk_dlp", "policy_dlp")
+        graph.add_conditional_edges("policy_dlp", _should_run_llm)
+        graph.add_edge("llm_detector", "merge_final")
+        graph.add_edge("merge_final", "risk_final")
+        graph.add_edge("risk_final", "policy_final")
+        graph.add_edge("policy_final", "remediation")
         graph.add_edge("remediation", END)
         return graph.compile()

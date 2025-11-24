@@ -30,3 +30,6 @@ include = ["multiagent_firewall*"]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
 ]
+filterwarnings = [
+    "ignore:Pydantic serializer warnings:UserWarning:pydantic.main",
+]

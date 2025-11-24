@@ -7,8 +7,8 @@ from langgraph.graph import END, StateGraph
 
 from . import nodes
 from .detectors import LiteLLMDetector
-from .detectors.dlp import default_regex_patterns
-from .nodes.detection import DLPDetector, LLMDetector, OCRDetector
+from .constants import REGEX_PATTERNS, KEYWORDS
+from .nodes.detection import LLMDetector, OCRDetector
 from .nodes.risk import compute_risk_level
 from .types import GuardState, RiskEvaluator
 
@@ -21,13 +21,13 @@ class GuardOrchestrator:
         risk_evaluator: RiskEvaluator | None = None,
         llm_detector: LLMDetector | None = None,
         regex_patterns: Mapping[str, str] | None = None,
-        extra_dlp_detectors: Sequence[DLPDetector] | None = None,
+        keywords: Mapping[str, Sequence[str]] | None = None,
         ocr_detector: OCRDetector | None = None,
     ) -> None:
         self._llm_detector = llm_detector or LiteLLMDetector.from_env()
         self._risk_evaluator = risk_evaluator or compute_risk_level
-        self._regex_patterns = regex_patterns or default_regex_patterns()
-        self._extra_dlp_detectors = list(extra_dlp_detectors or [])
+        self._regex_patterns = regex_patterns or REGEX_PATTERNS
+        self._keywords = keywords or KEYWORDS
         self._ocr_detector = ocr_detector
         self._graph = self._build_graph()
 
@@ -61,7 +61,7 @@ class GuardOrchestrator:
             partial(
                 nodes.run_dlp_detector,
                 regex_patterns=self._regex_patterns,
-                extra_dlp_detectors=self._extra_dlp_detectors,
+                keywords=self._keywords,
             ),
         )
         graph.add_node(

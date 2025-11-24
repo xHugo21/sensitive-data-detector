@@ -1,14 +1,11 @@
-from .dlp import default_regex_patterns
 from .llm import LiteLLMConfig, LiteLLMDetector
-from .types import DetectorResult, FieldList, LLMDetector, DLPDetector, OCRDetector
+from .types import DetectorResult, FieldList, LLMDetector, OCRDetector
 
 __all__ = [
     "LiteLLMConfig",
     "LiteLLMDetector",
-    "default_regex_patterns",
     "DetectorResult",
     "FieldList",
     "LLMDetector",
-    "DLPDetector",
     "OCRDetector",
 ]

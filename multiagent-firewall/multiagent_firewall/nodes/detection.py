@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import re
-from typing import Any, Callable, Dict, List, Mapping, Sequence
+from typing import Any, Callable, Dict, List, Mapping
 
+from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
 from ..types import FieldList, GuardState
 
 DetectorResult = Mapping[str, Any]
 LLMDetector = Callable[[str, str | None, str | None], DetectorResult]
-DLPDetector = Callable[[str], FieldList]
 OCRDetector = Callable[[GuardState], FieldList]
 
 
@@ -40,27 +39,29 @@ def run_llm_detector(
 def run_dlp_detector(
     state: GuardState,
     regex_patterns: Mapping[str, str],
-    extra_dlp_detectors: Sequence[DLPDetector],
+    keywords: Mapping[str, Any] | None = None,
 ) -> GuardState:
     text = state.get("normalized_text") or ""
     findings: FieldList = []
-    for field_name, pattern in regex_patterns.items():
-        for match in re.findall(pattern, text):
-            value = match if isinstance(match, str) else " ".join(match)
-            cleaned = value.strip()
-            if not cleaned:
-                continue
-            findings.append(
-                {"field": field_name, "value": cleaned, "source": "dlp_regex"}
-            )
-    for detector in extra_dlp_detectors:
-        try:
-            extra = detector(text) or []
-            for item in extra:
-                if isinstance(item, dict):
-                    findings.append(item)
-        except Exception as exc:
-            _append_error(state, f"DLP detector failed: {exc}")
+    
+    try:
+        regex_findings = detect_regex_patterns(text, regex_patterns)
+        findings.extend(regex_findings)
+    except Exception as exc:
+        _append_error(state, f"Regex detector failed: {exc}")
+    
+    try:
+        keyword_findings = detect_keywords(text, keywords)
+        findings.extend(keyword_findings)
+    except Exception as exc:
+        _append_error(state, f"Keyword detector failed: {exc}")
+    
+    try:
+        checksum_findings = detect_checksums(text)
+        findings.extend(checksum_findings)
+    except Exception as exc:
+        _append_error(state, f"Checksum detector failed: {exc}")
+    
     state["dlp_fields"] = findings
     return state
 

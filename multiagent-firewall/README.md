@@ -35,15 +35,15 @@ flowchart TD
     
     Remediation --> End([Output: decision, risk_level, detected_fields])
     
-    style Start fill:#e1f5ff
-    style End fill:#e1f5ff
-    style HasImage fill:#fff4e6
-    style LowRisk fill:#fff4e6
-    style LLM fill:#f0e6ff
-    style OCR fill:#f0e6ff
-    style DLP1 fill:#e6ffe6
-    style DLP2 fill:#e6ffe6
-    style Remediation fill:#ffe6e6
+    style Start fill:#e1f5ff,stroke:#333,color:#000
+    style End fill:#e1f5ff,stroke:#333,color:#000
+    style HasImage fill:#fff4e6,stroke:#333,color:#000
+    style LowRisk fill:#fff4e6,stroke:#333,color:#000
+    style LLM fill:#f0e6ff,stroke:#333,color:#000
+    style OCR fill:#f0e6ff,stroke:#333,color:#000
+    style DLP1 fill:#e6ffe6,stroke:#333,color:#000
+    style DLP2 fill:#e6ffe6,stroke:#333,color:#000
+    style Remediation fill:#ffe6e6,stroke:#333,color:#000
 ```
 
 ## Usage

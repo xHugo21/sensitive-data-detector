@@ -11,7 +11,8 @@ REGEX_PATTERNS = {
 KEYWORDS = {
     "SSN": ["ssn", "social security", "social security number", "social"],
     "API_KEY": ["api_key", "apikey", "api-key", "api key"],
-    "SECRET": ["secret", "password", "pwd"],
+    "SECRET": ["secret"],
+    "PASSWORD": ["password", "pwd"],
     "TOKEN": ["token", "bearer", "auth"],
 }
 

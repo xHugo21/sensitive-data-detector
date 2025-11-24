@@ -12,8 +12,8 @@ class GuardState(TypedDict, total=False):
     raw_text: str
     normalized_text: str
     metadata: Dict[str, Any]
-    prompt: NotRequired[str | None]
     mode: NotRequired[str | None]
+    has_image: bool
     warnings: List[str]
     errors: List[str]
     llm_fields: FieldList

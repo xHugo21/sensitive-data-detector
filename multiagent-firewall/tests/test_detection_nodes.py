@@ -10,7 +10,7 @@ from multiagent_firewall.types import GuardState
 
 
 def test_run_llm_detector_success():
-    def mock_llm_detector(text: str, prompt: str | None, mode: str | None) -> dict:
+    def mock_llm_detector(text: str, mode: str | None) -> dict:
         return {
             "detected_fields": [
                 {"field": "EMAIL", "value": "test@example.com"},
@@ -20,11 +20,9 @@ def test_run_llm_detector_success():
     
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com",
-        "prompt": None,
         "mode": None,
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_llm_detector(state, mock_llm_detector)
@@ -35,14 +33,13 @@ def test_run_llm_detector_success():
 
 
 def test_run_llm_detector_empty_text():
-    def mock_llm_detector(text: str, prompt: str | None, mode: str | None) -> dict:
+    def mock_llm_detector(text: str, mode: str | None) -> dict:
         return {"detected_fields": []}
     
     state: GuardState = {
         "normalized_text": "",
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_llm_detector(state, mock_llm_detector)
@@ -51,14 +48,13 @@ def test_run_llm_detector_empty_text():
 
 
 def test_run_llm_detector_exception():
-    def mock_llm_detector(text: str, prompt: str | None, mode: str | None) -> dict:
+    def mock_llm_detector(text: str, mode: str | None) -> dict:
         raise RuntimeError("LLM service unavailable")
     
     state: GuardState = {
         "normalized_text": "Some text",
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_llm_detector(state, mock_llm_detector)
@@ -76,7 +72,6 @@ def test_run_dlp_detector_with_regex():
         "normalized_text": "Contact us at support@example.com",
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_dlp_detector(state, regex_patterns)
@@ -98,7 +93,6 @@ def test_run_dlp_detector_with_keywords():
         "normalized_text": "My api_key is secret123",
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_dlp_detector(state, {}, keywords)
@@ -114,7 +108,6 @@ def test_run_dlp_detector_with_checksums():
         "normalized_text": "Card number: 4532015112830366",
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_dlp_detector(state, {})
@@ -130,7 +123,6 @@ def test_run_dlp_detector_empty_text():
         "normalized_text": "",
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_dlp_detector(state, {})
@@ -147,7 +139,6 @@ def test_run_ocr_detector_with_detector():
     state: GuardState = {
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_ocr_detector(state, mock_ocr_detector)
@@ -160,7 +151,6 @@ def test_run_ocr_detector_without_detector():
     state: GuardState = {
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_ocr_detector(state, None)
@@ -175,7 +165,6 @@ def test_run_ocr_detector_exception():
     state: GuardState = {
         "warnings": [],
         "errors": [],
-        "metadata": {},
     }
     
     result = run_ocr_detector(state, mock_ocr_detector)

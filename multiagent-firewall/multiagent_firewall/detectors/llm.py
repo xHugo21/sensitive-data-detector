@@ -115,6 +115,7 @@ class LiteLLMDetector:
 
         model_id = _maybe_prefix_model(self._model, self._provider)
         if llm is None:
+            assert model_id is not None, "Model ID cannot be None"
             self._llm = ChatLiteLLM(model=model_id, **config.client_params)
         else:
             self._llm = llm
@@ -135,9 +136,9 @@ class LiteLLMDetector:
     def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
         return cls(LiteLLMConfig.from_env(), **kwargs)
 
-    def __call__(self, text: str, prompt: str | None, mode: str | None):
+    def __call__(self, text: str, mode: str | None):
         try:
-            prompt_content, prompt_info = self._build_prompt(text, prompt, mode)
+            prompt_content, prompt_info = self._build_prompt(text, mode)
             try:
                 content = self._invoke(prompt_content, json_mode=self._config.supports_json_mode)
             except Exception:
@@ -156,13 +157,8 @@ class LiteLLMDetector:
     def _build_prompt(
         self,
         text: str,
-        prompt: str | None,
         mode: str | None,
     ) -> tuple[str, str]:
-        if prompt and prompt.strip():
-            final_prompt = inject_text(prompt.strip(), text)
-            return final_prompt, "custom"
-
         resolved = resolve_mode(mode)
         prompt_filename = self._prompt_map.get(resolved)
         if not prompt_filename:

@@ -10,7 +10,7 @@ def test_orchestrator_initialization_custom():
     def custom_risk_evaluator(fields):
         return "High"
     
-    def custom_llm_detector(text, prompt, mode):
+    def custom_llm_detector(text, mode):
         return {"detected_fields": []}
     
     custom_regex = {"EMAIL": r"\b[\w.-]+@[\w.-]+\.\w+\b"}
@@ -31,7 +31,7 @@ def test_orchestrator_initialization_custom():
 
 
 def test_orchestrator_run_basic():
-    def mock_llm_detector(text, prompt, mode):
+    def mock_llm_detector(text, mode):
         return {"detected_fields": []}
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
@@ -42,26 +42,21 @@ def test_orchestrator_run_basic():
     assert result.get("raw_text") == "Hello world"
 
 
-def test_orchestrator_run_with_metadata():
-    def mock_llm_detector(text, prompt, mode):
+def test_orchestrator_run_with_prompt_and_mode():
+    def mock_llm_detector(text, mode):
         return {"detected_fields": []}
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
-    metadata = {"user_id": "123", "session": "abc"}
     result = orchestrator.run(
         "Test text",
-        prompt="Analyze this",
         mode="strict",
-        metadata=metadata,
     )
     
-    assert result.get("prompt") == "Analyze this"
     assert result.get("mode") == "strict"
-    assert result.get("metadata") == metadata
 
 
 def test_orchestrator_run_empty_text():
-    def mock_llm_detector(text, prompt, mode):
+    def mock_llm_detector(text, mode):
         return {"detected_fields": []}
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
@@ -72,7 +67,7 @@ def test_orchestrator_run_empty_text():
 
 
 def test_orchestrator_graph_structure():
-    def mock_llm_detector(text, prompt, mode):
+    def mock_llm_detector(text, mode):
         return {"detected_fields": []}
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
@@ -82,7 +77,7 @@ def test_orchestrator_graph_structure():
 
 
 def test_orchestrator_run_with_sensitive_data():
-    def mock_llm_detector(text, prompt, mode):
+    def mock_llm_detector(text, mode):
         return {
             "detected_fields": [
                 {"field": "EMAIL", "value": "test@example.com"},

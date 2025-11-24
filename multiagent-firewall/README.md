@@ -4,21 +4,40 @@ A sophisticated multi-agent system that detects sensitive data in LLM prompts us
 
 ## Architecture
 
-The firewall uses a multi-agent architecture built on LangGraph:
+The firewall uses a multi-agent architecture built on LangGraph with conditional routing for optimal performance:
 
 ```
 ┌──────────────────┐
 │  Input Text      │
+│  (+ has_image?)  │
 └────────┬─────────┘
          │
          ▼
 ┌──────────────────┐
-│  Preprocessing   │  (Normalize text)
+│  Normalize       │  (Preprocess text)
 └────────┬─────────┘
          │
          ▼
+    [has_image?]
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌─────────┐  ┌─────────────┐
+│   OCR   │  │ DLP Detector│  (Regex, Keywords, Checksums)
+│Detector │  └──────┬──────┘
+└────┬────┘         │
+     │              │
+     ▼              │
+┌─────────────┐     │
+│ DLP Detector│     │
+└──────┬──────┘     │
+       │            │
+       └────┬───────┘
+            │
+            ▼
 ┌──────────────────┐
-│  Detection Node  │  (DLP + LLM detection in parallel)
+│  Merge Detections│  (DLP/OCR findings)
 └────────┬─────────┘
          │
          ▼
@@ -28,8 +47,41 @@ The firewall uses a multi-agent architecture built on LangGraph:
          │
          ▼
 ┌──────────────────┐
-│  Policy Engine   │  (Decide: allow/block/warn)
-└──────────────────┘
+│  Policy Check    │  (Evaluate initial risk)
+└────────┬─────────┘
+         │
+         ▼
+  [Risk Low/None?]
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌─────────┐  ┌────────────┐
+│   LLM   │  │Remediation │  (Skip LLM for high confidence)
+│Detector │  └──────┬─────┘
+└────┬────┘         │
+     │              │
+     ▼              │
+┌─────────────┐     │
+│Merge Final  │     │
+└──────┬──────┘     │
+       │            │
+       ▼            │
+┌─────────────┐     │
+│Risk (Final) │     │
+└──────┬──────┘     │
+       │            │
+       ▼            │
+┌─────────────┐     │
+│Policy(Final)│     │
+└──────┬──────┘     │
+       │            │
+       └────┬───────┘
+            │
+            ▼
+     ┌────────────┐
+     │ Remediation│
+     └────────────┘
 ```
 
 ## Usage
@@ -49,6 +101,11 @@ result = orchestrator.run(text="My SSN is 123-45-6789")
 print(f"Decision: {result['decision']}")
 print(f"Risk Level: {result['risk_level']}")
 print(f"Detected Fields: {result['detected_fields']}")
+
+result = orchestrator.run(
+    text="Sensitive data",
+    mode="enriched-zero-shot"  # zero-shot, few-shot, or enriched-zero-shot
+)
 ```
 
 ### Response Structure

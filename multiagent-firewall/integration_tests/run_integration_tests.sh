@@ -16,7 +16,6 @@ if [ ! -f "$SCRIPT_DIR/.env" ]; then
   echo "Please create a .env file with your LLM configuration:"
   echo "  cd $SCRIPT_DIR"
   echo "  cp .env.example .env"
-  echo "  # Edit .env and add your API key"
   echo ""
   exit 1
 fi
@@ -33,7 +32,6 @@ fi
 echo "Configuration:"
 echo "  LLM_PROVIDER: ${LLM_PROVIDER:-not set}"
 echo "  LLM_MODEL: ${LLM_MODEL:-not set}"
-echo "  LLM_API_KEY: ${LLM_API_KEY:+***hidden***}"
 echo ""
 
 cd "$PROJECT_ROOT"
@@ -47,8 +45,3 @@ rm -f "$SCRIPT_DIR/.test_results_cache.json"
 echo "Running integration tests..."
 echo ""
 uv run pytest integration_tests/ -v -m integration -s
-
-echo ""
-echo "=================================================="
-echo "Integration tests completed!"
-echo "=================================================="

@@ -1,0 +1,99 @@
+test_cases:
+  # - id: "ssn_detection"
+  #   prompt: "My Social Security Number is 123-45-6789 and I need help with my taxes."
+  #   expected_sensitive: true
+  #   expected_entities:
+  #     - "SSN"
+  #   description: "Prompt containing a US Social Security Number"
+
+  - id: "credit_card_detection"
+    prompt: "Please charge my credit card 4532-1234-5678-9010 for the subscription."
+    expected_sensitive: true
+    expected_entities:
+      - "CREDITCARD"
+    description: "Prompt containing a credit card number"
+
+  - id: "email_detection"
+    prompt: "Send the report to john.doe@company.com as soon as possible."
+    expected_sensitive: false
+    expected_entities:
+      - "EMAIL"
+    description: "Prompt containing an email address. Should not be marked as sensitive because it is low risk"
+
+  - id: "phone_detection"
+    prompt: "Call me at (555) 123-4567 when you have a chance."
+    expected_sensitive: true
+    expected_entities:
+      - "PHONE"
+    description: "Prompt containing a phone number"
+
+  # - id: "api_key_detection"
+  #   prompt: "Use this API key: sk-proj-1234567890abcdefghijklmnopqrstuvwxyz for authentication."
+  #   expected_sensitive: true
+  #   expected_entities:
+  #     - "API_KEY"
+  #   description: "Prompt containing an API key"
+
+  - id: "password_detection"
+    prompt: "My password is SuperSecret123! and I can't log in."
+    expected_sensitive: true
+    expected_entities:
+      - "PASSWORD"
+    description: "Prompt explicitly mentioning a password"
+
+  - id: "multiple_pii"
+    prompt: "Hi, I'm Jane Smith. My SSN is 987-65-4321, email is jane@example.com, and phone is 555-9876."
+    expected_sensitive: true
+    expected_entities:
+      - "SSN"
+      - "EMAIL"
+      - "PHONE"
+    description: "Prompt containing multiple types of PII"
+
+  - id: "benign_greeting"
+    prompt: "Hello! How are you doing today?"
+    expected_sensitive: false
+    expected_entities: []
+    description: "Simple greeting with no sensitive information"
+
+  - id: "benign_question"
+    prompt: "What is the weather like in Paris?"
+    expected_sensitive: false
+    expected_entities: []
+    description: "General question with no sensitive data"
+
+  - id: "benign_technical"
+    prompt: "How do I implement a binary search algorithm in Python?"
+    expected_sensitive: false
+    expected_entities: []
+    description: "Technical question with no sensitive information"
+
+  - id: "benign_conversation"
+    prompt: "I really enjoyed the movie we watched last night. The plot was amazing!"
+    expected_sensitive: false
+    expected_entities: []
+    description: "Casual conversation with no sensitive data"
+
+  - id: "address_detection"
+    prompt: "Ship the package to 123 Main Street, Apartment 4B, New York, NY 10001."
+    expected_sensitive: true
+    expected_entities:
+      - "STREET"
+      - "CITY"
+      - "STATE"
+      - "ZIPCODE"
+    description: "Prompt containing a physical address"
+
+  - id: "ip_address_detection"
+    prompt: "The server IP is 192.168.1.100 and it's not responding."
+    expected_sensitive: true
+    expected_entities:
+      - "IP"
+    description: "Prompt containing an IP address"
+
+  # - id: "obfuscated_ssn"
+  #   prompt: "My social is 123 45 6789 (spaces instead of dashes)."
+  #   expected_sensitive: true
+  #   expected_entities:
+  #     - "SSN"
+  #   description: "SSN with non-standard formatting"

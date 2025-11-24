@@ -1,6 +1,16 @@
 from __future__ import annotations
 
 from typing import Sequence
+from ..types import GuardState, RiskEvaluator
+
+
+def evaluate_risk(
+    state: GuardState,
+    risk_evaluator: RiskEvaluator,
+) -> GuardState:
+    detected = state.get("detected_fields", [])
+    state["risk_level"] = risk_evaluator(detected)
+    return state
 
 
 def compute_risk_level(detected_fields: Sequence[dict]) -> str:

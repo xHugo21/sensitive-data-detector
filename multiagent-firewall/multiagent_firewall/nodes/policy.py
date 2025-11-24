@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-from ..types import GuardState, RiskEvaluator
-
-
-def evaluate_risk(
-    state: GuardState,
-    risk_evaluator: RiskEvaluator,
-) -> GuardState:
-    detected = state.get("detected_fields", [])
-    state["risk_level"] = risk_evaluator(detected)
-    return state
+from ..types import GuardState
 
 
 def apply_policy(state: GuardState) -> GuardState:

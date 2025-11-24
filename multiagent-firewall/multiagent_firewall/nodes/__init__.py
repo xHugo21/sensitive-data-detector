@@ -1,5 +1,6 @@
 from .detection import run_dlp_detector, run_llm_detector, run_ocr_detector
-from .policy import apply_policy, evaluate_risk, generate_remediation
+from .policy import apply_policy, generate_remediation
+from .risk import evaluate_risk
 from .preprocessing import merge_detections, normalize
 from .risk import compute_risk_level
 

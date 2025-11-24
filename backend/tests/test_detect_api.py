@@ -9,19 +9,19 @@ def test_detect_endpoint_uses_orchestrator(monkeypatch):
         def __init__(self):
             self.calls = []
 
-        def run(self, text, *, prompt=None, mode=None, metadata=None):
-            self.calls.append((text, prompt, mode, metadata))
+        def run(self, text, *, mode=None):
+            self.calls.append((text, mode))
             return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "Low"}
 
     dummy = DummyOrchestrator()
     monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda: dummy)
 
     client = TestClient(app)
-    resp = client.post("/detect", json={"text": "hello", "prompt": "p", "mode": "m"})
+    resp = client.post("/detect", json={"text": "hello", "mode": "m"})
 
     assert resp.status_code == 200
     assert resp.json()["detected_fields"] == [{"field": "EMAIL"}]
-    assert dummy.calls == [("hello", "p", "m", {"source": "text"})]
+    assert dummy.calls == [("hello", "m")]
 
 
 def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
@@ -29,8 +29,8 @@ def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
         def __init__(self):
             self.calls = []
 
-        def run(self, text, *, prompt=None, mode=None, metadata=None):
-            self.calls.append((text, prompt, mode, metadata))
+        def run(self, text, *, mode=None):
+            self.calls.append((text, mode))
             return {"detected_fields": [], "risk_level": "None"}
 
     dummy = DummyOrchestrator()
@@ -44,7 +44,7 @@ def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
     with file_path.open("rb") as f:
         resp = client.post(
             "/detect_file",
-            data={"mode": "zero-shot", "prompt": "prompt"},
+            data={"mode": "zero-shot"},
             files={"file": ("sample.txt", f, "text/plain")},
         )
 
@@ -52,8 +52,6 @@ def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
     body = resp.json()
     assert body["extracted_snippet"] == "file text content"
     assert dummy.calls
-    text, prompt, mode, metadata = dummy.calls[0]
+    text, mode = dummy.calls[0]
     assert text == "file text content"
-    assert prompt == "prompt"
     assert mode == "zero-shot"
-    assert metadata["source"] == "file"

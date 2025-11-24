@@ -6,82 +6,44 @@ A sophisticated multi-agent system that detects sensitive data in LLM prompts us
 
 The firewall uses a multi-agent architecture built on LangGraph with conditional routing for optimal performance:
 
-```
-┌──────────────────┐
-│  Input Text      │
-│  (+ has_image?)  │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Normalize       │  (Preprocess text)
-└────────┬─────────┘
-         │
-         ▼
-    [has_image?]
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌─────────┐  ┌─────────────┐
-│   OCR   │  │ DLP Detector│  (Regex, Keywords, Checksums)
-│Detector │  └──────┬──────┘
-└────┬────┘         │
-     │              │
-     ▼              │
-┌─────────────┐     │
-│ DLP Detector│     │
-└──────┬──────┘     │
-       │            │
-       └────┬───────┘
-            │
-            ▼
-┌──────────────────┐
-│  Merge Detections│  (DLP/OCR findings)
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Risk Evaluation │  (Calculate risk level)
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Policy Check    │  (Evaluate initial risk)
-└────────┬─────────┘
-         │
-         ▼
-  [Risk Low/None?]
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌─────────┐  ┌────────────┐
-│   LLM   │  │Remediation │  (Skip LLM for high confidence)
-│Detector │  └──────┬─────┘
-└────┬────┘         │
-     │              │
-     ▼              │
-┌─────────────┐     │
-│Merge Final  │     │
-└──────┬──────┘     │
-       │            │
-       ▼            │
-┌─────────────┐     │
-│Risk (Final) │     │
-└──────┬──────┘     │
-       │            │
-       ▼            │
-┌─────────────┐     │
-│Policy(Final)│     │
-└──────┬──────┘     │
-       │            │
-       └────┬───────┘
-            │
-            ▼
-     ┌────────────┐
-     │ Remediation│
-     └────────────┘
+```mermaid
+flowchart TD
+    Start([Input Text + has_image?]) --> Normalize[Normalize<br/>Preprocess text]
+    Normalize --> HasImage{has_image?}
+    
+    HasImage -->|Yes| OCR[OCR Detector<br/>Extract text from images]
+    HasImage -->|No| DLP1[DLP Detector<br/>Regex, Keywords, Checksums]
+    
+    OCR --> DLP2[DLP Detector<br/>Regex, Keywords, Checksums]
+    DLP2 --> MergeDLP
+    DLP1 --> MergeDLP[Merge Detections<br/>DLP/OCR findings]
+    
+    MergeDLP --> RiskDLP[Risk Evaluation<br/>Calculate risk level]
+    RiskDLP --> PolicyDLP[Policy Check<br/>Evaluate initial risk]
+    
+    PolicyDLP --> LowRisk{Risk Low/None?}
+    
+    LowRisk -->|Yes| LLM[LLM Detector<br/>Deep semantic analysis]
+    LowRisk -->|No| SkipLLM[Skip to Remediation<br/>High confidence detection]
+    
+    LLM --> MergeFinal[Merge Final<br/>Combine DLP + LLM findings]
+    MergeFinal --> RiskFinal[Risk Final<br/>Recalculate risk level]
+    RiskFinal --> PolicyFinal[Policy Final<br/>Final decision]
+    
+    PolicyFinal --> Remediation
+    SkipLLM --> Remediation[Remediation<br/>Final decision + action]
+    
+    Remediation --> End([Output: decision, risk_level, detected_fields])
+    
+    style Start fill:#e1f5ff
+    style End fill:#e1f5ff
+    style HasImage fill:#fff4e6
+    style LowRisk fill:#fff4e6
+    style LLM fill:#f0e6ff
+    style OCR fill:#f0e6ff
+    style DLP1 fill:#e6ffe6
+    style DLP2 fill:#e6ffe6
+    style Remediation fill:#ffe6e6
 ```
 
 ## Usage

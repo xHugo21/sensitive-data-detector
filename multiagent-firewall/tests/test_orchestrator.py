@@ -39,7 +39,7 @@ def test_orchestrator_run_basic():
     
     assert isinstance(result, dict)
     assert "raw_text" in result
-    assert result["raw_text"] == "Hello world"
+    assert result.get("raw_text") == "Hello world"
 
 
 def test_orchestrator_run_with_metadata():
@@ -55,9 +55,9 @@ def test_orchestrator_run_with_metadata():
         metadata=metadata,
     )
     
-    assert result["prompt"] == "Analyze this"
-    assert result["mode"] == "strict"
-    assert result["metadata"] == metadata
+    assert result.get("prompt") == "Analyze this"
+    assert result.get("mode") == "strict"
+    assert result.get("metadata") == metadata
 
 
 def test_orchestrator_run_empty_text():
@@ -67,7 +67,7 @@ def test_orchestrator_run_empty_text():
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
     result = orchestrator.run("")
     
-    assert result["raw_text"] == ""
+    assert result.get("raw_text") == ""
     assert "warnings" in result
 
 

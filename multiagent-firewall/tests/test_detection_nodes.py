@@ -30,8 +30,8 @@ def test_run_llm_detector_success():
     result = run_llm_detector(state, mock_llm_detector)
     
     assert "llm_fields" in result
-    assert len(result["llm_fields"]) == 2
-    assert all(f["source"] == "llm_detector" for f in result["llm_fields"])
+    assert len(result.get("llm_fields", [])) == 2
+    assert all(f["source"] == "llm_detector" for f in result.get("llm_fields", []))
 
 
 def test_run_llm_detector_empty_text():
@@ -47,7 +47,7 @@ def test_run_llm_detector_empty_text():
     
     result = run_llm_detector(state, mock_llm_detector)
     
-    assert result["llm_fields"] == []
+    assert result.get("llm_fields") == []
 
 
 def test_run_llm_detector_exception():
@@ -63,7 +63,7 @@ def test_run_llm_detector_exception():
     
     result = run_llm_detector(state, mock_llm_detector)
     
-    assert result["llm_fields"] == []
+    assert result.get("llm_fields") == []
     assert any("LLM detector failed" in e for e in result.get("errors", []))
 
 
@@ -82,8 +82,9 @@ def test_run_dlp_detector_with_regex():
     result = run_dlp_detector(state, regex_patterns)
     
     assert "dlp_fields" in result
-    assert len(result["dlp_fields"]) >= 1
-    email_findings = [f for f in result["dlp_fields"] if f["field"] == "EMAIL"]
+    dlp_fields = result.get("dlp_fields", [])
+    assert len(dlp_fields) >= 1
+    email_findings = [f for f in dlp_fields if f["field"] == "EMAIL"]
     assert len(email_findings) >= 1
     assert email_findings[0]["source"] == "dlp_regex"
 
@@ -103,7 +104,8 @@ def test_run_dlp_detector_with_keywords():
     result = run_dlp_detector(state, {}, keywords)
     
     assert "dlp_fields" in result
-    keyword_findings = [f for f in result["dlp_fields"] if f["source"] == "dlp_keyword"]
+    dlp_fields = result.get("dlp_fields", [])
+    keyword_findings = [f for f in dlp_fields if f["source"] == "dlp_keyword"]
     assert len(keyword_findings) >= 1
 
 
@@ -118,7 +120,8 @@ def test_run_dlp_detector_with_checksums():
     result = run_dlp_detector(state, {})
     
     assert "dlp_fields" in result
-    checksum_findings = [f for f in result["dlp_fields"] if f["source"] == "dlp_checksum"]
+    dlp_fields = result.get("dlp_fields", [])
+    checksum_findings = [f for f in dlp_fields if f["source"] == "dlp_checksum"]
     assert len(checksum_findings) >= 1
 
 
@@ -132,7 +135,7 @@ def test_run_dlp_detector_empty_text():
     
     result = run_dlp_detector(state, {})
     
-    assert result["dlp_fields"] == []
+    assert result.get("dlp_fields") == []
 
 
 def test_run_ocr_detector_with_detector():
@@ -150,7 +153,7 @@ def test_run_ocr_detector_with_detector():
     result = run_ocr_detector(state, mock_ocr_detector)
     
     assert "ocr_fields" in result
-    assert len(result["ocr_fields"]) == 1
+    assert len(result.get("ocr_fields", [])) == 1
 
 
 def test_run_ocr_detector_without_detector():
@@ -177,5 +180,5 @@ def test_run_ocr_detector_exception():
     
     result = run_ocr_detector(state, mock_ocr_detector)
     
-    assert result["ocr_fields"] == []
+    assert result.get("ocr_fields") == []
     assert any("OCR detector failed" in e for e in result.get("errors", []))

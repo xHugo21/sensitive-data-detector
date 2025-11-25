@@ -6,17 +6,16 @@ A sophisticated multi-agent system that detects sensitive data in LLM prompts us
 
 The firewall uses a multi-agent architecture built on LangGraph with conditional routing for optimal performance:
 
-```mermaid
+```mermai
 flowchart TD
-    Start([Input Text + has_image?]) --> Normalize[Normalize<br/>Preprocess text]
+    Start(INPUT) --> Normalize[Normalize<br/>Preprocess text]
     Normalize --> HasImage{has_image?}
     
     HasImage -->|Yes| OCR[OCR Detector<br/>Extract text from images]
-    HasImage -->|No| DLP1[DLP Detector<br/>Regex, Keywords, Checksums]
+    HasImage -->|No| DLP[DLP Detector<br/>Regex, Keywords, Checksums]
     
-    OCR --> DLP2[DLP Detector<br/>Regex, Keywords, Checksums]
-    DLP2 --> MergeDLP
-    DLP1 --> MergeDLP[Merge Detections<br/>DLP/OCR findings]
+    OCR --> DLP[DLP Detector<br/>Regex, Keywords, Checksums]
+    DLP --> MergeDLP[Merge Detections<br/>DLP/OCR findings]
     
     MergeDLP --> RiskDLP[Risk Evaluation<br/>Calculate risk level]
     RiskDLP --> PolicyDLP[Policy Check<br/>Evaluate initial risk]
@@ -24,16 +23,15 @@ flowchart TD
     PolicyDLP --> LowRisk{Risk Low/None?}
     
     LowRisk -->|Yes| LLM[LLM Detector<br/>Deep semantic analysis]
-    LowRisk -->|No| SkipLLM[Skip to Remediation<br/>High confidence detection]
+    LowRisk -->|No| Remediation[Remediation<br/>Final decision + action]
     
     LLM --> MergeFinal[Merge Final<br/>Combine DLP + LLM findings]
     MergeFinal --> RiskFinal[Risk Final<br/>Recalculate risk level]
     RiskFinal --> PolicyFinal[Policy Final<br/>Final decision]
     
     PolicyFinal --> Remediation
-    SkipLLM --> Remediation[Remediation<br/>Final decision + action]
     
-    Remediation --> End([Output: decision, risk_level, detected_fields])
+    Remediation --> End(OUTPUT)
     
     style Start fill:#e1f5ff,stroke:#333,color:#000
     style End fill:#e1f5ff,stroke:#333,color:#000
@@ -41,9 +39,9 @@ flowchart TD
     style LowRisk fill:#fff4e6,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style OCR fill:#f0e6ff,stroke:#333,color:#000
-    style DLP1 fill:#e6ffe6,stroke:#333,color:#000
-    style DLP2 fill:#e6ffe6,stroke:#333,color:#000
+    style DLP fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000
+
 ```
 
 ## Usage

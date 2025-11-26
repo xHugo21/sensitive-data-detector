@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, unquote
 
-from ..types import GuardState
+from ..types import GuardState, FieldList
+
+if TYPE_CHECKING:
+    from ..nodes.detection import OCRDetector
+
+# Supported image file extensions for automatic OCR detection
+IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.tif', '.webp'}
 
 
 def sanitize_file_path(file_path: str) -> str:
@@ -25,6 +32,20 @@ def sanitize_file_path(file_path: str) -> str:
             parsed_path = parsed_path.lstrip("/")
         return parsed_path
     return file_path
+
+
+def is_image_file(file_path: str) -> bool:
+    """
+    Check if file is an image based on extension.
+    
+    Args:
+        file_path: Path to file
+        
+    Returns:
+        True if file has image extension, False otherwise
+    """
+    _, ext = os.path.splitext(file_path)
+    return ext.lower() in IMAGE_EXTENSIONS
 
 
 def read_pdf(file_path: str) -> str | None:
@@ -94,17 +115,43 @@ def extract_text_from_file(file_path: str) -> str | None:
         return None
 
 
-def read_document(state: GuardState) -> GuardState:
+def extract_text_from_ocr_fields(ocr_fields: FieldList) -> str:
+    """
+    Extract text from OCR fields to populate raw_text.
+    
+    Args:
+        ocr_fields: List of OCR detection fields
+        
+    Returns:
+        Concatenated text from all OCR fields
+    """
+    if not ocr_fields:
+        return ""
+    
+    text_parts = []
+    for field in ocr_fields:
+        if isinstance(field, dict) and field.get("value"):
+            text_parts.append(str(field["value"]))
+    
+    return " ".join(text_parts)
+
+
+def read_document(state: GuardState, ocr_detector: OCRDetector | None = None) -> GuardState:
     """
     Document ingestion node: Extracts text from file if file_path provided.
+    Automatically detects image files and runs OCR if detector is available.
     
     Priority:
     1. If raw_text is already provided, use it (skip file extraction)
-    2. If file_path provided, extract text from file
+    2. If file_path provided:
+       - For images: Run OCR detector if available
+       - For PDFs: Extract text using pdfplumber
+       - For other files: Read as plain text
     3. If neither provided, set empty string with warning
     
     Args:
         state: Current guard state
+        ocr_detector: Optional OCR detector for image files
         
     Returns:
         Updated state with raw_text populated
@@ -122,15 +169,60 @@ def read_document(state: GuardState) -> GuardState:
         _append_warning(state, "No text or file provided for analysis")
         return state
     
-    # Extract text from file
+    # Sanitize and validate file path
     try:
-        text = extract_text_from_file(file_path)
+        file_path_clean = sanitize_file_path(file_path)
         
-        if text is None:
-            _append_error(state, f"Failed to extract text from file: {file_path}")
+        if not os.path.exists(file_path_clean):
+            _append_error(state, f"File not found: {file_path}")
             state["raw_text"] = ""
+            return state
+        
+        # Detect file type and handle accordingly
+        if is_image_file(file_path_clean):
+            # Handle image files with OCR
+            if "metadata" not in state:
+                state["metadata"] = {}
+            state["metadata"]["file_type"] = "image"
+            
+            if ocr_detector:
+                try:
+                    # Call OCR detector with current state
+                    ocr_fields = ocr_detector(state) or []
+                    state["ocr_fields"] = ocr_fields
+                    
+                    # Extract text from OCR results
+                    text = extract_text_from_ocr_fields(ocr_fields)
+                    state["raw_text"] = text
+                    
+                    if not text:
+                        _append_warning(state, f"No text extracted from image: {file_path}")
+                except Exception as e:
+                    _append_error(state, f"OCR detection failed: {str(e)}")
+                    state["raw_text"] = ""
+                    state["ocr_fields"] = []
+            else:
+                _append_warning(state, f"Image file detected but no OCR detector available: {file_path}")
+                state["raw_text"] = ""
+                state["ocr_fields"] = []
         else:
-            state["raw_text"] = text
+            # Handle PDF and text files
+            text = extract_text_from_file(file_path_clean)
+            
+            if text is None:
+                _append_error(state, f"Failed to extract text from file: {file_path}")
+                state["raw_text"] = ""
+            else:
+                state["raw_text"] = text
+                
+            # Set file type metadata
+            if "metadata" not in state:
+                state["metadata"] = {}
+            if file_path_clean.lower().endswith(".pdf"):
+                state["metadata"]["file_type"] = "pdf"
+            else:
+                state["metadata"]["file_type"] = "text"
+                
     except Exception as e:
         _append_error(state, f"Document extraction error: {str(e)}")
         state["raw_text"] = ""
@@ -152,4 +244,4 @@ def _append_error(state: GuardState, message: str) -> None:
     state["errors"].append(message)
 
 
-__all__ = ["read_document", "sanitize_file_path", "extract_text_from_file"]
+__all__ = ["read_document", "sanitize_file_path", "extract_text_from_file", "is_image_file"]

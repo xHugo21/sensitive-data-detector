@@ -8,6 +8,7 @@ from multiagent_firewall.nodes.document import (
     read_document,
     sanitize_file_path,
     extract_text_from_file,
+    is_image_file,
 )
 from multiagent_firewall.types import GuardState
 
@@ -70,6 +71,7 @@ def test_extract_text_from_file_reads_pdf(monkeypatch, tmp_path):
 
     import multiagent_firewall.nodes.document as document_module
     import pdfplumber
+
     monkeypatch.setattr(pdfplumber, "open", fake_open)
 
     content = extract_text_from_file(str(pdf_path))
@@ -84,7 +86,7 @@ def test_read_document_with_text_input():
         "errors": [],
     }
     result = read_document(state)
-    
+
     assert result["raw_text"] == "existing text"
     assert len(result.get("warnings", [])) == 0
 
@@ -96,7 +98,7 @@ def test_read_document_with_no_input():
         "errors": [],
     }
     result = read_document(state)
-    
+
     assert result["raw_text"] == ""
     assert "No text or file provided" in result["warnings"][0]
 
@@ -105,14 +107,14 @@ def test_read_document_with_file_path(tmp_path):
     """Extract text from file when file_path provided"""
     file_path = tmp_path / "test.txt"
     file_path.write_text("file content", encoding="utf-8")
-    
+
     state: GuardState = {
         "file_path": str(file_path),
         "warnings": [],
         "errors": [],
     }
     result = read_document(state)
-    
+
     assert result["raw_text"] == "file content"
     assert len(result.get("errors", [])) == 0
 
@@ -120,24 +122,24 @@ def test_read_document_with_file_path(tmp_path):
 def test_read_document_with_missing_file(tmp_path):
     """Handle missing file gracefully"""
     missing_path = tmp_path / "missing.txt"
-    
+
     state: GuardState = {
         "file_path": str(missing_path),
         "warnings": [],
         "errors": [],
     }
     result = read_document(state)
-    
+
     assert result["raw_text"] == ""
     assert len(result["errors"]) > 0
-    assert "Failed to extract text" in result["errors"][0]
+    assert "File not found" in result["errors"][0]
 
 
 def test_read_document_text_takes_precedence_over_file(tmp_path):
     """If both text and file provided, text takes precedence"""
     file_path = tmp_path / "test.txt"
     file_path.write_text("file content", encoding="utf-8")
-    
+
     state: GuardState = {
         "raw_text": "direct text",
         "file_path": str(file_path),
@@ -145,5 +147,125 @@ def test_read_document_text_takes_precedence_over_file(tmp_path):
         "errors": [],
     }
     result = read_document(state)
-    
+
     assert result["raw_text"] == "direct text"
+
+
+def test_is_image_file_detects_png():
+    assert is_image_file("photo.png") == True
+    assert is_image_file("PHOTO.PNG") == True
+
+
+def test_is_image_file_detects_jpg():
+    assert is_image_file("photo.jpg") == True
+    assert is_image_file("photo.jpeg") == True
+    assert is_image_file("PHOTO.JPG") == True
+
+
+def test_is_image_file_rejects_non_images():
+    assert is_image_file("document.pdf") == False
+    assert is_image_file("text.txt") == False
+    assert is_image_file("data.csv") == False
+
+
+def test_read_document_with_image_file_and_ocr_detector(tmp_path):
+    image_path = tmp_path / "screenshot.png"
+    image_path.write_bytes(b"fake image data")
+
+    def mock_ocr_detector(state):
+        return [
+            {
+                "field": "TEXT_IN_IMAGE",
+                "value": "Some text from image",
+                "source": "ocr",
+            },
+            {"field": "EMAIL", "value": "test@example.com", "source": "ocr"},
+        ]
+
+    state: GuardState = {
+        "file_path": str(image_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state, ocr_detector=mock_ocr_detector)
+
+    assert result["raw_text"] == "Some text from image test@example.com"
+    assert result.get("metadata", {}).get("file_type") == "image"
+    assert "ocr_fields" in result
+    assert len(result["ocr_fields"]) == 2
+
+
+def test_read_document_with_image_file_no_ocr_detector(tmp_path):
+    image_path = tmp_path / "screenshot.jpg"
+    image_path.write_bytes(b"fake image data")
+
+    state: GuardState = {
+        "file_path": str(image_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state, ocr_detector=None)
+
+    assert result["raw_text"] == ""
+    assert "Image file detected but no OCR detector available" in result["warnings"][0]
+    assert result.get("metadata", {}).get("file_type") == "image"
+    assert result.get("ocr_fields") == []
+
+
+def test_read_document_sets_file_type_metadata_for_pdf(tmp_path):
+    pdf_path = tmp_path / "document.pdf"
+    pdf_path.write_bytes(b"%PDF-fake")
+
+    state: GuardState = {
+        "file_path": str(pdf_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state)
+
+    # Even if extraction fails, metadata should be set
+    assert result.get("metadata", {}).get("file_type") == "pdf"
+
+
+def test_read_document_sets_file_type_metadata_for_text(tmp_path):
+    text_path = tmp_path / "document.txt"
+    text_path.write_text("Some content", encoding="utf-8")
+
+    state: GuardState = {
+        "file_path": str(text_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state)
+
+    assert result["raw_text"] == "Some content"
+    assert result.get("metadata", {}).get("file_type") == "text"
+
+
+def test_read_document_handles_ocr_exception(tmp_path):
+    image_path = tmp_path / "bad_image.png"
+    image_path.write_bytes(b"corrupt image")
+
+    def failing_ocr_detector(state):
+        raise RuntimeError("OCR service unavailable")
+
+    state: GuardState = {
+        "file_path": str(image_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state, ocr_detector=failing_ocr_detector)
+
+    assert result["raw_text"] == ""
+    assert any("OCR detection failed" in e for e in result["errors"])
+    assert result.get("ocr_fields") == []

@@ -17,7 +17,6 @@ class GuardState(TypedDict, total=False):
     normalized_text: str
     metadata: Dict[str, Any]
     mode: NotRequired[str | None]
-    has_image: bool
     
     # DETECTION
     warnings: List[str]

@@ -20,12 +20,6 @@ def _should_read_document(state: GuardState) -> str:
     return "normalize"
 
 
-def _should_run_ocr(state: GuardState) -> str:
-    if state.get("has_image", False):
-        return "ocr_detector"
-    return "dlp_detector"
-
-
 def _should_run_llm(state: GuardState) -> str:
     risk_level = (state.get("risk_level") or "").lower()
     if risk_level in {"low", "none"}:
@@ -57,16 +51,14 @@ class GuardOrchestrator:
         *,
         file_path: str = None,
         mode: str | None = None,
-        has_image: bool = False,
     ) -> GuardState:
         """
         Run the detection pipeline.
 
         Args:
             text: Direct text input
-            file_path: Path to file on disk
+            file_path: Path to file on disk (automatically detects images)
             mode: Detection mode (zero-shot, few-shot, enriched-zero-shot)
-            has_image: Force image processing (optional, for backward compatibility)
 
         Returns:
             GuardState with detection results
@@ -76,7 +68,6 @@ class GuardOrchestrator:
             "file_path": file_path,
             "mode": mode,
             "metadata": {},
-            "has_image": has_image,
             "warnings": [],
             "errors": [],
         }
@@ -85,13 +76,11 @@ class GuardOrchestrator:
     def _build_graph(self):
         graph = StateGraph(GuardState)
 
-        # Add all nodes
-        graph.add_node("read_document", nodes.read_document)
-        graph.add_node("normalize", nodes.normalize)
         graph.add_node(
-            "ocr_detector",
-            partial(nodes.run_ocr_detector, ocr_detector=self._ocr_detector),
+            "read_document",
+            partial(nodes.read_document, ocr_detector=self._ocr_detector),
         )
+        graph.add_node("normalize", nodes.normalize)
         graph.add_node(
             "dlp_detector",
             partial(
@@ -121,11 +110,10 @@ class GuardOrchestrator:
         # Conditional entry: only read_document if file_path provided
         graph.set_conditional_entry_point(
             _should_read_document,
-            path_map={"read_document": "read_document", "normalize": "normalize"}
+            path_map={"read_document": "read_document", "normalize": "normalize"},
         )
         graph.add_edge("read_document", "normalize")
-        graph.add_conditional_edges("normalize", _should_run_ocr)
-        graph.add_edge("ocr_detector", "dlp_detector")
+        graph.add_edge("normalize", "dlp_detector")
         graph.add_edge("dlp_detector", "merge_dlp")
         graph.add_edge("merge_dlp", "risk_dlp")
         graph.add_edge("risk_dlp", "policy_dlp")

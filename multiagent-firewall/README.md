@@ -6,17 +6,17 @@ A sophisticated multi-agent system that detects sensitive data in LLM prompts us
 
 The firewall uses a multi-agent architecture built on LangGraph with conditional routing for optimal performance:
 
-```mermai
+```mermaid
 flowchart TD
-    Start(INPUT) --> Normalize[Normalize<br/>Preprocess text]
-    Normalize --> HasImage{has_image?}
+    Start(INPUT) --> HasFile{has file_path?}
     
-    HasImage -->|Yes| OCR[OCR Detector<br/>Extract text from images]
-    HasImage -->|No| DLP[DLP Detector<br/>Regex, Keywords, Checksums]
+    HasFile -->|Yes| Document[Read Document<br/>Extract text, auto-detect images/PDFs]
+    HasFile -->|No| Normalize[Normalize<br/>Preprocess text]
     
-    OCR --> DLP[DLP Detector<br/>Regex, Keywords, Checksums]
-    DLP --> MergeDLP[Merge Detections<br/>DLP/OCR findings]
+    Document --> Normalize
+    Normalize --> DLP[DLP Detector<br/>Regex, Keywords, Checksums<br/>+OCR for images]
     
+    DLP --> MergeDLP[Merge Detections<br/>DLP findings]
     MergeDLP --> RiskDLP[Risk Evaluation<br/>Calculate risk level]
     RiskDLP --> PolicyDLP[Policy Check<br/>Evaluate initial risk]
     
@@ -35,10 +35,10 @@ flowchart TD
     
     style Start fill:#e1f5ff,stroke:#333,color:#000
     style End fill:#e1f5ff,stroke:#333,color:#000
-    style HasImage fill:#fff4e6,stroke:#333,color:#000
+    style HasFile fill:#fff4e6,stroke:#333,color:#000
     style LowRisk fill:#fff4e6,stroke:#333,color:#000
+    style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
-    style OCR fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000
 

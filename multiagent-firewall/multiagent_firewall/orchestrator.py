@@ -6,7 +6,7 @@ from typing import Any, Dict, Mapping, Sequence
 from langgraph.graph import END, StateGraph
 
 from . import nodes
-from .detectors import LiteLLMDetector
+from .detectors import TesseractOCRDetector, LiteLLMDetector
 from .constants import REGEX_PATTERNS, KEYWORDS
 from .nodes.detection import LLMDetector, OCRDetector
 from .nodes.risk import compute_risk_level
@@ -42,7 +42,7 @@ class GuardOrchestrator:
         self._risk_evaluator = risk_evaluator or compute_risk_level
         self._regex_patterns = regex_patterns or REGEX_PATTERNS
         self._keywords = keywords or KEYWORDS
-        self._ocr_detector = ocr_detector
+        self._ocr_detector = ocr_detector if ocr_detector is not None else self._create_default_ocr()
         self._graph = self._build_graph()
 
     def run(
@@ -72,6 +72,26 @@ class GuardOrchestrator:
             "errors": [],
         }
         return self._graph.invoke(initial_state)
+
+    def _create_default_ocr(self) -> OCRDetector | None:
+        """
+        Create default OCR detector from environment.
+        
+        Returns None if Tesseract is not available or fails to initialize.
+        This allows graceful degradation when OCR dependencies are missing.
+        """
+        try:
+            return TesseractOCRDetector.from_env()
+        except Exception as e:
+            # Log warning but don't crash - OCR is optional
+            import warnings
+            warnings.warn(
+                f"Failed to initialize OCR detector: {e}. "
+                "Image text extraction will be disabled. "
+                "Install Tesseract: https://github.com/tesseract-ocr/tesseract",
+                RuntimeWarning
+            )
+            return None
 
     def _build_graph(self):
         graph = StateGraph(GuardState)

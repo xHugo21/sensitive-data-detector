@@ -13,6 +13,8 @@ dependencies = [
     "langchain-litellm",
     "typing_extensions>=4.7",
     "pdfplumber",
+    "pytesseract>=0.3.10",
+    "pillow>=10.0.0",
 ]
 
 [dependency-groups]

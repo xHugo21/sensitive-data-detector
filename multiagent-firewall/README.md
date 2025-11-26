@@ -1,6 +1,6 @@
 # Multiagent Firewall for LLM Interactions
 
-A sophisticated multi-agent system that detects sensitive data in LLM prompts using a combination of DLP (Data Loss Prevention), LLM-based detection, and risk evaluation strategies.
+Multi-agent system that detects sensitive data in LLM prompts using a combination of DLP (Data Loss Prevention), OCR (Optical Character Recognition), LLM-based detection, and risk evaluation strategies.
 
 ## Architecture
 
@@ -47,25 +47,48 @@ flowchart TD
 ## Usage
 
 ### Via the backend package
-Our `backend/` package exposes an HTTP api that can be used to automatically call the multiagent pipeline
+Our `backend/` package exposes an HTTP API that can be used to automatically call the multiagent pipeline.
 
 ### From another Python project
 
+#### Text Detection
 ```python
 from multiagent_firewall.orchestrator import GuardOrchestrator
 
 orchestrator = GuardOrchestrator()
 
-result = orchestrator.run(text="My SSN is 123-45-6789")
+# Detect sensitive data in text
+result = orchestrator.run(
+  text="My SSN is 123-45-6789",
+  mode="enriched-zero-shot"  # zero-shot, few-shot, or enriched-zero-shot
+)
 
 print(f"Decision: {result['decision']}")
 print(f"Risk Level: {result['risk_level']}")
 print(f"Detected Fields: {result['detected_fields']}")
+```
 
-result = orchestrator.run(
-    text="Sensitive data",
-    mode="enriched-zero-shot"  # zero-shot, few-shot, or enriched-zero-shot
-)
+#### PDF Detection
+```python
+from multiagent_firewall.orchestrator import GuardOrchestrator
+
+orchestrator = GuardOrchestrator()
+
+# Extracts text from PDF and detects sensitive data
+result = orchestrator.run(file_path="/path/to/document.pdf")
+```
+
+#### Image Detection (OCR must be configured)
+```python
+from multiagent_firewall.orchestrator import GuardOrchestrator
+
+orchestrator = GuardOrchestrator()
+
+result = orchestrator.run(file_path="/path/to/screenshot.png")
+
+print(f"Extracted Text: {result['raw_text'][:100]}...")
+print(f"Risk Level: {result['risk_level']}")
+print(f"Detected Fields: {result['detected_fields']}")
 ```
 
 ### Response Structure
@@ -89,6 +112,38 @@ The orchestrator returns a `GuardState` dictionary with:
     "remediation": str            # Suggested action
 }
 ```
+
+## Configuration
+
+### Environment Variables
+
+#### LLM Configuration (Required)
+```bash
+LLM_PROVIDER=openai          # LLM provider (openai, ollama, etc.)
+LLM_MODEL=gpt-4o-mini        # Model name
+LLM_API_KEY=sk-xxx           # API key for the provider
+LLM_BASE_URL=https://...     # Optional: custom API base URL
+LLM_SUPPORTS_JSON_MODE=true  # Optional: enable JSON mode
+```
+
+#### OCR Configuration (Optional)
+```bash
+OCR_LANG=eng                 # Tesseract language code (default: eng, more languages: install specific language for tesseract and add it (e.g: eng+esp))
+OCR_CONFIDENCE_THRESHOLD=60  # Minimum confidence 0-100 (default: 0)
+TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
+```
+
+#### Detection Mode
+```bash
+DETECTION_MODE=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot
+```
+
+### Supported File Types
+
+- **Text files**: `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.yaml`, `.sh`, `.sql`
+- **Documents**: `.pdf`
+- **Images**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tiff`, `.webp`
+- **Code files**: `.js`, `.py`, `.java`, `.cpp`, `.c`, `.html`, `.css`
 
 ## Testing
 

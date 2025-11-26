@@ -35,7 +35,7 @@ def test_orchestrator_run_basic():
         return {"detected_fields": []}
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
-    result = orchestrator.run("Hello world")
+    result = orchestrator.run(text="Hello world")
     
     assert isinstance(result, dict)
     assert "raw_text" in result
@@ -48,7 +48,7 @@ def test_orchestrator_run_with_prompt_and_mode():
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
     result = orchestrator.run(
-        "Test text",
+        text="Test text",
         mode="strict",
     )
     
@@ -60,7 +60,7 @@ def test_orchestrator_run_empty_text():
         return {"detected_fields": []}
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
-    result = orchestrator.run("")
+    result = orchestrator.run(text="")
     
     assert result.get("raw_text") == ""
     assert "warnings" in result
@@ -86,8 +86,40 @@ def test_orchestrator_run_with_sensitive_data():
         }
     
     orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
-    result = orchestrator.run("My email is test@example.com and password is secret123")
+    result = orchestrator.run(text="My email is test@example.com and password is secret123")
     
     assert "detected_fields" in result
     assert "risk_level" in result
     assert "decision" in result
+
+
+def test_orchestrator_run_with_file_path(tmp_path):
+    """Test orchestrator with file_path parameter"""
+    def mock_llm_detector(text, mode):
+        return {"detected_fields": []}
+    
+    # Create a test file
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("File content with SSN 123-45-6789", encoding="utf-8")
+    
+    orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
+    result = orchestrator.run(file_path=str(test_file))
+    
+    assert "raw_text" in result
+    assert "File content with SSN" in result["raw_text"]
+    assert "detected_fields" in result
+
+
+def test_orchestrator_text_takes_precedence_over_file(tmp_path):
+    """Test that text parameter takes precedence over file_path"""
+    def mock_llm_detector(text, mode):
+        return {"detected_fields": []}
+    
+    # Create a test file
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("File content", encoding="utf-8")
+    
+    orchestrator = GuardOrchestrator(llm_detector=mock_llm_detector)
+    result = orchestrator.run(text="Direct text", file_path=str(test_file))
+    
+    assert result.get("raw_text") == "Direct text"

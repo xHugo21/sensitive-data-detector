@@ -15,7 +15,7 @@
         "src/state/alertStore.js",
         "src/services/detectorClient.js",
         "src/services/riskUtils.js",
-        "src/services/pdfAnalyzer.js",
+        "src/services/fileAnalyzer.js",
         "src/ui/panel.js",
         "src/ui/highlights.js",
         "src/ui/loadingState.js",

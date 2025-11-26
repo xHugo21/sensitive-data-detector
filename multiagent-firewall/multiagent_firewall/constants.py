@@ -4,13 +4,13 @@
 REGEX_PATTERNS = {
     "SSN": r"\b\d{3}[\s\-]?\d{2}[\s\-]?\d{4}\b",
     "EMAIL": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
-    "PHONE_NUMBER": r"\b\+?\d[\d\s\-\(\)]{7,}\d\b",
+    "PHONENUMBER": r"\b\+?\d[\d\s\-\(\)]{7,}\d\b",
 }
 
 # Keyword lists for DLP
 KEYWORDS = {
     "SSN": ["ssn", "social security", "social security number", "social"],
-    "API_KEY": ["api_key", "apikey", "api-key", "api key"],
+    "APIKEY": ["api_key", "apikey", "api-key", "api key"],
     "SECRET": ["secret"],
     "PASSWORD": ["password", "pwd"],
     "TOKEN": ["token", "bearer", "auth"],
@@ -43,7 +43,7 @@ HIGH_RISK_FIELDS = {
     "BITCOINADDRESS",
     "ETHEREUMADDRESS",
     "PHONEIMEI",
-    "API_KEY",
+    "APIKEY",
     "SECRET",
     "TOKEN",
 }

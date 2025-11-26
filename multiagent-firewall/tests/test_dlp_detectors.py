@@ -15,7 +15,7 @@ def test_detect_keywords_default():
     
     assert len(findings) >= 3
     field_names = [f["field"] for f in findings]
-    assert "API_KEY" in field_names
+    assert "APIKEY" in field_names
     assert "SECRET" in field_names
     assert "TOKEN" in field_names
 
@@ -37,7 +37,7 @@ def test_detect_keywords_case_insensitive():
     findings = detect_keywords(text)
     
     field_names = [f["field"] for f in findings]
-    assert "API_KEY" in field_names
+    assert "APIKEY" in field_names
 
 
 def test_detect_keywords_empty_text():
@@ -64,7 +64,7 @@ def test_detect_checksums_valid_card():
     findings = detect_checksums(text)
     
     assert len(findings) == 1
-    assert findings[0]["field"] == "CREDIT_CARD"
+    assert findings[0]["field"] == "CREDITCARDNUMBER"
     assert findings[0]["value"] == "4532015112830366"
     assert findings[0]["source"] == "dlp_checksum"
 
@@ -95,7 +95,7 @@ def test_detect_regex_patterns_default():
     assert len(findings) >= 2
     field_names = [f["field"] for f in findings]
     assert "EMAIL" in field_names
-    assert "PHONE_NUMBER" in field_names
+    assert "PHONENUMBER" in field_names
 
 
 def test_detect_regex_patterns_custom():

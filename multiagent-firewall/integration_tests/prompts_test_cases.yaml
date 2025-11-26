@@ -31,7 +31,7 @@ test_cases:
     prompt: "Use this API key: sk-proj-1234567890abcdefghijklmnopqrstuvwxyz for authentication."
     expected_sensitive: true
     expected_entities:
-      - "API_KEY"
+      - "APIKEY"
     description: "Prompt containing an API key"
 
   - id: "password_detection"

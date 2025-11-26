@@ -86,7 +86,7 @@ def test_run_dlp_detector_with_regex():
 
 def test_run_dlp_detector_with_keywords():
     keywords = {
-        "API_KEY": ["api_key", "apikey"],
+        "APIKEY": ["api_key", "apikey"],
     }
     
     state: GuardState = {

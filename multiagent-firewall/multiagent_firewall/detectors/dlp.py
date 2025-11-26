@@ -52,7 +52,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
         card_clean = card.replace(" ", "").replace("-", "")
         if luhn_checksum(card_clean):
             findings.append({
-                "field": "CREDIT_CARD",
+                "field": "CREDITCARDNUMBER",
                 "value": card,
                 "source": "dlp_checksum",
             })

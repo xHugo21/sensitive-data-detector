@@ -135,9 +135,9 @@ class SensitiveDataDetector:
         )
 
         if field_names:
-            message = f"[SensitiveDataDetectionProxy] Sensitive data detected: {field_names}. Request blocked."
+            message = f"[SensitiveDataDetectorBackend] Sensitive data detected: {field_names}. Request blocked."
         else:
-            message = "[SensitiveDataDetectionProxy] Sensitive data detected. Request blocked."
+            message = "[SensitiveDataDetectorBackend] Sensitive data detected. Request blocked."
 
         payload = {
             "error": {

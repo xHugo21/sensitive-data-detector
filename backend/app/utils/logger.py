@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.config import DEBUG_MODE
+from app.config import DEBUG_MODE
 
 
 def debug_log(*args: Any, **kwargs: Any) -> None:

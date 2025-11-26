@@ -13,6 +13,13 @@ from .nodes.risk import compute_risk_level
 from .types import GuardState, RiskEvaluator
 
 
+def _should_read_document(state: GuardState) -> str:
+    """Route to document reader only if file_path is provided."""
+    if state.get("file_path"):
+        return "read_document"
+    return "normalize"
+
+
 def _should_run_ocr(state: GuardState) -> str:
     if state.get("has_image", False):
         return "ocr_detector"
@@ -78,7 +85,7 @@ class GuardOrchestrator:
     def _build_graph(self):
         graph = StateGraph(GuardState)
 
-        # Add read_document node first
+        # Add all nodes
         graph.add_node("read_document", nodes.read_document)
         graph.add_node("normalize", nodes.normalize)
         graph.add_node(
@@ -111,8 +118,11 @@ class GuardOrchestrator:
         graph.add_node("policy_final", nodes.apply_policy)
         graph.add_node("remediation", nodes.generate_remediation)
 
-        # Start with read_document, then normalize
-        graph.set_entry_point("read_document")
+        # Conditional entry: only read_document if file_path provided
+        graph.set_conditional_entry_point(
+            _should_read_document,
+            path_map={"read_document": "read_document", "normalize": "normalize"}
+        )
         graph.add_edge("read_document", "normalize")
         graph.add_conditional_edges("normalize", _should_run_ocr)
         graph.add_edge("ocr_detector", "dlp_detector")

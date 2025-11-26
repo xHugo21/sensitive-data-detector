@@ -46,13 +46,27 @@ class GuardOrchestrator:
 
     def run(
         self,
-        text: str,
+        text: str = None,
         *,
+        file_path: str = None,
         mode: str | None = None,
         has_image: bool = False,
     ) -> GuardState:
+        """
+        Run the detection pipeline.
+        
+        Args:
+            text: Direct text input
+            file_path: Path to file on disk
+            mode: Detection mode (zero-shot, few-shot, enriched-zero-shot)
+            has_image: Force image processing (optional, for backward compatibility)
+        
+        Returns:
+            GuardState with detection results
+        """
         initial_state: GuardState = {
             "raw_text": text or "",
+            "file_path": file_path,
             "mode": mode,
             "metadata": {},
             "has_image": has_image,
@@ -63,6 +77,9 @@ class GuardOrchestrator:
 
     def _build_graph(self):
         graph = StateGraph(GuardState)
+        
+        # Add read_document node first
+        graph.add_node("read_document", nodes.read_document)
         graph.add_node("normalize", nodes.normalize)
         graph.add_node(
             "ocr_detector",
@@ -94,7 +111,9 @@ class GuardOrchestrator:
         graph.add_node("policy_final", nodes.apply_policy)
         graph.add_node("remediation", nodes.generate_remediation)
 
-        graph.set_entry_point("normalize")
+        # Start with read_document, then normalize
+        graph.set_entry_point("read_document")
+        graph.add_edge("read_document", "normalize")
         graph.add_conditional_edges("normalize", _should_run_ocr)
         graph.add_edge("ocr_detector", "dlp_detector")
         graph.add_edge("dlp_detector", "merge_dlp")

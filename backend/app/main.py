@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import PORT, ALLOW_ORIGINS
 from app.api.routes.health import router as health_router
 from app.api.routes.detect import router as detect_router
-from app.api.routes.detect_file import router as detect_file_router
 
 app = FastAPI(title="Sensitive Data Detector", version="1.1.0")
 
@@ -18,7 +17,6 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(detect_router)
-app.include_router(detect_file_router)
 
 if __name__ == "__main__":
     import argparse

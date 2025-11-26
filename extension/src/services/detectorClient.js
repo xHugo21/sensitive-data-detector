@@ -14,7 +14,7 @@
   }
 
   async function detectFile(formData) {
-    const resp = await fetch(`${sg.config.API_BASE}/detect_file`, {
+    const resp = await fetch(`${sg.config.API_BASE}/detect`, {
       method: "POST",
       body: formData,
     });

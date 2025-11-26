@@ -12,6 +12,7 @@ dependencies = [
     "langgraph",
     "langchain-litellm",
     "typing_extensions>=4.7",
+    "pdfplumber",
 ]
 
 [dependency-groups]

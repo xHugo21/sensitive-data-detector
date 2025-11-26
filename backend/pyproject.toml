@@ -13,12 +13,6 @@ dependencies = [
     "uvicorn[standard]",
     "python-multipart",
     "python-dotenv",
-    "pdfplumber",
-    "PyPDF2",
-    "pdfminer.six",
-    "pdf2image",
-    "pytesseract",
-    "pillow",
     "multiagent-firewall",
 ]
 

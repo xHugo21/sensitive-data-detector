@@ -9,17 +9,25 @@ RiskEvaluator = Callable[[Sequence[Dict[str, Any]]], str]
 
 
 class GuardState(TypedDict, total=False):
+    # INPUT
+    file_path: NotRequired[str | None]
     raw_text: str
+    
+    # PROCESSING
     normalized_text: str
     metadata: Dict[str, Any]
     mode: NotRequired[str | None]
     has_image: bool
+    
+    # DETECTION
     warnings: List[str]
     errors: List[str]
     llm_fields: FieldList
     dlp_fields: FieldList
     ocr_fields: FieldList
     detected_fields: FieldList
+    
+    # DECISION
     risk_level: str
     decision: str
     remediation: str

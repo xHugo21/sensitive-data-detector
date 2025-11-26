@@ -1,10 +1,12 @@
 from .detection import run_dlp_detector, run_llm_detector, run_ocr_detector
+from .ingestion import read_document
 from .policy import apply_policy, generate_remediation
 from .risk import evaluate_risk
 from .preprocessing import merge_detections, normalize
 from .risk import compute_risk_level
 
 __all__ = [
+    "read_document",
     "normalize",
     "merge_detections",
     "run_llm_detector",

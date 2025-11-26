@@ -2,41 +2,47 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.api.routes import detect as detect_route
-from app.api.routes import detect_file as detect_file_route
 
 
-def test_detect_endpoint_uses_orchestrator(monkeypatch):
+def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
+    """Test detect endpoint with text parameter"""
     class DummyOrchestrator:
         def __init__(self):
             self.calls = []
 
-        def run(self, text, *, mode=None):
-            self.calls.append((text, mode))
+        def run(self, text=None, *, file_path=None, mode=None):
+            self.calls.append(("text", text, mode))
             return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "Low"}
 
     dummy = DummyOrchestrator()
     monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda: dummy)
 
     client = TestClient(app)
-    resp = client.post("/detect", json={"text": "hello", "mode": "m"})
+    resp = client.post("/detect", data={"text": "hello", "mode": "m"})
 
     assert resp.status_code == 200
     assert resp.json()["detected_fields"] == [{"field": "EMAIL"}]
-    assert dummy.calls == [("hello", "m")]
+    assert dummy.calls[0][0] == "text"
+    assert dummy.calls[0][1] == "hello"
+    assert dummy.calls[0][2] == "m"
 
 
-def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
+def test_detect_endpoint_with_file(monkeypatch, tmp_path):
+    """Test detect endpoint with file upload"""
     class DummyOrchestrator:
         def __init__(self):
             self.calls = []
 
-        def run(self, text, *, mode=None):
-            self.calls.append((text, mode))
-            return {"detected_fields": [], "risk_level": "None"}
+        def run(self, text=None, *, file_path=None, mode=None):
+            self.calls.append(("file", file_path, mode))
+            return {
+                "detected_fields": [],
+                "risk_level": "None",
+                "raw_text": "file text content"
+            }
 
     dummy = DummyOrchestrator()
-    monkeypatch.setattr(detect_file_route, "GuardOrchestrator", lambda: dummy)
-    monkeypatch.setattr(detect_file_route, "read_document", lambda path: "file text content")
+    monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda: dummy)
 
     client = TestClient(app)
     file_path = tmp_path / "sample.txt"
@@ -44,7 +50,7 @@ def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
 
     with file_path.open("rb") as f:
         resp = client.post(
-            "/detect_file",
+            "/detect",
             data={"mode": "zero-shot"},
             files={"file": ("sample.txt", f, "text/plain")},
         )
@@ -53,6 +59,19 @@ def test_detect_file_endpoint_adds_snippet(monkeypatch, tmp_path):
     body = resp.json()
     assert body["extracted_snippet"] == "file text content"
     assert dummy.calls
-    text, mode = dummy.calls[0]
-    assert text == "file text content"
-    assert mode == "zero-shot"
+    call_type, call_file_path, call_mode = dummy.calls[0]
+    assert call_type == "file"
+    assert call_file_path is not None
+    assert call_mode == "zero-shot"
+
+
+def test_detect_endpoint_requires_input():
+    """Test that detect endpoint requires either text or file"""
+    client = TestClient(app)
+    resp = client.post("/detect", data={})
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "error" in body
+    assert "text or file must be provided" in body["error"].lower()
+

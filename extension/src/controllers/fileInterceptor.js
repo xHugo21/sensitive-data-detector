@@ -7,7 +7,7 @@
     attached = true;
     document.addEventListener("change", handleFileChange, true);
     console.log(
-      "[SensitiveDataDetector] File interceptor attached - monitoring all file uploads",
+      "[SensitiveDataDetectorExtension] File interceptor attached - monitoring all file uploads",
     );
   }
 
@@ -21,14 +21,14 @@
     // Check if file type is supported
     if (!sg.fileAnalyzer.isSupportedFile(file.name)) {
       console.log(
-        `[SensitiveDataDetector] Skipping unsupported file: ${file.name}`,
+        `[SensitiveDataDetectorExtension] Skipping unsupported file: ${file.name}`,
       );
       return;
     }
 
     const fileInfo = sg.fileAnalyzer.getFileInfo(file.name);
     console.log(
-      `[SensitiveDataDetector] Detected ${fileInfo.label} file upload: ${file.name}`,
+      `[SensitiveDataDetectorExtension] Detected ${fileInfo.label} file upload: ${file.name}`,
     );
 
     try {
@@ -50,7 +50,7 @@
       // Log extracted text snippet if available
       if (result?.extracted_snippet) {
         console.log(
-          `[SensitiveDataDetector] Extracted snippet from ${file.name}:`,
+          `[SensitiveDataDetectorExtension] Extracted snippet from ${file.name}:`,
           result.extracted_snippet.substring(0, 200) + "...",
         );
       }
@@ -58,14 +58,14 @@
       // Log detection summary
       if (result?.detected_fields?.length > 0) {
         console.log(
-          `[SensitiveDataDetector] Detected ${result.detected_fields.length} sensitive fields in ${file.name}:`,
+          `[SensitiveDataDetectorExtension] Detected ${result.detected_fields.length} sensitive fields in ${file.name}:`,
           result.detected_fields.map((f) => f.field),
         );
       }
     } catch (err) {
       sg.loadingState.hide();
       console.error(
-        `[SensitiveDataDetector] Error analyzing ${file.name}:`,
+        `[SensitiveDataDetectorExtension] Error analyzing ${file.name}:`,
         err,
       );
 

@@ -42,7 +42,7 @@ async def detect(
             with open(tmp_path, "wb") as f:
                 f.write(await file.read())
 
-            debug_log(f"[backend] Saved file to {tmp_path}")
+            debug_log(f"[SensitiveDataDetectorBackend] Saved file to {tmp_path}")
 
             # Use orchestrator with file_path
             result = GuardOrchestrator().run(
@@ -63,19 +63,22 @@ async def detect(
             return result
 
         # Handle text input
-        debug_log("[backend] Processing text:", text)
-        debug_log("[backend] Mode:", mode)
+        debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
+        debug_log("[SensitiveDataDetectorBackend] Mode:", mode)
 
         result = GuardOrchestrator().run(
             text=text,
             mode=mode,
         )
 
-        debug_log("[backend] Detected fields:", result.get("detected_fields", []))
+        debug_log(
+            "[SensitiveDataDetectorBackend] Detected fields:",
+            result.get("detected_fields", []),
+        )
         return result
 
     except Exception as e:
-        debug_log("[backend] Error:", e)
+        debug_log("[SensitiveDataDetectorBackend] Error:", e)
         return {
             "detected_fields": [],
             "risk_level": "Unknown",

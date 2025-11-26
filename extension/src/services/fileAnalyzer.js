@@ -5,7 +5,7 @@
   const SUPPORTED_EXTENSIONS = {
     // Documents
     pdf: { type: "document", label: "PDF" },
-    
+
     // Images (OCR supported by backend)
     png: { type: "image", label: "Image" },
     jpg: { type: "image", label: "Image" },
@@ -15,12 +15,12 @@
     webp: { type: "image", label: "Image" },
     tiff: { type: "image", label: "Image" },
     tif: { type: "image", label: "Image" },
-    
+
     // Text files
     txt: { type: "text", label: "Text File" },
     md: { type: "text", label: "Markdown" },
     csv: { type: "text", label: "CSV" },
-    
+
     // Code files
     js: { type: "code", label: "JavaScript" },
     py: { type: "code", label: "Python" },
@@ -74,13 +74,13 @@
     const fileInfo = getFileInfo(file.name);
 
     console.log(
-      `[SensitiveDataDetector] Analyzing ${fileInfo.label} file: ${file.name} (${file.size} bytes)`,
+      `[SensitiveDataDetectorExtension] Analyzing ${fileInfo.label} file: ${file.name} (${file.size} bytes)`,
     );
 
     // Create FormData to send file to backend
     const formData = new FormData();
     formData.append("file", file);
-    
+
     // Add detection mode if configured
     if (sg.config.MODE) {
       formData.append("mode", sg.config.MODE);
@@ -88,7 +88,7 @@
 
     try {
       const result = await sg.detectorClient.detectFile(formData);
-      
+
       // Add file metadata to result
       result.fileInfo = {
         name: file.name,
@@ -99,7 +99,7 @@
       };
 
       console.log(
-        `[SensitiveDataDetector] Analysis complete for ${file.name}:`,
+        `[SensitiveDataDetectorExtension] Analysis complete for ${file.name}:`,
         {
           riskLevel: result.risk_level,
           fieldsDetected: result.detected_fields?.length || 0,
@@ -110,7 +110,7 @@
       return result;
     } catch (error) {
       console.error(
-        `[SensitiveDataDetector] Error analyzing ${file.name}:`,
+        `[SensitiveDataDetectorExtension] Error analyzing ${file.name}:`,
         error,
       );
       throw error;

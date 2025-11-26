@@ -68,7 +68,7 @@
       allowSend(composer, button);
     } catch (err) {
       console.error(
-        "[SensitiveDataDetector] Backend error, allowing send:",
+        "[SensitiveDataDetectorExtension] Backend error, allowing send:",
         err,
       );
       allowSend(composer, button);

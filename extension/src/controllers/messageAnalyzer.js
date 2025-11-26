@@ -75,7 +75,10 @@
           );
         }
       } catch (err) {
-        console.warn("[SensitiveDataDetector] analyze assistant error:", err);
+        console.warn(
+          "[SensitiveDataDetectorExtension] analyze assistant error:",
+          err,
+        );
       } finally {
         store.markAnalyzed(host);
         store.endInFlight(host);
@@ -96,7 +99,10 @@
         }
         store.markAnalyzed(host);
       } catch (err) {
-        console.warn("[SensitiveDataDetector] analyze user error:", err);
+        console.warn(
+          "[SensitiveDataDetectorExtension] analyze user error:",
+          err,
+        );
       }
     }
   }

@@ -54,13 +54,13 @@ class GuardOrchestrator:
     ) -> GuardState:
         """
         Run the detection pipeline.
-        
+
         Args:
             text: Direct text input
             file_path: Path to file on disk
             mode: Detection mode (zero-shot, few-shot, enriched-zero-shot)
             has_image: Force image processing (optional, for backward compatibility)
-        
+
         Returns:
             GuardState with detection results
         """
@@ -77,7 +77,7 @@ class GuardOrchestrator:
 
     def _build_graph(self):
         graph = StateGraph(GuardState)
-        
+
         # Add read_document node first
         graph.add_node("read_document", nodes.read_document)
         graph.add_node("normalize", nodes.normalize)

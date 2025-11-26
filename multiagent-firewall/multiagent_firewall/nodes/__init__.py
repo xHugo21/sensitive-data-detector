@@ -1,5 +1,5 @@
 from .detection import run_dlp_detector, run_llm_detector, run_ocr_detector
-from .ingestion import read_document
+from .document import read_document
 from .policy import apply_policy, generate_remediation
 from .risk import evaluate_risk
 from .preprocessing import merge_detections, normalize

@@ -4,7 +4,7 @@ import os
 import pytest
 from pathlib import Path
 
-from multiagent_firewall.nodes.ingestion import (
+from multiagent_firewall.nodes.document import (
     read_document,
     sanitize_file_path,
     extract_text_from_file,
@@ -68,7 +68,7 @@ def test_extract_text_from_file_reads_pdf(monkeypatch, tmp_path):
         assert path == str(pdf_path)
         return FakePdf()
 
-    import multiagent_firewall.nodes.ingestion as ingestion_module
+    import multiagent_firewall.nodes.document as document_module
     import pdfplumber
     monkeypatch.setattr(pdfplumber, "open", fake_open)
 

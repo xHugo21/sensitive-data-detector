@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from functools import partial
 from typing import Any, Dict, Mapping, Sequence
 
@@ -11,6 +13,7 @@ from .constants import REGEX_PATTERNS, KEYWORDS
 from .nodes.detection import LLMDetector, OCRDetector
 from .nodes.risk import compute_risk_level
 from .types import GuardState, RiskEvaluator
+from .utils import debug_invoke
 
 
 def _should_read_document(state: GuardState) -> str:
@@ -42,7 +45,9 @@ class GuardOrchestrator:
         self._risk_evaluator = risk_evaluator or compute_risk_level
         self._regex_patterns = regex_patterns or REGEX_PATTERNS
         self._keywords = keywords or KEYWORDS
-        self._ocr_detector = ocr_detector if ocr_detector is not None else self._create_default_ocr()
+        self._ocr_detector = (
+            ocr_detector if ocr_detector is not None else self._create_default_ocr()
+        )
         self._graph = self._build_graph()
 
     def run(
@@ -71,12 +76,15 @@ class GuardOrchestrator:
             "warnings": [],
             "errors": [],
         }
-        return self._graph.invoke(initial_state)
+        if bool(os.getenv("DEBUG_MODE")):
+            return debug_invoke(self._graph, initial_state)
+        else:
+            return self._graph.invoke(initial_state)
 
     def _create_default_ocr(self) -> OCRDetector | None:
         """
         Create default OCR detector from environment.
-        
+
         Returns None if Tesseract is not available or fails to initialize.
         This allows graceful degradation when OCR dependencies are missing.
         """
@@ -85,11 +93,12 @@ class GuardOrchestrator:
         except Exception as e:
             # Log warning but don't crash - OCR is optional
             import warnings
+
             warnings.warn(
                 f"Failed to initialize OCR detector: {e}. "
                 "Image text extraction will be disabled. "
                 "Install Tesseract: https://github.com/tesseract-ocr/tesseract",
-                RuntimeWarning
+                RuntimeWarning,
             )
             return None
 
@@ -143,4 +152,5 @@ class GuardOrchestrator:
         graph.add_edge("risk_final", "policy_final")
         graph.add_edge("policy_final", "remediation")
         graph.add_edge("remediation", END)
+
         return graph.compile()

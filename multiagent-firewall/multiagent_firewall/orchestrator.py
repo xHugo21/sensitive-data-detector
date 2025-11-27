@@ -2,17 +2,10 @@ from __future__ import annotations
 
 import os
 
-from functools import partial
-from typing import Any, Dict, Mapping, Sequence
-
 from langgraph.graph import END, StateGraph
 
 from . import nodes
-from .detectors import TesseractOCRDetector, LiteLLMDetector
-from .constants import REGEX_PATTERNS, KEYWORDS
-from .nodes.detection import LLMDetector, OCRDetector
-from .nodes.risk import compute_risk_level
-from .types import GuardState, RiskEvaluator
+from .types import GuardState
 from .utils import debug_invoke
 
 
@@ -31,23 +24,15 @@ def _should_run_llm(state: GuardState) -> str:
 
 
 class GuardOrchestrator:
+    """
+    Orchestrates the sensitive data detection pipeline.
 
-    def __init__(
-        self,
-        *,
-        risk_evaluator: RiskEvaluator | None = None,
-        llm_detector: LLMDetector | None = None,
-        regex_patterns: Mapping[str, str] | None = None,
-        keywords: Mapping[str, Sequence[str]] | None = None,
-        ocr_detector: OCRDetector | None = None,
-    ) -> None:
-        self._llm_detector = llm_detector or LiteLLMDetector.from_env()
-        self._risk_evaluator = risk_evaluator or compute_risk_level
-        self._regex_patterns = regex_patterns or REGEX_PATTERNS
-        self._keywords = keywords or KEYWORDS
-        self._ocr_detector = (
-            ocr_detector if ocr_detector is not None else self._create_default_ocr()
-        )
+    This class builds the detection graph. All detectors and configurations
+    are initialized within the nodes themselves from their single sources of truth
+    (environment variables and constants), ensuring consistency across the application.
+    """
+
+    def __init__(self) -> None:
         self._graph = self._build_graph()
 
     def run(
@@ -83,62 +68,27 @@ class GuardOrchestrator:
         else:
             return self._graph.invoke(initial_state)
 
-    def _create_default_ocr(self) -> OCRDetector | None:
-        """
-        Create default OCR detector from environment.
-
-        Returns None if Tesseract is not available or fails to initialize.
-        This allows graceful degradation when OCR dependencies are missing.
-        """
-        try:
-            return TesseractOCRDetector.from_env()
-        except Exception as e:
-            # Log warning but don't crash - OCR is optional
-            import warnings
-
-            warnings.warn(
-                f"Failed to initialize OCR detector: {e}. "
-                "Image text extraction will be disabled. "
-                "Install Tesseract: https://github.com/tesseract-ocr/tesseract",
-                RuntimeWarning,
-            )
-            return None
-
     def _build_graph(self):
+        """
+        Build the detection pipeline graph.
+
+        All nodes use their internal default detectors and configurations,
+        which are the single sources of truth for the application.
+        """
         graph = StateGraph(GuardState)
 
-        graph.add_node(
-            "read_document",
-            partial(nodes.read_document, ocr_detector=self._ocr_detector),
-        )
+        graph.add_node("read_document", nodes.read_document)
         graph.add_node("normalize", nodes.normalize)
-        graph.add_node(
-            "dlp_detector",
-            partial(
-                nodes.run_dlp_detector,
-                regex_patterns=self._regex_patterns,
-                keywords=self._keywords,
-            ),
-        )
+        graph.add_node("dlp_detector", nodes.run_dlp_detector)
         graph.add_node("merge_dlp", nodes.merge_detections)
-        graph.add_node(
-            "risk_dlp",
-            partial(nodes.evaluate_risk, risk_evaluator=self._risk_evaluator),
-        )
+        graph.add_node("risk_dlp", nodes.evaluate_risk)
         graph.add_node("policy_dlp", nodes.apply_policy)
-        graph.add_node(
-            "llm_detector",
-            partial(nodes.run_llm_detector, llm_detector=self._llm_detector),
-        )
+        graph.add_node("llm_detector", nodes.run_llm_detector)
         graph.add_node("merge_final", nodes.merge_detections)
-        graph.add_node(
-            "risk_final",
-            partial(nodes.evaluate_risk, risk_evaluator=self._risk_evaluator),
-        )
+        graph.add_node("risk_final", nodes.evaluate_risk)
         graph.add_node("policy_final", nodes.apply_policy)
         graph.add_node("remediation", nodes.generate_remediation)
 
-        # Conditional entry: only read_document if file_path provided
         graph.set_conditional_entry_point(
             _should_read_document,
             path_map={"read_document": "read_document", "normalize": "normalize"},

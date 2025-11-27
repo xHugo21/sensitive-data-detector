@@ -1,20 +1,28 @@
 from __future__ import annotations
 
 from typing import Sequence
-from ..types import GuardState, RiskEvaluator
+from ..types import GuardState
 from ..constants import HIGH_RISK_FIELDS, MEDIUM_RISK_FIELDS, LOW_RISK_FIELDS
 
 
-def evaluate_risk(
-    state: GuardState,
-    risk_evaluator: RiskEvaluator,
-) -> GuardState:
+def evaluate_risk(state: GuardState) -> GuardState:
+    """
+    Evaluate risk level based on detected fields.
+    
+    Uses the default compute_risk_level function as the single
+    source of truth for risk evaluation logic.
+    """
     detected = state.get("detected_fields", [])
-    state["risk_level"] = risk_evaluator(detected)
+    state["risk_level"] = compute_risk_level(detected)
     return state
 
 
 def compute_risk_level(detected_fields: Sequence[dict]) -> str:
+    """
+    Compute risk level based on detected field types.
+    
+    This is the single source of truth for risk scoring logic.
+    """
     def norm(name: str) -> str:
         return (name or "").strip().upper().replace("-", "").replace("_", "")
 
@@ -43,4 +51,4 @@ def compute_risk_level(detected_fields: Sequence[dict]) -> str:
     return "None"
 
 
-__all__ = ["compute_risk_level"]
+__all__ = ["compute_risk_level", "evaluate_risk"]

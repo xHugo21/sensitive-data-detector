@@ -1,4 +1,4 @@
-from .detection import run_dlp_detector, run_llm_detector, run_ocr_detector
+from .detection import run_dlp_detector, run_llm_detector
 from .document import read_document
 from .policy import apply_policy, generate_remediation
 from .risk import evaluate_risk
@@ -11,7 +11,6 @@ __all__ = [
     "merge_detections",
     "run_llm_detector",
     "run_dlp_detector",
-    "run_ocr_detector",
     "evaluate_risk",
     "apply_policy",
     "generate_remediation",

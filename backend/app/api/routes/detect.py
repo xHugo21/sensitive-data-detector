@@ -30,7 +30,7 @@ async def detect(
         if not text and not file:
             return {
                 "detected_fields": [],
-                "risk_level": "Unknown",
+                "risk_level": "unknown",
                 "error": "Either text or file must be provided",
             }
 
@@ -79,6 +79,6 @@ async def detect(
         debug_log("[SensitiveDataDetectorBackend] Error:", e)
         return {
             "detected_fields": [],
-            "risk_level": "Unknown",
+            "risk_level": "unknown",
             "error": str(e),
         }

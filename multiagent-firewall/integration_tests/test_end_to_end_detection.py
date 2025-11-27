@@ -79,7 +79,7 @@ def test_sensitive_detection(
     decision = result.get("decision", "")
 
     risk_level_normalized = risk_level.lower() if risk_level else ""
-    is_sensitive = risk_level_normalized in ["high"] or decision == "block"
+    is_sensitive = risk_level_normalized == "high" or decision == "block"
 
     cache_result(test_id, expected_sensitive, is_sensitive)
 

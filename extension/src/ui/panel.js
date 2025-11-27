@@ -234,13 +234,13 @@
     } = panel._els;
     list.innerHTML = "";
 
-    const { risk_level = "Unknown", detected_fields = [] } = result || {};
+    const { risk_level = "unknown", detected_fields = [] } = result || {};
     const riskLabel =
-      risk_level === "High"
+      risk_level === "high"
         ? "High"
-        : risk_level === "Medium"
+        : risk_level === "medium"
           ? "Medium"
-          : risk_level === "Low"
+          : risk_level === "low"
             ? "Low"
             : "Unknown";
 
@@ -256,11 +256,11 @@
       : "";
 
     const accentRisk =
-      risk_level === "High"
+      risk_level === "high"
         ? "#fa5a5a"
-        : risk_level === "Medium"
+        : risk_level === "medium"
           ? "#ffd369"
-          : risk_level === "Low"
+          : risk_level === "low"
             ? "#10a37f"
             : "#c5c5d2";
     const accentOrigin = origin === "Response" ? "#82b5ff" : accentRisk;

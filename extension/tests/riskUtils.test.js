@@ -19,8 +19,8 @@ test("classifyField prefers backend-provided risk and defaults to low", () => {
 test("shouldBlock respects decision and override flag", () => {
   store.setOverrideActive(false);
   assert.equal(shouldBlock({ decision: "block" }), true);
-  assert.equal(shouldBlock({ risk_level: "High" }), true);
-  assert.equal(shouldBlock({ risk_level: "Medium" }), false);
+  assert.equal(shouldBlock({ risk_level: "high" }), true);
+  assert.equal(shouldBlock({ risk_level: "medium" }), false);
   store.setOverrideActive(true);
   assert.equal(shouldBlock({ decision: "block" }), false);
   store.setOverrideActive(false);

@@ -29,7 +29,7 @@
     if (!result || sg.alertStore.isOverrideActive()) return false;
     const decision = String(result.decision || "").toLowerCase();
     if (decision === "block") return true;
-    return result.risk_level === "High";
+    return result.risk_level === "high";
   }
 
   sg.riskUtils = {

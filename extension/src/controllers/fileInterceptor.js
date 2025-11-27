@@ -73,7 +73,7 @@
       if (!sg.alertStore.shouldSuppressUserAlerts()) {
         sg.panel.render(
           {
-            risk_level: "Unknown",
+            risk_level: "unknown",
             detected_fields: [],
             error: `Failed to analyze file: ${err.message}`,
           },

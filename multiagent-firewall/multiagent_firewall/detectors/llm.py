@@ -152,7 +152,7 @@ class LiteLLMDetector:
             result["_provider"] = self._provider
             return result
         except Exception as exc:
-            return {"detected_fields": [], "risk_level": "Unknown", "_error": str(exc)}
+            return {"detected_fields": [], "risk_level": "unknown", "_error": str(exc)}
 
     def _build_prompt(
         self,

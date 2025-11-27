@@ -47,7 +47,7 @@ def test_detection_headers_include_detected_fields(
     interceptor: SensitiveDataDetector,
 ):
     result = {
-        "risk_level": "High",
+        "risk_level": "high",
         "detected_fields": [
             {"field": "password"},
             {"field": "api_key"},
@@ -64,7 +64,7 @@ def test_detection_headers_include_detected_fields(
 def test_should_block_uses_decision(interceptor: SensitiveDataDetector):
     assert interceptor._should_block({"decision": "block"})
     assert not interceptor._should_block({"decision": "allow"})
-    assert not interceptor._should_block({"risk_level": "High"})
+    assert not interceptor._should_block({"risk_level": "high"})
 
 
 def test_should_intercept_matches_configured_endpoints(
@@ -137,7 +137,7 @@ def test_ask_backend_posts_to_configured_url(
 
     mock_response = Mock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {"risk_level": "None", "detected_fields": []}
+    mock_response.json.return_value = {"risk_level": "none", "detected_fields": []}
 
     with patch("app.sensitive_data_detector.httpx.Client") as mock_client:
         mock_client.return_value.__enter__.return_value.post.return_value = (

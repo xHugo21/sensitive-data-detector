@@ -71,7 +71,7 @@ class SensitiveDataDetector:
 
     def _ask_backend(self, text: str) -> Dict[str, Any] | None:
         if not text.strip():
-            return {"detected_fields": [], "risk_level": "None"}
+            return {"detected_fields": [], "risk_level": "none"}
 
         data = {"text": text}
         detect_url = config.BACKEND_URL

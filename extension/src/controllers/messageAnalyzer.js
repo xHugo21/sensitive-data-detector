@@ -69,7 +69,7 @@
         const hasFindings = (result?.detected_fields || []).length > 0;
         const shouldShow =
           hasFindings ||
-          ["Low", "Medium", "High"].includes(result?.risk_level);
+          ["low", "medium", "high"].includes(result?.risk_level);
         if (shouldShow) {
           sg.panel.render(result, "Response", text);
           sg.highlights.applyHighlights(
@@ -101,7 +101,7 @@
         const hasFindings = (result?.detected_fields || []).length > 0;
         const shouldShow =
           hasFindings ||
-          ["Low", "Medium", "High"].includes(result?.risk_level);
+          ["low", "medium", "high"].includes(result?.risk_level);
         if (shouldShow) {
           sg.panel.render(result, "User", textUser);
         }

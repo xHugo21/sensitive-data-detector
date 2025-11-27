@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import Sequence
 from ..types import GuardState
 from ..constants import (
-    HIGH_RISK_FIELDS,
-    MEDIUM_RISK_FIELDS,
-    LOW_RISK_FIELDS,
+    RISK_SCORE,
     RISK_SCORE_THRESHOLDS,
 )
 
@@ -25,34 +23,27 @@ def evaluate_risk(state: GuardState) -> GuardState:
 def compute_risk_level(detected_fields: Sequence[dict]) -> str:
     """
     Compute risk level based on detected field types.
+
+    Uses pre-computed risk values from each field's 'risk' attribute.
+    Expects all fields to have been processed through merge_detections first.
     """
 
-    def norm(name: str) -> str:
-        return (name or "").strip().upper().replace("-", "").replace("_", "")
-
-    high_threshold = RISK_SCORE_THRESHOLDS["High"]
-    medium_range = RISK_SCORE_THRESHOLDS["Medium"]
-    low_range = RISK_SCORE_THRESHOLDS["Low"]
+    high_threshold = RISK_SCORE_THRESHOLDS["high"]
+    medium_range = RISK_SCORE_THRESHOLDS["medium"]
+    low_range = RISK_SCORE_THRESHOLDS["low"]
 
     score = 0
     for field_info in detected_fields:
-        field = norm(field_info.get("field", ""))
-        if field in HIGH_RISK_FIELDS:
-            score += high_threshold
-        elif field in MEDIUM_RISK_FIELDS:
-            score += 2
-        elif field in LOW_RISK_FIELDS:
-            score += 1
-        else:
-            score += 2
+        risk_value = field_info.get("risk", "").lower()
+        score += RISK_SCORE.get(risk_value, 0)  # Default to 0 for missing/unknown risk
 
     if score >= high_threshold:
-        return "High"
+        return "high"
     if medium_range[0] <= score <= medium_range[1]:
-        return "Medium"
+        return "medium"
     if low_range[0] <= score <= low_range[1]:
-        return "Low"
-    return "None"
+        return "low"
+    return "none"
 
 
 __all__ = ["compute_risk_level", "evaluate_risk"]

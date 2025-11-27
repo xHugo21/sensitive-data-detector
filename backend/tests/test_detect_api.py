@@ -12,7 +12,7 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
 
         def run(self, text=None, *, file_path=None, mode=None, min_block_risk=None):
             self.calls.append(("text", text, mode, min_block_risk))
-            return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "Low"}
+            return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "low"}
 
     dummy = DummyOrchestrator()
     monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda: dummy)
@@ -38,7 +38,7 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
             self.calls.append(("file", file_path, mode, min_block_risk))
             return {
                 "detected_fields": [],
-                "risk_level": "None",
+                "risk_level": "none",
                 "raw_text": "file text content"
             }
 

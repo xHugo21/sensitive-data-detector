@@ -114,9 +114,14 @@ LOW_RISK_FIELDS = {
     "LEGALDISCLOSURE",
 }
 
-# Risk scoring thresholds
+RISK_SCORE = {
+    "high": 6,
+    "medium": 2,
+    "low": 1,
+}
+
 RISK_SCORE_THRESHOLDS = {
-    "High": 6,
-    "Medium": (4, 5),
-    "Low": (1, 3),
+    "high": 6,
+    "medium": (4, 5),
+    "low": (1, 3),
 }

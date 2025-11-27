@@ -49,7 +49,7 @@
       marginBottom: "4px",
       letterSpacing: "-0.01em",
     });
-    title.textContent = "⚠️ WARNING: Risk Detected";
+    title.textContent = "⚠️ Risk Detected";
     titleRow.appendChild(title);
 
     const originBadge = document.createElement("div");
@@ -257,7 +257,7 @@
             ? "Low"
             : "Unknown";
 
-    title.textContent = `⚠️ WARNING: ${riskLabel} Risk Detected`;
+    title.textContent = `⚠️ ${riskLabel} Risk Detected`;
     originBadge.textContent = `Source: ${origin}`;
 
     const baseText = contextText || "";

@@ -77,12 +77,7 @@ class SensitiveDataDetector:
             return {"detected_fields": [], "risk_level": "None"}
 
         data = {"text": text}
-        if config.BACKEND_DETECTION_MODE:
-            data["mode"] = config.BACKEND_DETECTION_MODE
-
-        detect_url = (
-            f"{config.BACKEND_URL}/{config.BACKEND_DETECT_ENDPOINT.lstrip('/')}"
-        )
+        detect_url = config.BACKEND_URL
 
         try:
             with httpx.Client(timeout=config.BACKEND_TIMEOUT_SECONDS) as client:

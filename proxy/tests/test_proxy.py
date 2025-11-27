@@ -133,13 +133,14 @@ def test_ask_backend_handles_empty_text(interceptor: SensitiveDataDetector):
     assert result["detected_fields"] == []
 
 
-def test_ask_backend_includes_mode_if_configured(
+def test_ask_backend_posts_to_configured_url(
     interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
 ):
     from app import config
     from unittest.mock import Mock, patch
 
-    monkeypatch.setattr(config, "BACKEND_DETECTION_MODE", "enriched-zero-shot")
+    mock_url = "http://backend.test/detect"
+    monkeypatch.setattr(config, "BACKEND_URL", mock_url)
 
     mock_response = Mock()
     mock_response.status_code = 200
@@ -154,4 +155,5 @@ def test_ask_backend_includes_mode_if_configured(
         result = interceptor_with_mode._ask_backend("test text")
 
         call_args = mock_client.return_value.__enter__.return_value.post.call_args
-        assert call_args[1]["json"]["mode"] == "enriched-zero-shot"
+        assert call_args[0][0] == mock_url
+        assert call_args[1]["json"] == {"text": "test text"}

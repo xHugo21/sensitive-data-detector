@@ -34,14 +34,15 @@ def _parse_list(value: str | None, default: list[str]) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
-BACKEND_DETECT_ENDPOINT = os.getenv("BACKEND_DETECT_ENDPOINT", "/detect")
-BACKEND_TIMEOUT_SECONDS = _parse_float(os.getenv("BACKEND_TIMEOUT_SECONDS"), 10.0)
-BACKEND_DETECTION_MODE = os.getenv("BACKEND_DETECTION_MODE", "").strip()
+BACKEND_URL = os.getenv(
+    "BACKEND_URL",
+    "http://127.0.0.1:8000/detect",
+).rstrip("/")
+BACKEND_TIMEOUT_SECONDS = _parse_float(os.getenv("BACKEND_TIMEOUT_SECONDS"), 30.0)
 
 PROXY_HOST = os.getenv("PROXY_HOST", "127.0.0.1")
 PROXY_PORT = _parse_int(os.getenv("PROXY_PORT"), 8080)
-PROXY_MIN_BLOCK_RISK = _parse_risk(os.getenv("PROXY_MIN_BLOCK_RISK"), "low")
+PROXY_MIN_BLOCK_RISK = _parse_risk(os.getenv("PROXY_MIN_BLOCK_RISK"), "medium")
 
 INTERCEPTED_HOSTS = _parse_list(
     os.getenv("INTERCEPTED_HOSTS"),

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Sequence
+from typing import Any, Dict, List
 
 from typing_extensions import NotRequired, TypedDict
 
 FieldList = List[Dict[str, Any]]
-RiskEvaluator = Callable[[Sequence[Dict[str, Any]]], str]
 
 
 class GuardState(TypedDict, total=False):

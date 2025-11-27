@@ -1,5 +1,11 @@
-def debug_invoke(app, inputs):
-    final_state = None
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .types import GuardState
+
+
+def debug_invoke(app: Any, inputs: "GuardState") -> "GuardState":
+    final_state: dict[str, Any] = {}
     print("\n--- Starting Execution ---\n")
 
     for chunk in app.stream(inputs, stream_mode="updates"):
@@ -8,4 +14,4 @@ def debug_invoke(app, inputs):
             print(f"   Update: {update}\n")
             final_state = update
 
-    return final_state
+    return final_state  # type: ignore[return-value]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import cast
 
 from langgraph.graph import END, StateGraph
 
@@ -27,9 +28,7 @@ class GuardOrchestrator:
     """
     Orchestrates the sensitive data detection pipeline.
 
-    This class builds the detection graph. All detectors and configurations
-    are initialized within the nodes themselves from their single sources of truth
-    (environment variables and constants), ensuring consistency across the application.
+    This class builds the detection graph.
     """
 
     def __init__(self) -> None:
@@ -37,9 +36,9 @@ class GuardOrchestrator:
 
     def run(
         self,
-        text: str = None,
+        text: str | None = None,
         *,
-        file_path: str = None,
+        file_path: str | None = None,
         mode: str | None = None,
         min_block_risk: str | None = None,
     ) -> GuardState:
@@ -65,8 +64,7 @@ class GuardOrchestrator:
         }
         if bool(os.getenv("DEBUG_MODE")):
             return debug_invoke(self._graph, initial_state)
-        else:
-            return self._graph.invoke(initial_state)
+        return cast(GuardState, self._graph.invoke(initial_state))
 
     def _build_graph(self):
         """

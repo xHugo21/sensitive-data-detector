@@ -56,7 +56,7 @@ def test_detection_headers_include_detected_fields(
 
     headers = interceptor._detection_headers(result)
 
-    assert headers["X-LLM-Guard-Risk-Level"] == "High"
+    assert headers["X-LLM-Guard-Risk-Level"] == "high"
     assert "password" in headers["X-LLM-Guard-Detected-Fields"]
     assert "api_key" in headers["X-LLM-Guard-Detected-Fields"]
 
@@ -122,7 +122,7 @@ def test_should_intercept_ignores_non_configured_paths(
 def test_ask_backend_handles_empty_text(interceptor: SensitiveDataDetector):
     result = interceptor._ask_backend("")
 
-    assert result["risk_level"] == "None"
+    assert result["risk_level"] == "none"
     assert result["detected_fields"] == []
 
 

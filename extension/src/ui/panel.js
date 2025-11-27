@@ -311,7 +311,7 @@
           group = {
             field: fieldName,
             source: detected.source || "Unknown",
-            risk: sg.riskUtils.classifyField(fieldName),
+            risk: sg.riskUtils.classifyField(detected),
             _seen: new Map(),
             minIdx: Number.POSITIVE_INFINITY,
           };
@@ -358,18 +358,18 @@
             : group.risk === "medium"
               ? "#ffd666"
               : "#7de6a3";
-        
+
         const fieldName = document.createElement("span");
         fieldName.style.color = accent;
         fieldName.textContent = group.field;
-        
+
         const sourceLabel = document.createElement("span");
         sourceLabel.style.color = "#9fa0b3";
         sourceLabel.style.fontWeight = "400";
         sourceLabel.style.fontSize = "13px";
         sourceLabel.style.marginLeft = "8px";
         sourceLabel.textContent = `Source: ${group.source}`;
-        
+
         head.appendChild(fieldName);
         head.appendChild(sourceLabel);
 

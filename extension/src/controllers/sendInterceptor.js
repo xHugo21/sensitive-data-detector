@@ -59,7 +59,7 @@
         "user",
       );
 
-      if (sg.riskUtils.shouldBlock(result?.risk_level)) {
+      if (sg.riskUtils.shouldBlock(result)) {
         lastSendIntent = { composer, button };
         sg.panel.render(result, "User", text);
         return;

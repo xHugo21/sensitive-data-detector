@@ -81,7 +81,7 @@
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const bucket = sg.riskUtils.classifyField(field.field);
+      const bucket = sg.riskUtils.classifyField(field);
       const target =
         bucket === "high" ? high : bucket === "medium" ? medium : low;
       target.push(...rangesForValue(host, value));

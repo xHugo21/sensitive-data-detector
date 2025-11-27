@@ -81,11 +81,6 @@
     const formData = new FormData();
     formData.append("file", file);
 
-    // Add detection mode if configured
-    if (sg.config.MODE) {
-      formData.append("mode", sg.config.MODE);
-    }
-
     try {
       const result = await sg.detectorClient.detectFile(formData);
 

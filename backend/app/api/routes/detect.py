@@ -13,7 +13,6 @@ router = APIRouter()
 async def detect(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    mode: Optional[str] = Form(None),
 ):
     """
     Unified detection endpoint that accepts either text or file.
@@ -48,7 +47,6 @@ async def detect(
             # Use orchestrator with file_path
             result = GuardOrchestrator().run(
                 file_path=tmp_path,
-                mode=mode,
                 min_block_risk=MIN_BLOCK_RISK,
             )
 
@@ -66,11 +64,8 @@ async def detect(
 
         # Handle text input
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
-        debug_log("[SensitiveDataDetectorBackend] Mode:", mode)
-
         result = GuardOrchestrator().run(
             text=text,
-            mode=mode,
             min_block_risk=MIN_BLOCK_RISK,
         )
 

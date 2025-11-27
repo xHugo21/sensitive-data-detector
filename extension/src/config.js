@@ -2,7 +2,6 @@
   const sg = (root.SG = root.SG || {});
 
   const API_BASE = "http://127.0.0.1:8000";
-  const MODE = "zero-shot"; // Set to null to defer to backend DETECTION_MODE
 
   const HIGH_FIELDS = new Set([
     "PASSWORD",
@@ -72,7 +71,6 @@
 
   sg.config = {
     API_BASE,
-    MODE,
     HIGH_FIELDS,
     MEDIUM_FIELDS,
   };

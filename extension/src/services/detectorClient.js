@@ -1,11 +1,10 @@
 (function initDetectorClient(root) {
   const sg = (root.SG = root.SG || {});
 
-  async function detectText(text, mode = sg.config.MODE) {
+  async function detectText(text) {
     const formData = new FormData();
     formData.append("text", text);
-    if (mode) formData.append("mode", mode);
-    
+
     const resp = await fetch(`${sg.config.API_BASE}/detect`, {
       method: "POST",
       body: formData,

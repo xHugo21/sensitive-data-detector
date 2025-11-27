@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import os
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, unquote
 
+from ..detectors import TesseractOCRDetector
 from ..types import GuardState, FieldList
 
 if TYPE_CHECKING:
@@ -136,10 +138,33 @@ def extract_text_from_ocr_fields(ocr_fields: FieldList) -> str:
     return " ".join(text_parts)
 
 
-def read_document(state: GuardState, ocr_detector: OCRDetector | None = None) -> GuardState:
+def _get_default_ocr_detector():
+    """
+    Get default OCR detector from environment.
+    
+    Returns None if Tesseract is not available or fails to initialize.
+    This allows graceful degradation when OCR dependencies are missing.
+    """
+    try:
+        return TesseractOCRDetector.from_env()
+    except Exception as e:
+        # Log warning but don't crash - OCR is optional
+        warnings.warn(
+            f"Failed to initialize OCR detector: {e}. "
+            "Image text extraction will be disabled. "
+            "Install Tesseract: https://github.com/tesseract-ocr/tesseract",
+            RuntimeWarning,
+        )
+        return None
+
+
+def read_document(state: GuardState) -> GuardState:
     """
     Document ingestion node: Extracts text from file if file_path provided.
-    Automatically detects image files and runs OCR if detector is available.
+    Automatically detects image files and runs OCR using the default detector.
+    
+    The OCR detector is initialized from environment variables, ensuring
+    consistent configuration across the application.
     
     Priority:
     1. If raw_text is already provided, use it (skip file extraction)
@@ -151,7 +176,6 @@ def read_document(state: GuardState, ocr_detector: OCRDetector | None = None) ->
     
     Args:
         state: Current guard state
-        ocr_detector: Optional OCR detector for image files
         
     Returns:
         Updated state with raw_text populated
@@ -185,6 +209,7 @@ def read_document(state: GuardState, ocr_detector: OCRDetector | None = None) ->
                 state["metadata"] = {}
             state["metadata"]["file_type"] = "image"
             
+            ocr_detector = _get_default_ocr_detector()
             if ocr_detector:
                 try:
                     # Call OCR detector with current state

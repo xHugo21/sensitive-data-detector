@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pytest
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 from multiagent_firewall.nodes.document import (
     read_document,
@@ -168,19 +169,22 @@ def test_is_image_file_rejects_non_images():
     assert is_image_file("data.csv") == False
 
 
-def test_read_document_with_image_file_and_ocr_detector(tmp_path):
+@patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
+def test_read_document_with_image_file_and_ocr_detector(mock_ocr_from_env, tmp_path):
+    """Test reading image file with OCR detector"""
     image_path = tmp_path / "screenshot.png"
     image_path.write_bytes(b"fake image data")
 
-    def mock_ocr_detector(state):
-        return [
-            {
-                "field": "TEXT_IN_IMAGE",
-                "value": "Some text from image",
-                "source": "ocr",
-            },
-            {"field": "EMAIL", "value": "test@example.com", "source": "ocr"},
-        ]
+    mock_detector = MagicMock()
+    mock_detector.return_value = [
+        {
+            "field": "TEXT_IN_IMAGE",
+            "value": "Some text from image",
+            "source": "ocr",
+        },
+        {"field": "EMAIL", "value": "test@example.com", "source": "ocr"},
+    ]
+    mock_ocr_from_env.return_value = mock_detector
 
     state: GuardState = {
         "file_path": str(image_path),
@@ -189,7 +193,7 @@ def test_read_document_with_image_file_and_ocr_detector(tmp_path):
         "metadata": {},
     }
 
-    result = read_document(state, ocr_detector=mock_ocr_detector)
+    result = read_document(state)
 
     assert result["raw_text"] == "Some text from image test@example.com"
     assert result.get("metadata", {}).get("file_type") == "image"
@@ -197,9 +201,14 @@ def test_read_document_with_image_file_and_ocr_detector(tmp_path):
     assert len(result["ocr_fields"]) == 2
 
 
-def test_read_document_with_image_file_no_ocr_detector(tmp_path):
+@patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
+def test_read_document_with_image_file_no_ocr_detector(mock_ocr_from_env, tmp_path):
+    """Test reading image file when OCR detector fails to initialize"""
     image_path = tmp_path / "screenshot.jpg"
     image_path.write_bytes(b"fake image data")
+    
+    # Simulate OCR detector initialization failure
+    mock_ocr_from_env.side_effect = RuntimeError("Tesseract not found")
 
     state: GuardState = {
         "file_path": str(image_path),
@@ -208,7 +217,9 @@ def test_read_document_with_image_file_no_ocr_detector(tmp_path):
         "metadata": {},
     }
 
-    result = read_document(state, ocr_detector=None)
+    # The function should handle the missing detector gracefully
+    with pytest.warns(RuntimeWarning, match="Failed to initialize OCR detector"):
+        result = read_document(state)
 
     assert result["raw_text"] == ""
     assert "Image file detected but no OCR detector available" in result["warnings"][0]
@@ -250,12 +261,15 @@ def test_read_document_sets_file_type_metadata_for_text(tmp_path):
     assert result.get("metadata", {}).get("file_type") == "text"
 
 
-def test_read_document_handles_ocr_exception(tmp_path):
+@patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
+def test_read_document_handles_ocr_exception(mock_ocr_from_env, tmp_path):
+    """Test handling OCR detector exceptions"""
     image_path = tmp_path / "bad_image.png"
     image_path.write_bytes(b"corrupt image")
 
-    def failing_ocr_detector(state):
-        raise RuntimeError("OCR service unavailable")
+    mock_detector = MagicMock()
+    mock_detector.side_effect = RuntimeError("OCR service unavailable")
+    mock_ocr_from_env.return_value = mock_detector
 
     state: GuardState = {
         "file_path": str(image_path),
@@ -264,7 +278,7 @@ def test_read_document_handles_ocr_exception(tmp_path):
         "metadata": {},
     }
 
-    result = read_document(state, ocr_detector=failing_ocr_detector)
+    result = read_document(state)
 
     assert result["raw_text"] == ""
     assert any("OCR detection failed" in e for e in result["errors"])

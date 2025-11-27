@@ -76,17 +76,6 @@
     });
     panel.appendChild(policy);
 
-    const header = document.createElement("div");
-    header.id = "sg-llm-header";
-    Object.assign(header.style, {
-      fontWeight: "600",
-      margin: "14px 0 6px",
-      fontSize: "16px",
-      color: "#ECECF1",
-    });
-    header.textContent = "Sensitive data detected:";
-    panel.appendChild(header);
-
     const list = document.createElement("div");
     list.id = "sg-llm-list";
     Object.assign(list.style, {
@@ -153,7 +142,6 @@
       list,
       originBadge,
       policy,
-      header,
       actions,
       btnSendAnyway,
       btnDismiss,
@@ -240,7 +228,6 @@
       list,
       originBadge,
       policy,
-      header,
       btnSendAnyway,
       btnDismiss,
       actions,
@@ -278,11 +265,6 @@
             : "#c5c5d2";
     const accentOrigin = origin === "Response" ? "#82b5ff" : accentRisk;
     panel.style.borderLeft = `4px solid ${accentOrigin}`;
-
-    header.textContent =
-      origin === "Response"
-        ? "Sensitive fields detected in the model response:"
-        : "Sensitive data detected:";
 
     if (detected_fields.length) {
       const groups = new Map();

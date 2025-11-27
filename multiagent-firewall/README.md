@@ -107,7 +107,7 @@ The orchestrator returns a `GuardState` dictionary with:
             "source": str         # Detection source (dlp/llm)
         }
     ],
-    "risk_level": str,            # None/Low/Medium/High/Critical
+    "risk_level": str,            # None/Low/Medium/High
     "decision": str,              # allow/allow_with_warning/block
     "remediation": str            # Suggested action
 }
@@ -136,6 +136,11 @@ TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
 #### Detection Mode
 ```bash
 DETECTION_MODE=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot
+
+#### Blocking Policy
+```bash
+MIN_BLOCK_RISK=medium        # Options: low, medium, high
+```
 ```
 
 ### Supported File Types

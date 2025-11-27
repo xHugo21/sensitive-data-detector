@@ -10,9 +10,6 @@ from mitmproxy.http import HTTPFlow
 from app import config
 
 
-_RISK_ORDER = {"none": 0, "low": 1, "medium": 2, "high": 3}
-
-
 class SensitiveDataDetector:
     def __init__(self):
         self.intercepted_hosts = config.INTERCEPTED_HOSTS
@@ -91,11 +88,8 @@ class SensitiveDataDetector:
             return None
 
     def _should_block(self, result: Dict[str, Any]) -> bool:
-        threshold = _RISK_ORDER.get(config.PROXY_MIN_BLOCK_RISK, 1)
-        if threshold <= 0:
-            return False
-        risk_level = (result.get("risk_level") or "none").strip().lower()
-        return _RISK_ORDER.get(risk_level, 0) >= threshold
+        decision = (result.get("decision") or "").strip().lower()
+        return decision == "block"
 
     def _detection_headers(self, result: Dict[str, Any]) -> Dict[str, str]:
         headers: Dict[str, str] = {}

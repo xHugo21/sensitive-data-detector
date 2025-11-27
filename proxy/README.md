@@ -7,7 +7,7 @@ A transparent HTTP/HTTPS proxy built with `mitmproxy` that intercepts LLM API re
 - **Transparent Interception**: Works system-wide via `HTTP_PROXY`/`HTTPS_PROXY` environment variables
 - **Configurable Endpoints**: Define which API hosts and paths to monitor
 - **Sensitive Data Detection**: Integrates with the sensitive-data-detector backend
-- **Risk-Based Blocking**: Configure minimum risk level to block requests
+- **Risk-Based Blocking**: Uses backend policy (configured via backend `MIN_BLOCK_RISK`)
 - **Zero Code Changes**: No need to modify application code or API endpoints
 
 > [!NOTE]

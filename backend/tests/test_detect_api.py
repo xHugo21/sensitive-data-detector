@@ -10,8 +10,8 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
         def __init__(self):
             self.calls = []
 
-        def run(self, text=None, *, file_path=None, mode=None):
-            self.calls.append(("text", text, mode))
+        def run(self, text=None, *, file_path=None, mode=None, min_block_risk=None):
+            self.calls.append(("text", text, mode, min_block_risk))
             return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "Low"}
 
     dummy = DummyOrchestrator()
@@ -25,6 +25,7 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
     assert dummy.calls[0][0] == "text"
     assert dummy.calls[0][1] == "hello"
     assert dummy.calls[0][2] == "m"
+    assert dummy.calls[0][3] is not None
 
 
 def test_detect_endpoint_with_file(monkeypatch, tmp_path):
@@ -33,8 +34,8 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
         def __init__(self):
             self.calls = []
 
-        def run(self, text=None, *, file_path=None, mode=None):
-            self.calls.append(("file", file_path, mode))
+        def run(self, text=None, *, file_path=None, mode=None, min_block_risk=None):
+            self.calls.append(("file", file_path, mode, min_block_risk))
             return {
                 "detected_fields": [],
                 "risk_level": "None",
@@ -59,10 +60,11 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
     body = resp.json()
     assert body["extracted_snippet"] == "file text content"
     assert dummy.calls
-    call_type, call_file_path, call_mode = dummy.calls[0]
+    call_type, call_file_path, call_mode, call_threshold = dummy.calls[0]
     assert call_type == "file"
     assert call_file_path is not None
     assert call_mode == "zero-shot"
+    assert call_threshold is not None
 
 
 def test_detect_endpoint_requires_input():
@@ -74,4 +76,3 @@ def test_detect_endpoint_requires_input():
     body = resp.json()
     assert "error" in body
     assert "text or file must be provided" in body["error"].lower()
-

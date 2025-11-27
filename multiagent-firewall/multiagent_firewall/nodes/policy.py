@@ -3,11 +3,28 @@ from __future__ import annotations
 from ..types import GuardState
 
 
+_RISK_ORDER = {
+    "none": 0,
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+}
+
+
+def _risk_value(name: str | None) -> int:
+    return _RISK_ORDER.get((name or "").strip().lower(), 0)
+
+
 def apply_policy(state: GuardState) -> GuardState:
-    risk = (state.get("risk_level") or "none").lower()
-    if risk in {"high", "medium"}:
+    risk_level = state.get("risk_level")
+    threshold = state.get("min_block_risk") or "medium"
+
+    risk_value = _risk_value(risk_level)
+    threshold_value = _risk_value(threshold) or _RISK_ORDER["medium"]
+
+    if risk_value >= threshold_value and risk_value > 0:
         state["decision"] = "block"
-    elif risk == "low" and state.get("detected_fields"):
+    elif state.get("detected_fields"):
         state["decision"] = "allow_with_warning"
     else:
         state["decision"] = "allow"

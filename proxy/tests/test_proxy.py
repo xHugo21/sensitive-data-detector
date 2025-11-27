@@ -43,19 +43,6 @@ def test_extract_payload_text_uses_prompt_for_non_chat_path(
     assert text == "linear"
 
 
-def test_should_block_respects_threshold(
-    interceptor: SensitiveDataDetector, monkeypatch: pytest.MonkeyPatch
-):
-    from app import config
-
-    monkeypatch.setattr(config, "PROXY_MIN_BLOCK_RISK", "medium")
-
-    interceptor_high_threshold = SensitiveDataDetector()
-
-    assert interceptor_high_threshold._should_block({"risk_level": "High"})
-    assert not interceptor_high_threshold._should_block({"risk_level": "Low"})
-
-
 def test_detection_headers_include_detected_fields(
     interceptor: SensitiveDataDetector,
 ):
@@ -72,6 +59,12 @@ def test_detection_headers_include_detected_fields(
     assert headers["X-LLM-Guard-Risk-Level"] == "High"
     assert "password" in headers["X-LLM-Guard-Detected-Fields"]
     assert "api_key" in headers["X-LLM-Guard-Detected-Fields"]
+
+
+def test_should_block_uses_decision(interceptor: SensitiveDataDetector):
+    assert interceptor._should_block({"decision": "block"})
+    assert not interceptor._should_block({"decision": "allow"})
+    assert not interceptor._should_block({"risk_level": "High"})
 
 
 def test_should_intercept_matches_configured_endpoints(

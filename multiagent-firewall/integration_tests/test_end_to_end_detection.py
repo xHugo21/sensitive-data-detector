@@ -65,9 +65,9 @@ def orchestrator():
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "test_id,prompt,expected_sensitive,expected_entities,description", 
+    "test_id,prompt,expected_sensitive,expected_entities,description",
     load_test_cases(),
-    ids=[case[0] for case in load_test_cases()]
+    ids=[case[0] for case in load_test_cases()],
 )
 def test_sensitive_detection(
     orchestrator, test_id, prompt, expected_sensitive, expected_entities, description
@@ -79,7 +79,7 @@ def test_sensitive_detection(
     decision = result.get("decision", "")
 
     risk_level_normalized = risk_level.lower() if risk_level else ""
-    is_sensitive = risk_level_normalized in ["high", "critical"] or decision == "block"
+    is_sensitive = risk_level_normalized in ["high"] or decision == "block"
 
     cache_result(test_id, expected_sensitive, is_sensitive)
 

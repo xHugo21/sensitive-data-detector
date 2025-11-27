@@ -1,4 +1,4 @@
-from multiagent_firewall import compute_risk_level
+from multiagent_firewall.nodes.risk import compute_risk_level
 
 
 def test_compute_risk_level_high_for_sensitive_fields():

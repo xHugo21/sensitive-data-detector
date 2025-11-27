@@ -262,22 +262,11 @@
 
     const baseText = contextText || "";
 
-    const policyUser = `
-      <div style="margin-bottom:6px;">
-        According to the <b>OpenAI privacy policy</b>, your sensitive data may be shared with
-        <b>vendors</b>, <b>affiliates</b>, <b>authorities</b>, or during <b>business transfers</b>.
-        <b>Corporate administrators</b> and the <b>third parties</b> you choose to share with can also access it.
-        Some content may be retained and used to <b>improve services/models</b>.
-        Read the full policy
-        <a href="https://openai.com/policies/row-privacy-policy/" target="_blank" style="color:#3fa9ff;text-decoration:underline;">here</a>.
-      </div>`;
-    const policyResponse = `
-      <div style="margin-bottom:6px;">
-        ⚠️ <b>Sensitive fields were detected in the model response.</b><br>
-        If you use this information outside ChatGPT, be aware of the risks of sharing it.
-        Read the <a href="https://openai.com/policies/row-privacy-policy/" target="_blank" style="color:#3fa9ff;text-decoration:underline;">privacy policy here</a>.
-      </div>`;
-    policy.innerHTML = origin === "Response" ? policyResponse : policyUser;
+    // Display remediation message from backend
+    const remediation = result?.remediation || "";
+    policy.innerHTML = remediation
+      ? `<div style="margin-bottom:6px;">${remediation}</div>`
+      : "";
 
     const accentRisk =
       risk_level === "High"

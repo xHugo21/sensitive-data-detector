@@ -19,3 +19,16 @@ def _str_to_bool(value: str | None, default: bool) -> bool:
 
 
 DEBUG_MODE = _str_to_bool(os.getenv("DEBUG_MODE"), False)
+
+
+def _parse_risk(value: str | None, default: str) -> str:
+    allowed = {"low", "medium", "high"}
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized not in allowed:
+        return default
+    return normalized
+
+
+MIN_BLOCK_RISK = _parse_risk(os.getenv("MIN_BLOCK_RISK"), "medium")

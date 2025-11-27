@@ -66,7 +66,11 @@
 
       try {
         const result = await sg.detectorClient.detectText(text);
-        if (["Medium", "High"].includes(result?.risk_level)) {
+        const hasFindings = (result?.detected_fields || []).length > 0;
+        const shouldShow =
+          hasFindings ||
+          ["Low", "Medium", "High"].includes(result?.risk_level);
+        if (shouldShow) {
           sg.panel.render(result, "Response", text);
           sg.highlights.applyHighlights(
             contentEl,
@@ -94,7 +98,11 @@
       if (!textUser) return;
       try {
         const result = await sg.detectorClient.detectText(textUser);
-        if (["Medium", "High"].includes(result?.risk_level)) {
+        const hasFindings = (result?.detected_fields || []).length > 0;
+        const shouldShow =
+          hasFindings ||
+          ["Low", "Medium", "High"].includes(result?.risk_level);
+        if (shouldShow) {
           sg.panel.render(result, "User", textUser);
         }
         store.markAnalyzed(host);

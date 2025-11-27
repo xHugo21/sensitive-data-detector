@@ -56,6 +56,7 @@ class GuardOrchestrator:
         *,
         file_path: str = None,
         mode: str | None = None,
+        min_block_risk: str | None = None,
     ) -> GuardState:
         """
         Run the detection pipeline.
@@ -72,6 +73,7 @@ class GuardOrchestrator:
             "raw_text": text or "",
             "file_path": file_path,
             "mode": mode,
+            "min_block_risk": (min_block_risk or "medium").lower(),
             "metadata": {},
             "warnings": [],
             "errors": [],

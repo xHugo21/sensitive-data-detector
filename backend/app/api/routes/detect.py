@@ -4,6 +4,7 @@ from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 from app.utils.logger import debug_log
 from multiagent_firewall import GuardOrchestrator
+from app.config import MIN_BLOCK_RISK
 
 router = APIRouter()
 
@@ -12,7 +13,6 @@ router = APIRouter()
 async def detect(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    mode: Optional[str] = Form(None),
 ):
     """
     Unified detection endpoint that accepts either text or file.
@@ -47,7 +47,7 @@ async def detect(
             # Use orchestrator with file_path
             result = GuardOrchestrator().run(
                 file_path=tmp_path,
-                mode=mode,
+                min_block_risk=MIN_BLOCK_RISK,
             )
 
             # Add snippet of extracted text
@@ -64,11 +64,9 @@ async def detect(
 
         # Handle text input
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
-        debug_log("[SensitiveDataDetectorBackend] Mode:", mode)
-
         result = GuardOrchestrator().run(
             text=text,
-            mode=mode,
+            min_block_risk=MIN_BLOCK_RISK,
         )
 
         debug_log(

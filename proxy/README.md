@@ -7,36 +7,19 @@ A transparent HTTP/HTTPS proxy built with `mitmproxy` that intercepts LLM API re
 - **Transparent Interception**: Works system-wide via `HTTP_PROXY`/`HTTPS_PROXY` environment variables
 - **Configurable Endpoints**: Define which API hosts and paths to monitor
 - **Sensitive Data Detection**: Integrates with the sensitive-data-detector backend
-- **Risk-Based Blocking**: Configure minimum risk level to block requests
+- **Risk-Based Blocking**: Uses backend policy (configured via backend `MIN_BLOCK_RISK`)
 - **Zero Code Changes**: No need to modify application code or API endpoints
 
 > [!NOTE]
 > Proxy only analyses prompt data from the role: 'user'. This avoids having false positives from system prompts included by external apps.
 
-## Installation
-
-```bash
-uv pip install -e .
-```
-
 ## Configuration
 
-Copy `.env.example` to `.env` and configure:
+Copy `.env.example` to `.env` and configure its values:
 
 ```bash
 cp .env.example .env
 ```
-
-### Key Configuration Options
-
-- **`PROXY_HOST`**: Proxy server host (default: `127.0.0.1`)
-- **`PROXY_PORT`**: Proxy server port (default: `8080`)
-- **`INTERCEPTED_HOSTS`**: Comma-separated list of API hosts to intercept
-  - Example: `api.openai.com,api.groq.com,api.anthropic.com`
-- **`INTERCEPTED_PATHS`**: Comma-separated list of API path prefixes to monitor
-  - Example: `/v1/chat/completions,/v1/completions`
-- **`PROXY_MIN_BLOCK_RISK`**: Minimum risk level to block (`none`, `low`, `medium`, `high`)
-- **`BACKEND_URL`**: URL of the sensitive-data-detector backend
 
 ## Usage
 
@@ -47,6 +30,7 @@ First, ensure the sensitive-data-detector backend is running
 ### 2. Start the Proxy
 
 ```bash
+uv sync
 uv run python -m app.main
 ```
 

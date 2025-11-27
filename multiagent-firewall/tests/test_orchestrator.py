@@ -91,6 +91,10 @@ def test_orchestrator_run_with_sensitive_data():
     assert "detected_fields" in result
     assert "risk_level" in result
     assert "decision" in result
+    assert all("risk" in f for f in result["detected_fields"])
+    risk_map = {f["field"]: f["risk"] for f in result["detected_fields"]}
+    assert risk_map.get("PASSWORD") == "high"
+    assert risk_map.get("EMAIL") == "medium"
 
 
 def test_orchestrator_run_with_file_path(tmp_path):

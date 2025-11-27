@@ -6,11 +6,20 @@ from typing import Any
 from ..types import FieldList, GuardState
 
 _whitespace_re = re.compile(r"\s+")
+_system_reminder_re = re.compile(
+    r"<system-reminder>.*?</system-reminder>", flags=re.DOTALL | re.IGNORECASE
+)
 
 
 def normalize(state: GuardState) -> GuardState:
     text = state.get("raw_text") or ""
+    
+    # Remove system tags (e.g., OpenCode CLI artifacts)
+    text = _system_reminder_re.sub("", text)
+    
+    # Normalize whitespace
     normalized = _whitespace_re.sub(" ", text).strip()
+    
     state["normalized_text"] = normalized
     if not normalized:
         _append(state, "warnings", "No text provided for analysis.")

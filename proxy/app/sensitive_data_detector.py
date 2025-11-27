@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any, Dict
 
 import httpx
@@ -51,15 +50,6 @@ class SensitiveDataDetector:
             )
         return ""
 
-    def _clean_text(self, text: str) -> str:
-        text = re.sub(
-            r"<system-reminder>.*?</system-reminder>",  # Opencode CLI tags added inside user prompt
-            "",
-            text,
-            flags=re.DOTALL | re.IGNORECASE,
-        )
-        return text.strip()
-
     def _extract_payload_text(self, payload: Dict[str, Any], path: str) -> str:
         path_lower = path.lower()
         if "chat" in path_lower:
@@ -74,12 +64,12 @@ class SensitiveDataDetector:
                         continue
                     text = self._stringify(item.get("content"))
                     if text:
-                        chunks.append(self._clean_text(text))
+                        chunks.append(text.strip())
                 if chunks:
                     return "\n\n".join(chunks)
         prompt = payload.get("prompt")
         if prompt is not None:
-            return self._clean_text(self._stringify(prompt))
+            return self._stringify(prompt).strip()
         return ""
 
     def _ask_backend(self, text: str) -> Dict[str, Any] | None:

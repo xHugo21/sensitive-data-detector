@@ -1,60 +1,60 @@
-# 🛡️ LLM Guard 
+# 🛡️ Sensitive Data Detector
 
-Detect and prevent private data leakage in user-LLM interactions.
+Modular architecture to detect and prevent private data leakage in user-LLM interactions.
 
 ## 📦 Packages
 
 ### 🧱 Multiagent Firewall
-Implements a LangGraph-based multiagent firewall for advanced policy enforcement and detection.
+Implements a LangGraph-based multiagent firewall for advanced data leakage detection and policy management.
 
 ### 🔌 Backend
-Provides a FastAPI server for analyzing and detecting sensitive data in LLM interactions
+Provides a FastAPI server as a bridge to connect proxy and extension packages with the multiagent firewall
 
 ### 🌐 Extension
 Chromium based extension that analyzes user and LLM interactions to detect sensitive data and provide feedback to the user within the browser.
 
 ### 🧩 Proxy
-Protect user and LLM interactions via command-line clients, IDEs or applications by routing their LLM API calls through our multiagent firewall.
+Protect user and LLM interactions via command-line clients, IDEs or applications by routing their LLM API calls through the multiagent firewall.
 
 ## 🔄 Architecture
 
 ```mermaid
-flowchart LR
-  subgraph Backend["Backend"]
-    B[FastAPI Backend]
-    B --> O[multiagent-firewall]
-    O -->|regex + LLM + OCR detectors| B
-  end
+flowchart TB
+    subgraph Browser["🌐 Browser Usage"]
+        USER1[User on ChatGPT]
+        EXT[Extension]
+        CHATGPT[ChatGPT Website]
+        
+        USER1 -->|text / file| EXT
+        EXT -->|warns about detection results| USER1
+        EXT -.->|forwards when safe or allowed by the user| CHATGPT
+    end
+    subgraph SystemWide["💻 System-Wide Usage"]
+        USER2[User on CLI/IDE/App]
+        PROXY[Proxy]
+        LLMAPI[LLM API Providers<br/><small>OpenAI, Claude, etc.</small>]
+        
+        USER2 -->|LLM API calls| PROXY
+        PROXY -->|403 block or allow| USER2
+        PROXY -.->|forwards when safe| LLMAPI
+    end
+    subgraph Backend["🔌 Backend"]
+        API[FastAPI Server<br/><small>/detect endpoint</small>]
+        FIREWALL[Multiagent Firewall<br/><small>LangGraph Pipeline</small>]
+        API -->|invoke | FIREWALL
+        FIREWALL -->|detection result| API
+    end
+    EXT -->|POST /detect<br/>text or file| API
+    PROXY -->|POST /detect<br/>text or file| API
+    
+    API -->|detection result| EXT
+    API -->|detection result| PROXY
+    style Browser fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    style SystemWide fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    style Backend fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-  subgraph Browser
-    U[User in browser] --> E[Extension]
-    E -->|/detect or /detect_file| B
-
-    E -->|allows prompt only when safe| S[LLM website/provider]
-  end
-
-  subgraph Proxy["Proxy"]
-    A[User in CLI/IDE/App] -->|LLM requests via HTTP or HTTPS proxy| P[Proxy]
-    P -->|LLM HTTP payloads| B
-    P -->|forwards when safe| L[LLM API provider]
-    P -.blocked 403 response.- A
-  end
-
-  B -->|risk, detected fields, remediation| E
-  B -->|risk headers or 403 block| P
-
+    linkStyle default stroke:#000,stroke-width:2px
 ```
-
----
-
-## ⚡ Exclusive features of this fork
-- Proxy server that acts as a MiTM to analyse and block all sensitive LLM API interactions
-- Cleaner project structure
-- Chromium extension blocks prompt sending until analysed and user explicitly allows it.
-- Easier backend server setup via a shared `uv` workspace and Dockerfile
-- Unified LiteLLM integration for 100+ providers with simple `.env` overrides
-- Local model support through Ollama
-- Test suite on every package and CI workflow
 
 ---
 
@@ -67,15 +67,17 @@ Install [uv](https://docs.astral.sh/uv/#installation) (modern Python package man
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 2. Set up environment variables
+### 2. Configure package options
 - `backend`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
 - `proxy`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
 - `extension`: Modify `extension/src/config.js`
 
-### 3. Install dependencies and run
-From the directory of the desired package (either `backend` or `proxy`):
+### 3. Run backend server
+The backend package simplifies the connection between the `proxy` and `extension` modules.
 
 ```bash
+cd backend
+
 uv sync
 
 uv run python -m app.main
@@ -88,10 +90,18 @@ uv run python -m app.main
 > docker run -p 8000:8000 --env-file .env sensitive-data-detector
 > ```
 
-### 4. Load extension
+### 4a. Load extension
 1. Go to chrome://extensions/
 2. Toggle on "Developer mode"
 3. Click "Load unpacked" → choose path to `sensitive-data-detector/extension/`
+
+The extension will intercept ChatGPT interactions and provide feedback to the user regarding any potential sensitive information leakage
+
+### 4b. Run proxy
+
+Detailed information on how to run the proxy package under `proxy/README.md`
+
+The proxy will act as a middleman between the user and any listed endpoint under `proxy/.env`
 
 > [!IMPORTANT]
 > Ensure the host and ports of each package don't overlap with any other opened ports on your machine and that each package properly points to the backend port

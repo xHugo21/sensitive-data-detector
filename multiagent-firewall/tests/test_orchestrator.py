@@ -39,10 +39,10 @@ def test_orchestrator_run_with_prompt_and_mode(mock_llm_from_env):
     orchestrator = GuardOrchestrator()
     result = orchestrator.run(
         text="Test text",
-        mode="strict",
+        llm_prompt="strict",
     )
     
-    assert result.get("mode") == "strict"
+    assert result.get("llm_prompt") == "strict"
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')

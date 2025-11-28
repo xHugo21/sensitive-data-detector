@@ -60,7 +60,7 @@ orchestrator = GuardOrchestrator()
 # Detect sensitive data in text
 result = orchestrator.run(
   text="My SSN is 123-45-6789",
-  mode="enriched-zero-shot"  # zero-shot, few-shot, or enriched-zero-shot
+  llm_prompt="enriched-zero-shot"  # zero-shot, few-shot, or enriched-zero-shot
 )
 
 print(f"Decision: {result['decision']}")
@@ -133,14 +133,14 @@ OCR_CONFIDENCE_THRESHOLD=60  # Minimum confidence 0-100 (default: 0)
 TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
 ```
 
-#### Detection Mode
+#### LLM Prompt Template
 ```bash
-DETECTION_MODE=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot
+LLM_PROMPT=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot
+```
 
 #### Blocking Policy
 ```bash
 MIN_BLOCK_RISK=medium        # Options: low, medium, high
-```
 ```
 
 ### Supported File Types

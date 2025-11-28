@@ -10,8 +10,8 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
         def __init__(self):
             self.calls = []
 
-        def run(self, text=None, *, file_path=None, mode=None, min_block_risk=None):
-            self.calls.append(("text", text, mode, min_block_risk))
+        def run(self, text=None, *, file_path=None, llm_prompt=None, min_block_risk=None):
+            self.calls.append(("text", text, llm_prompt, min_block_risk))
             return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "low"}
 
     dummy = DummyOrchestrator()
@@ -34,8 +34,8 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
         def __init__(self):
             self.calls = []
 
-        def run(self, text=None, *, file_path=None, mode=None, min_block_risk=None):
-            self.calls.append(("file", file_path, mode, min_block_risk))
+        def run(self, text=None, *, file_path=None, llm_prompt=None, min_block_risk=None):
+            self.calls.append(("file", file_path, llm_prompt, min_block_risk))
             return {
                 "detected_fields": [],
                 "risk_level": "none",
@@ -59,10 +59,10 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
     body = resp.json()
     assert body["extracted_snippet"] == "file text content"
     assert dummy.calls
-    call_type, call_file_path, call_mode, call_threshold = dummy.calls[0]
+    call_type, call_file_path, call_llm_prompt, call_threshold = dummy.calls[0]
     assert call_type == "file"
     assert call_file_path is not None
-    assert call_mode is None
+    assert call_llm_prompt is None
     assert call_threshold is not None
 
 

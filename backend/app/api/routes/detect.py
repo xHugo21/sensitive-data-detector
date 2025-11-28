@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 from app.utils.logger import debug_log
 from multiagent_firewall import GuardOrchestrator
-from app.config import MIN_BLOCK_RISK
+from app.config import MIN_BLOCK_RISK, LLM_PROMPT
 
 router = APIRouter()
 
@@ -20,7 +20,6 @@ async def detect(
     Args:
         text: Direct text input
         file: File upload (PDF, TXT, etc.)
-        mode: Detection mode (zero-shot, few-shot, enriched-zero-shot)
 
     Returns:
         Detection results with risk level, detected fields, and remediation
@@ -47,6 +46,7 @@ async def detect(
             # Use orchestrator with file_path
             result = GuardOrchestrator().run(
                 file_path=tmp_path,
+                llm_prompt=LLM_PROMPT,
                 min_block_risk=MIN_BLOCK_RISK,
             )
 
@@ -66,6 +66,7 @@ async def detect(
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
         result = GuardOrchestrator().run(
             text=text,
+            llm_prompt=LLM_PROMPT,
             min_block_risk=MIN_BLOCK_RISK,
         )
 

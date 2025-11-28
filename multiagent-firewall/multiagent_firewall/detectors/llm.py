@@ -10,7 +10,7 @@ from typing import Any, Dict
 from langchain_litellm import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate
 
-from ..constants import PROMPT_MAP
+from ..constants import LLM_PROMPT_MAP
 
 
 def safe_json_from_text(s: str) -> dict:
@@ -54,11 +54,11 @@ def _maybe_prefix_model(model: str | None, provider: str) -> str | None:
     return f"{provider}/{model}"
 
 
-def _resolve_mode(mode: str | None, prompt_map: Dict[str, str]) -> str:
-    """Resolve detection mode: use explicit mode if valid, otherwise fallback to first key."""
+def _resolve_llm_prompt(llm_prompt: str | None, prompt_map: Dict[str, str]) -> str:
+    """Resolve LLM prompt: use explicit prompt if valid, otherwise fallback to first key."""
     fallback = next(iter(prompt_map))
-    if mode and mode in prompt_map:
-        return mode
+    if llm_prompt and llm_prompt in prompt_map:
+        return llm_prompt
     return fallback
 
 
@@ -133,8 +133,8 @@ class LiteLLMDetector:
             # Default: detectors/../prompts
             self._prompt_dir = Path(__file__).resolve().parent.parent / "prompts"
 
-        # Set up prompt map - merge default PROMPT_MAP with any overrides
-        self._prompt_map = dict(PROMPT_MAP)
+        # Set up prompt map - merge default LLM_PROMPT_MAP with any overrides
+        self._prompt_map = dict(LLM_PROMPT_MAP)
         if prompt_map:
             self._prompt_map.update(prompt_map)
 
@@ -161,9 +161,9 @@ class LiteLLMDetector:
     def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
         return cls(LiteLLMConfig.from_env(), **kwargs)
 
-    def __call__(self, text: str, mode: str | None):
+    def __call__(self, text: str, llm_prompt: str | None):
         try:
-            prompt_content, prompt_info = self._build_prompt(text, mode)
+            prompt_content, prompt_info = self._build_prompt(text, llm_prompt)
             try:
                 content = self._invoke(
                     prompt_content, json_mode=self._config.supports_json_mode
@@ -186,16 +186,16 @@ class LiteLLMDetector:
     def _build_prompt(
         self,
         text: str,
-        mode: str | None,
+        llm_prompt: str | None,
     ) -> tuple[str, str]:
         """Build the final prompt by loading template and injecting text."""
-        # Resolve the mode (explicit > env > fallback)
-        resolved_mode = _resolve_mode(mode, self._prompt_map)
+        # Resolve the llm_prompt
+        resolved_prompt = _resolve_llm_prompt(llm_prompt, self._prompt_map)
 
         # Get the prompt filename from the map
-        prompt_filename = self._prompt_map.get(resolved_mode)
+        prompt_filename = self._prompt_map.get(resolved_prompt)
         if not prompt_filename:
-            raise RuntimeError(f"Prompt mode '{resolved_mode}' not found in map")
+            raise RuntimeError(f"LLM prompt '{resolved_prompt}' not found in map")
 
         # Load the prompt template from file
         prompt_path = self._prompt_dir / prompt_filename

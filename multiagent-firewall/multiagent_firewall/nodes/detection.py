@@ -27,7 +27,7 @@ def run_llm_detector(state: GuardState) -> GuardState:
         llm_detector = LiteLLMDetector.from_env()
         result = llm_detector(
             text,
-            state.get("mode"),
+            state.get("llm_prompt"),
         )
         fields = [
             {**item, "source": item.get("source", "llm_detector")}

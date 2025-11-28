@@ -2999,12 +2999,6 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-default = [
-    { name = "httpx" },
-    { name = "mitmproxy", version = "10.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "mitmproxy", version = "12.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "python-dotenv" },
-]
 test = [
     { name = "pytest" },
 ]
@@ -3017,11 +3011,6 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-default = [
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "mitmproxy", specifier = ">=10.3.0" },
-    { name = "python-dotenv", specifier = ">=1.2.1" },
-]
 test = [{ name = "pytest" }]
 
 [[package]]

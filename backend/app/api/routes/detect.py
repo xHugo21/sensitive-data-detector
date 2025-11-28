@@ -15,12 +15,11 @@ async def detect(
     file: Optional[UploadFile] = File(None),
 ):
     """
-    Unified detection endpoint that accepts either text or file via form-data.
-    Supports both extension and proxy requests.
+    Unified detection endpoint that accepts either text or file.
 
     Args:
-        text: Direct text input (form-data)
-        file: File upload (images, PDF, TXT, etc.)
+        text: Direct text input
+        file: File upload (PDF, TXT, etc.)
 
     Returns:
         Detection results with risk level, detected fields, and remediation

@@ -1,6 +1,8 @@
 import pytest
+from pathlib import Path
 
 from multiagent_firewall.detectors import llm
+from multiagent_firewall.constants import PROMPT_MAP
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):
@@ -63,3 +65,88 @@ def test_maybe_prefix_model_handles_providers():
         llm._maybe_prefix_model("anthropic/claude-3", "anthropic")
         == "anthropic/claude-3"
     )
+
+
+# Prompt mapping and resolution tests
+
+
+def test_prompt_map_has_expected_modes():
+    """Test that PROMPT_MAP contains the expected detection modes"""
+    assert "zero-shot" in PROMPT_MAP
+    assert "enriched-zero-shot" in PROMPT_MAP
+    assert "few-shot" in PROMPT_MAP
+    assert len(PROMPT_MAP) >= 3
+
+
+def test_prompt_map_values_are_filenames():
+    """Test that PROMPT_MAP values are valid .txt filenames"""
+    for mode, filename in PROMPT_MAP.items():
+        assert isinstance(filename, str)
+        assert filename.endswith(".txt")
+        assert "/" not in filename  # Should be just filenames, not paths
+
+
+def test_prompt_files_exist():
+    """Test that all prompt files referenced in PROMPT_MAP actually exist"""
+    # Get the prompts directory
+    prompts_dir = Path(__file__).parent.parent / "multiagent_firewall" / "prompts"
+    
+    for mode, filename in PROMPT_MAP.items():
+        prompt_path = prompts_dir / filename
+        assert prompt_path.exists(), f"Prompt file missing for mode '{mode}': {prompt_path}"
+        assert prompt_path.is_file(), f"Prompt path is not a file: {prompt_path}"
+
+
+def test_resolve_mode_with_valid_mode():
+    """Test that _resolve_mode returns the mode when it's valid"""
+    assert llm._resolve_mode("zero-shot", PROMPT_MAP) == "zero-shot"
+    assert llm._resolve_mode("few-shot", PROMPT_MAP) == "few-shot"
+    assert llm._resolve_mode("enriched-zero-shot", PROMPT_MAP) == "enriched-zero-shot"
+
+
+def test_resolve_mode_with_none():
+    """Test that _resolve_mode falls back to first PROMPT_MAP key when mode is None"""
+    expected_fallback = next(iter(PROMPT_MAP))
+    assert llm._resolve_mode(None, PROMPT_MAP) == expected_fallback
+
+
+def test_resolve_mode_with_invalid_mode():
+    """Test that _resolve_mode falls back to first PROMPT_MAP key for invalid mode"""
+    expected_fallback = next(iter(PROMPT_MAP))
+    assert llm._resolve_mode("invalid-mode", PROMPT_MAP) == expected_fallback
+    assert llm._resolve_mode("", PROMPT_MAP) == expected_fallback
+
+
+def test_resolve_mode_fallback_is_dynamic():
+    """Test that fallback adapts to the first key in the map"""
+    custom_map = {"few-shot": "few-shot.txt", "zero-shot": "zero-shot.txt"}
+    assert llm._resolve_mode(None, custom_map) == "few-shot"
+    assert llm._resolve_mode("invalid", custom_map) == "few-shot"
+
+
+def test_inject_text_with_placeholder():
+    """Test that _inject_text replaces {text} placeholder correctly"""
+    template = "Analyze the following: {text}"
+    result = llm._inject_text(template, "sample data")
+    assert result == "Analyze the following: sample data"
+    assert "{text}" not in result
+
+
+def test_inject_text_without_placeholder():
+    """Test that _inject_text appends text when no placeholder exists"""
+    template = "Analyze the following input."
+    result = llm._inject_text(template, "sample data")
+    assert result.startswith("Analyze the following input.")
+    assert "sample data" in result
+    assert "Text:" in result
+
+
+def test_inject_text_preserves_formatting():
+    """Test that _inject_text preserves multiline templates"""
+    template = "Line 1\nLine 2\n{text}\nLine 4"
+    result = llm._inject_text(template, "inserted")
+    assert "Line 1" in result
+    assert "Line 2" in result
+    assert "inserted" in result
+    assert "Line 4" in result
+

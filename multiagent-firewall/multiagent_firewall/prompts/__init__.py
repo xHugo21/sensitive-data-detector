@@ -1,19 +1,7 @@
-from .utils import (
-    DETECTION_MODE,
-    PROMPT_DIR,
-    PROMPT_MAP,
-    inject_text,
-    load_prompt,
-    resolve_mode,
-    _FALLBACK_PROMPT_MODE,
-)
+"""
+Prompts package - contains LLM prompt template files.
 
-__all__ = [
-    "DETECTION_MODE",
-    "PROMPT_DIR",
-    "PROMPT_MAP",
-    "inject_text",
-    "load_prompt",
-    "resolve_mode",
-    "_FALLBACK_PROMPT_MODE",
-]
+The prompt loading and resolution logic is now integrated into:
+  - detectors/llm.py: LiteLLMDetector handles all prompt operations
+  - constants.py: LLM_PROMPT_MAP defines prompt templates and their files
+"""

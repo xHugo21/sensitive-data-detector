@@ -23,7 +23,7 @@ def test_run_llm_detector_success(mock_llm_from_env):
     
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com",
-        "mode": None,
+        "llm_prompt": None,
         "warnings": [],
         "errors": [],
     }

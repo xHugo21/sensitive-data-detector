@@ -16,7 +16,7 @@ class GuardState(TypedDict, total=False):
     # PROCESSING
     normalized_text: str
     metadata: Dict[str, Any]
-    mode: NotRequired[str | None]
+    llm_prompt: NotRequired[str | None]
 
     # DETECTION
     warnings: List[str]

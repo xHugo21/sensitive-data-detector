@@ -10,7 +10,7 @@ from typing import Any, Dict
 from langchain_litellm import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate
 
-from ..prompts import PROMPT_MAP, inject_text, load_prompt, resolve_mode
+from ..constants import LLM_PROMPT_MAP
 
 
 def safe_json_from_text(s: str) -> dict:
@@ -54,6 +54,21 @@ def _maybe_prefix_model(model: str | None, provider: str) -> str | None:
     return f"{provider}/{model}"
 
 
+def _resolve_llm_prompt(llm_prompt: str | None, prompt_map: Dict[str, str]) -> str:
+    """Resolve LLM prompt: use explicit prompt if valid, otherwise fallback to first key."""
+    fallback = next(iter(prompt_map))
+    if llm_prompt and llm_prompt in prompt_map:
+        return llm_prompt
+    return fallback
+
+
+def _inject_text(template: str, text: str) -> str:
+    """Inject text into template, using {text} placeholder or appending."""
+    if "{text}" in template:
+        return template.replace("{text}", text)
+    return f"{template.rstrip()}\n\nText:\n'''{text}'''"
+
+
 @dataclass(frozen=True)
 class LiteLLMConfig:
     provider: str
@@ -95,7 +110,9 @@ class LiteLLMConfig:
 
 
 class LiteLLMDetector:
-    _SYSTEM_MESSAGE = "You are to output a single valid JSON object only. No prose, no markdown."
+    _SYSTEM_MESSAGE = (
+        "You are to output a single valid JSON object only. No prose, no markdown."
+    )
 
     def __init__(
         self,
@@ -108,8 +125,16 @@ class LiteLLMDetector:
         self._config = config
         self._provider = config.provider
         self._model = config.model
-        self._prompt_dir = Path(prompt_dir) if prompt_dir else None
-        self._prompt_map = dict(PROMPT_MAP)
+
+        # Set up prompt directory - default to the prompts folder
+        if prompt_dir:
+            self._prompt_dir = Path(prompt_dir)
+        else:
+            # Default: detectors/../prompts
+            self._prompt_dir = Path(__file__).resolve().parent.parent / "prompts"
+
+        # Set up prompt map - merge default LLM_PROMPT_MAP with any overrides
+        self._prompt_map = dict(LLM_PROMPT_MAP)
         if prompt_map:
             self._prompt_map.update(prompt_map)
 
@@ -136,16 +161,20 @@ class LiteLLMDetector:
     def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
         return cls(LiteLLMConfig.from_env(), **kwargs)
 
-    def __call__(self, text: str, mode: str | None):
+    def __call__(self, text: str, llm_prompt: str | None):
         try:
-            prompt_content, prompt_info = self._build_prompt(text, mode)
+            prompt_content, prompt_info = self._build_prompt(text, llm_prompt)
             try:
-                content = self._invoke(prompt_content, json_mode=self._config.supports_json_mode)
+                content = self._invoke(
+                    prompt_content, json_mode=self._config.supports_json_mode
+                )
             except Exception:
                 content = self._invoke(prompt_content, json_mode=False)
 
             result = safe_json_from_text(content) or {"detected_fields": []}
-            if "detected_fields" not in result or not isinstance(result["detected_fields"], list):
+            if "detected_fields" not in result or not isinstance(
+                result["detected_fields"], list
+            ):
                 result["detected_fields"] = []
             result["_prompt_source"] = prompt_info
             result["_model_used"] = self._model
@@ -157,19 +186,27 @@ class LiteLLMDetector:
     def _build_prompt(
         self,
         text: str,
-        mode: str | None,
+        llm_prompt: str | None,
     ) -> tuple[str, str]:
-        resolved = resolve_mode(mode)
-        prompt_filename = self._prompt_map.get(resolved)
-        if not prompt_filename:
-            raise RuntimeError(f"Prompt mode '{resolved}' not found")
+        """Build the final prompt by loading template and injecting text."""
+        # Resolve the llm_prompt
+        resolved_prompt = _resolve_llm_prompt(llm_prompt, self._prompt_map)
 
-        template = load_prompt(
-            resolved,
-            prompt_dir=self._prompt_dir,
-            prompt_map=self._prompt_map,
-        )
-        final_prompt = inject_text(template, text)
+        # Get the prompt filename from the map
+        prompt_filename = self._prompt_map.get(resolved_prompt)
+        if not prompt_filename:
+            raise RuntimeError(f"LLM prompt '{resolved_prompt}' not found in map")
+
+        # Load the prompt template from file
+        prompt_path = self._prompt_dir / prompt_filename
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
+
+        template = prompt_path.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
+
+        # Inject the text into the template
+        final_prompt = _inject_text(template, text)
+
         return final_prompt, f"prompts/{prompt_filename}"
 
     def _invoke(self, prompt_content: str, *, json_mode: bool) -> str:

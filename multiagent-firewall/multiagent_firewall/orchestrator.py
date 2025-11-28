@@ -39,7 +39,7 @@ class GuardOrchestrator:
         text: str | None = None,
         *,
         file_path: str | None = None,
-        mode: str | None = None,
+        llm_prompt: str | None = None,
         min_block_risk: str | None = None,
     ) -> GuardState:
         """
@@ -48,7 +48,7 @@ class GuardOrchestrator:
         Args:
             text: Direct text input
             file_path: Path to file on disk (automatically detects images)
-            mode: Detection mode (zero-shot, few-shot, enriched-zero-shot)
+            llm_prompt: LLM prompt template (zero-shot, few-shot, enriched-zero-shot)
 
         Returns:
             GuardState with detection results
@@ -56,7 +56,7 @@ class GuardOrchestrator:
         initial_state: GuardState = {
             "raw_text": text or "",
             "file_path": file_path,
-            "mode": mode,
+            "llm_prompt": llm_prompt,
             "min_block_risk": (min_block_risk or "medium").lower(),
             "metadata": {},
             "warnings": [],

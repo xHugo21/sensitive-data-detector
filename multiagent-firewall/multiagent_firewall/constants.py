@@ -1,4 +1,9 @@
 # Shared constants for multiagent-firewall
+PROMPT_MAP = {
+    "zero-shot": "zero-shot.txt",
+    "enriched-zero-shot": "enriched-zero-shot.txt",
+    "few-shot": "few-shot.txt",
+}
 
 # Regex patterns for DLP
 REGEX_PATTERNS = {

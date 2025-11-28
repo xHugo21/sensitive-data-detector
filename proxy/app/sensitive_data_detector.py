@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import io
 import json
 from typing import Any, Dict
 
@@ -28,6 +30,147 @@ class SensitiveDataDetector:
             return False
 
         return True
+
+    def _extract_base64_images(self, payload: Dict[str, Any]) -> list[Dict[str, str]]:
+        """
+        Extract base64-encoded images from various LLM API formats.
+        
+        Supports:
+        - OpenAI/GPT-4 Vision: content[].image_url.url
+        - GitHub Copilot: attachments[].data
+        - Anthropic Claude: content[].source.data
+        - Google Gemini: parts[].inline_data.data
+        
+        Returns:
+            List of dicts with:
+            - data: base64 string (without data URL prefix)
+            - mime_type: e.g., image/png, image/jpeg
+            - source: API format (openai, copilot, claude, gemini)
+        """
+        images = []
+        
+        messages = payload.get("messages", [])
+        
+        for msg in messages:
+            if not isinstance(msg, dict):
+                continue
+            
+            content = msg.get("content")
+            
+            # OpenAI/GPT-4 Vision format: content can be array
+            if isinstance(content, list):
+                for item in content:
+                    if not isinstance(item, dict):
+                        continue
+                    
+                    # OpenAI: {"type": "image_url", "image_url": {"url": "data:..."}}
+                    if item.get("type") == "image_url":
+                        image_url = item.get("image_url", {})
+                        url = image_url.get("url", "")
+                        
+                        if url.startswith("data:"):
+                            # Parse data URL: data:image/png;base64,xxx
+                            try:
+                                parts = url.split(",", 1)
+                                if len(parts) == 2:
+                                    mime_part = parts[0].split(":")[1].split(";")[0]
+                                    base64_data = parts[1]
+                                    images.append({
+                                        "data": base64_data,
+                                        "mime_type": mime_part,
+                                        "source": "openai"
+                                    })
+                            except (IndexError, ValueError):
+                                continue
+                    
+                    # Claude: {"type": "image", "source": {"type": "base64", "data": "..."}}
+                    elif item.get("type") == "image":
+                        source = item.get("source", {})
+                        if source.get("type") == "base64":
+                            images.append({
+                                "data": source.get("data", ""),
+                                "mime_type": source.get("media_type", "image/png"),
+                                "source": "claude"
+                            })
+            
+            # GitHub Copilot format: attachments array
+            attachments = msg.get("attachments", [])
+            for att in attachments:
+                if isinstance(att, dict) and att.get("type") == "image":
+                    images.append({
+                        "data": att.get("data", ""),
+                        "mime_type": att.get("mime_type", "image/png"),
+                        "source": "copilot"
+                    })
+        
+        # Google Gemini format: contents[].parts[]
+        contents = payload.get("contents", [])
+        for content_item in contents:
+            if not isinstance(content_item, dict):
+                continue
+            
+            parts = content_item.get("parts", [])
+            for part in parts:
+                if not isinstance(part, dict):
+                    continue
+                
+                inline_data = part.get("inline_data", {})
+                if inline_data and "data" in inline_data:
+                    images.append({
+                        "data": inline_data.get("data", ""),
+                        "mime_type": inline_data.get("mime_type", "image/png"),
+                        "source": "gemini"
+                    })
+        
+        return images
+
+    def _ask_backend_with_file(self, text: str, image_data: Dict[str, str]) -> Dict[str, Any] | None:
+        """
+        Send text + image file to backend for analysis using multipart form-data.
+        
+        Args:
+            text: Text content from the request
+            image_data: Dict with 'data' (base64), 'mime_type', 'source'
+            
+        Returns:
+            Detection result dict or None on error
+        """
+        if not image_data.get("data"):
+            return None
+        
+        # Decode base64 to bytes
+        try:
+            image_bytes = base64.b64decode(image_data["data"])
+        except Exception:
+            return None
+        
+        # Determine file extension from mime type
+        mime_type = image_data.get("mime_type", "image/png")
+        extension = mime_type.split("/")[-1]
+        if extension == "jpeg":
+            extension = "jpg"
+        
+        filename = f"image.{extension}"
+        
+        # Create file-like object from bytes
+        file_obj = io.BytesIO(image_bytes)
+        
+        detect_url = config.BACKEND_URL
+        
+        try:
+            with httpx.Client(timeout=config.BACKEND_TIMEOUT_SECONDS) as client:
+                # Send as multipart form-data (like the extension does)
+                files = {"file": (filename, file_obj, mime_type)}
+                data = {"text": text} if text else {}
+                
+                response = client.post(detect_url, files=files, data=data)
+            
+            if response.status_code >= 400:
+                return None
+            
+            return response.json()
+        except Exception:
+            return None
 
     def _stringify(self, value: Any) -> str:
         if value is None:
@@ -148,15 +291,34 @@ class SensitiveDataDetector:
         except (UnicodeDecodeError, json.JSONDecodeError):
             return
 
+        # Extract text content
         text_to_check = self._extract_payload_text(payload, flow.request.path)
-        result = self._ask_backend(text_to_check)
-
-        if result is None:
-            return
-
-        if self._should_block(result):
-            self._create_block_response(flow, result)
-            return
+        
+        # Check text first
+        if text_to_check:
+            result = self._ask_backend(text_to_check)
+            
+            if result is None:
+                # Backend error, allow request to continue
+                return
+            
+            if self._should_block(result):
+                self._create_block_response(flow, result)
+                return
+        
+        # Extract and check images
+        images = self._extract_base64_images(payload)
+        
+        for image in images:
+            result = self._ask_backend_with_file(text_to_check or "", image)
+            
+            if result is None:
+                # Backend error or invalid image, continue checking other images
+                continue
+            
+            if self._should_block(result):
+                self._create_block_response(flow, result)
+                return
 
     def response(self, flow: HTTPFlow) -> None:
         if not self._should_intercept(flow):

@@ -36,17 +36,24 @@ PROXY_PORT = _parse_int(os.getenv("PROXY_PORT"), 8080)
 INTERCEPTED_HOSTS = _parse_list(
     os.getenv("INTERCEPTED_HOSTS"),
     [
-        "api.openai.com",
-        "api.githubcopilot.com",
-        "api.groq.com",
+        "api.openai.com",           # OpenAI GPT-4, GPT-4 Vision
+        "api.anthropic.com",        # Claude (Anthropic)
+        "api.githubcopilot.com",    # GitHub Copilot
+        "api.groq.com",             # Groq
+        "generativelanguage.googleapis.com",  # Google Gemini
     ],
 )
 
 INTERCEPTED_PATHS = _parse_list(
     os.getenv("INTERCEPTED_PATHS"),
     [
-        "/v1/chat/completions",
-        "/v1/completions",
-        "/v1/engines/",
+        "/v1/chat/completions",     # OpenAI, Groq, Copilot
+        "/v1/completions",          # OpenAI legacy
+        "/v1/engines/",             # OpenAI legacy
+        "/v1/messages",             # Anthropic Claude
+        "/chat/completions",        # GitHub Copilot
+        "/completions",             # Generic completions
+        "/v1beta/models",           # Google Gemini
+        "/v1/models",               # Generic models endpoint
     ],
 )

@@ -17,18 +17,18 @@ async def detect(
 ):
     """
     Unified detection endpoint that accepts either text or file.
-    Supports both JSON (for proxy) and form-data (for extension).
+    Supports both JSON (for proxy text) and form-data (for extension and proxy files).
 
     Args:
-        text: Direct text input (form-data)
-        file: File upload (PDF, TXT, etc.)
+        text: Direct text input (form-data or JSON)
+        file: File upload (images, PDF, TXT, etc.)
         request: FastAPI request object to check for JSON body
 
     Returns:
         Detection results with risk level, detected fields, and remediation
     """
     try:
-        # Try to get JSON body if form fields are None
+        # Try to get JSON body if form fields are None (for text-only requests from proxy)
         if not text and not file:
             try:
                 json_body = await request.json()

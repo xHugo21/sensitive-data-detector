@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any
+from .types import GuardState
 
 if TYPE_CHECKING:
     from .types import GuardState
@@ -16,3 +17,17 @@ def debug_invoke(app: Any, inputs: "GuardState") -> "GuardState":
             final_state = update
 
     return final_state  # type: ignore[return-value]
+
+
+def append_error(state: GuardState, message: str) -> None:
+    """Add error to state."""
+    if "errors" not in state:
+        state["errors"] = []
+    state["errors"].append(message)
+
+
+def append_warning(state: GuardState, message: str) -> None:
+    """Add warning to state."""
+    if "warnings" not in state:
+        state["warnings"] = []
+    state["warnings"].append(message)

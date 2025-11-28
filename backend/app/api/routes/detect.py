@@ -1,6 +1,6 @@
 import os
 import tempfile
-from fastapi import APIRouter, UploadFile, File, Form, Request
+from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 from app.utils.logger import debug_log
 from multiagent_firewall import GuardOrchestrator
@@ -11,31 +11,21 @@ router = APIRouter()
 
 @router.post("/detect")
 async def detect(
-    request: Request,
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
 ):
     """
-    Unified detection endpoint that accepts either text or file.
-    Supports both JSON (for proxy text) and form-data (for extension and proxy files).
+    Unified detection endpoint that accepts either text or file via form-data.
+    Supports both extension and proxy requests.
 
     Args:
-        text: Direct text input (form-data or JSON)
+        text: Direct text input (form-data)
         file: File upload (images, PDF, TXT, etc.)
-        request: FastAPI request object to check for JSON body
 
     Returns:
         Detection results with risk level, detected fields, and remediation
     """
     try:
-        # Try to get JSON body if form fields are None (for text-only requests from proxy)
-        if not text and not file:
-            try:
-                json_body = await request.json()
-                text = json_body.get("text")
-            except Exception:
-                pass
-        
         # Validate that at least one input is provided
         if not text and not file:
             return {

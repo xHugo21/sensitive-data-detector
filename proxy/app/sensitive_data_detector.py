@@ -221,7 +221,8 @@ class SensitiveDataDetector:
 
         try:
             with httpx.Client(timeout=config.BACKEND_TIMEOUT_SECONDS) as client:
-                response = client.post(detect_url, json=data)
+                # Send as form-data (not JSON) to match backend's expected format
+                response = client.post(detect_url, data=data)
 
             if response.status_code >= 400:
                 return None

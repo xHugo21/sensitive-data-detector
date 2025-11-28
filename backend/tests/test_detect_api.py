@@ -77,30 +77,6 @@ def test_detect_endpoint_requires_input():
     assert "text or file must be provided" in body["error"].lower()
 
 
-def test_detect_endpoint_with_json_input(monkeypatch):
-    """Test detect endpoint with JSON input (for proxy compatibility)"""
-    class DummyOrchestrator:
-        def __init__(self):
-            self.calls = []
-
-        def run(self, text=None, *, file_path=None, llm_prompt=None, min_block_risk=None):
-            self.calls.append(("text", text, llm_prompt, min_block_risk))
-            return {"detected_fields": [{"field": "SSN"}], "risk_level": "high"}
-
-    dummy = DummyOrchestrator()
-    monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda: dummy)
-
-    client = TestClient(app)
-    resp = client.post("/detect", json={"text": "my ssn is 123-45-6789"})
-
-    assert resp.status_code == 200
-    assert resp.json()["detected_fields"] == [{"field": "SSN"}]
-    assert dummy.calls[0][0] == "text"
-    assert dummy.calls[0][1] == "my ssn is 123-45-6789"
-    assert dummy.calls[0][2] is not None  # llm_prompt is passed from config
-    assert dummy.calls[0][3] is not None
-
-
 def test_detect_endpoint_with_file_and_text(monkeypatch, tmp_path):
     """Test detect endpoint with both file upload and text (proxy sends both)"""
     class DummyOrchestrator:

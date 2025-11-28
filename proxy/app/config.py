@@ -53,7 +53,5 @@ INTERCEPTED_PATHS = _parse_list(
         "/v1/messages",             # Anthropic Claude
         "/chat/completions",        # GitHub Copilot
         "/completions",             # Generic completions
-        "/v1beta/models",           # Google Gemini
-        "/v1/models",               # Generic models endpoint
     ],
 )

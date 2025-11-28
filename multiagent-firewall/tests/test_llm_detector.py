@@ -57,10 +57,7 @@ def test_config_from_env_includes_optional_fields(monkeypatch):
 def test_maybe_prefix_model_handles_providers():
     assert llm._maybe_prefix_model(None, "openai") is None
     assert llm._maybe_prefix_model("gpt-4o", "openai") == "gpt-4o"
-    assert (
-        llm._maybe_prefix_model("claude-3", "anthropic")
-        == "anthropic/claude-3"
-    )
+    assert llm._maybe_prefix_model("claude-3", "anthropic") == "anthropic/claude-3"
     assert (
         llm._maybe_prefix_model("anthropic/claude-3", "anthropic")
         == "anthropic/claude-3"
@@ -80,7 +77,7 @@ def test_prompt_map_has_expected_modes():
 
 def test_prompt_map_values_are_filenames():
     """Test that LLM_PROMPT_MAP values are valid .txt filenames"""
-    for llm_prompt, filename in LLM_PROMPT_MAP.items():
+    for _, filename in LLM_PROMPT_MAP.items():
         assert isinstance(filename, str)
         assert filename.endswith(".txt")
         assert "/" not in filename  # Should be just filenames, not paths
@@ -90,38 +87,33 @@ def test_prompt_files_exist():
     """Test that all prompt files referenced in LLM_PROMPT_MAP actually exist"""
     # Get the prompts directory
     prompts_dir = Path(__file__).parent.parent / "multiagent_firewall" / "prompts"
-    
+
     for llm_prompt, filename in LLM_PROMPT_MAP.items():
         prompt_path = prompts_dir / filename
-        assert prompt_path.exists(), f"Prompt file missing for mode '{mode}': {prompt_path}"
+        assert (
+            prompt_path.exists()
+        ), f"Prompt file missing for mode '{llm_prompt}': {prompt_path}"
         assert prompt_path.is_file(), f"Prompt path is not a file: {prompt_path}"
 
 
 def test_resolve_llm_prompt_with_valid_mode():
     """Test that _resolve_llm_prompt returns the mode when it's valid"""
-    assert llm._resolve_llm_prompt("zero-shot", LLM_PROMPT_MAP) == "zero-shot"
-    assert llm._resolve_llm_prompt("few-shot", LLM_PROMPT_MAP) == "few-shot"
-    assert llm._resolve_llm_prompt("enriched-zero-shot", LLM_PROMPT_MAP) == "enriched-zero-shot"
+    assert llm._resolve_llm_prompt("zero-shot") == "zero-shot"
+    assert llm._resolve_llm_prompt("few-shot") == "few-shot"
+    assert llm._resolve_llm_prompt("enriched-zero-shot") == "enriched-zero-shot"
 
 
 def test_resolve_llm_prompt_with_none():
     """Test that _resolve_llm_prompt falls back to first LLM_PROMPT_MAP key when mode is None"""
     expected_fallback = next(iter(LLM_PROMPT_MAP))
-    assert llm._resolve_llm_prompt(None, LLM_PROMPT_MAP) == expected_fallback
+    assert llm._resolve_llm_prompt(None) == expected_fallback
 
 
 def test_resolve_llm_prompt_with_invalid_mode():
     """Test that _resolve_llm_prompt falls back to first LLM_PROMPT_MAP key for invalid mode"""
     expected_fallback = next(iter(LLM_PROMPT_MAP))
-    assert llm._resolve_llm_prompt("invalid-mode", LLM_PROMPT_MAP) == expected_fallback
-    assert llm._resolve_llm_prompt("", LLM_PROMPT_MAP) == expected_fallback
-
-
-def test_resolve_llm_prompt_fallback_is_dynamic():
-    """Test that fallback adapts to the first key in the map"""
-    custom_map = {"few-shot": "few-shot.txt", "zero-shot": "zero-shot.txt"}
-    assert llm._resolve_llm_prompt(None, custom_map) == "few-shot"
-    assert llm._resolve_llm_prompt("invalid", custom_map) == "few-shot"
+    assert llm._resolve_llm_prompt("invalid-mode") == expected_fallback
+    assert llm._resolve_llm_prompt("") == expected_fallback
 
 
 def test_inject_text_with_placeholder():
@@ -149,4 +141,3 @@ def test_inject_text_preserves_formatting():
     assert "Line 2" in result
     assert "inserted" in result
     assert "Line 4" in result
-

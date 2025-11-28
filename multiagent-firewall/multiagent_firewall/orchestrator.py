@@ -18,6 +18,7 @@ def _should_read_document(state: GuardState) -> str:
 
 
 def _should_run_llm(state: GuardState) -> str:
+    """Route to llm_detector if global risk level detected is none or low."""
     risk_level = (state.get("risk_level") or "").lower()
     if risk_level in {"low", "none"}:
         return "llm_detector"
@@ -27,8 +28,6 @@ def _should_run_llm(state: GuardState) -> str:
 class GuardOrchestrator:
     """
     Orchestrates the sensitive data detection pipeline.
-
-    This class builds the detection graph.
     """
 
     def __init__(self) -> None:
@@ -49,6 +48,7 @@ class GuardOrchestrator:
             text: Direct text input
             file_path: Path to file on disk (automatically detects images)
             llm_prompt: LLM prompt template (zero-shot, few-shot, enriched-zero-shot)
+            min_block_risk: Minimum risk level ("none", "low", "medium", "high") required to trigger blocking actions
 
         Returns:
             GuardState with detection results
@@ -67,12 +67,6 @@ class GuardOrchestrator:
         return cast(GuardState, self._graph.invoke(initial_state))
 
     def _build_graph(self):
-        """
-        Build the detection pipeline graph.
-
-        All nodes use their internal default detectors and configurations,
-        which are the single sources of truth for the application.
-        """
         graph = StateGraph(GuardState)
 
         graph.add_node("read_document", nodes.read_document)

@@ -54,10 +54,10 @@ def _maybe_prefix_model(model: str | None, provider: str) -> str | None:
     return f"{provider}/{model}"
 
 
-def _resolve_llm_prompt(llm_prompt: str | None, prompt_map: Dict[str, str]) -> str:
+def _resolve_llm_prompt(llm_prompt: str | None) -> str:
     """Resolve LLM prompt: use explicit prompt if valid, otherwise fallback to first key."""
-    fallback = next(iter(prompt_map))
-    if llm_prompt and llm_prompt in prompt_map:
+    fallback = next(iter(LLM_PROMPT_MAP))
+    if llm_prompt and llm_prompt in LLM_PROMPT_MAP:
         return llm_prompt
     return fallback
 
@@ -76,6 +76,7 @@ class LiteLLMConfig:
     supports_json_mode: bool
     client_params: Dict[str, Any]
 
+    # TODO: Consume LLM configuration params from package parameters instead of env variables
     @classmethod
     def from_env(cls) -> "LiteLLMConfig":
         provider = os.getenv("LLM_PROVIDER", "openai").lower()
@@ -89,10 +90,7 @@ class LiteLLMConfig:
         )
 
         if not api_key:
-            raise RuntimeError(
-                f"Missing API key for provider '{provider}'. "
-                "Set LLM_API_KEY in your environment."
-            )
+            raise RuntimeError(f"Missing API key for provider '{provider}'. ")
 
         client_params: Dict[str, Any] = {"api_key": api_key}
         if base_url:
@@ -110,7 +108,7 @@ class LiteLLMConfig:
 
 
 class LiteLLMDetector:
-    _SYSTEM_MESSAGE = (
+    _SYSTEM_MESSAGE_FORCE_JSON = (
         "You are to output a single valid JSON object only. No prose, no markdown."
     )
 
@@ -119,7 +117,6 @@ class LiteLLMDetector:
         config: LiteLLMConfig,
         *,
         prompt_dir: str | Path | None = None,
-        prompt_map: Dict[str, str] | None = None,
         llm: Any | None = None,
     ) -> None:
         self._config = config
@@ -132,11 +129,6 @@ class LiteLLMDetector:
         else:
             # Default: detectors/../prompts
             self._prompt_dir = Path(__file__).resolve().parent.parent / "prompts"
-
-        # Set up prompt map - merge default LLM_PROMPT_MAP with any overrides
-        self._prompt_map = dict(LLM_PROMPT_MAP)
-        if prompt_map:
-            self._prompt_map.update(prompt_map)
 
         model_id = _maybe_prefix_model(self._model, self._provider)
         if llm is None:
@@ -152,7 +144,7 @@ class LiteLLMDetector:
 
         self._prompt_template = ChatPromptTemplate.from_messages(
             [
-                ("system", self._SYSTEM_MESSAGE),
+                ("system", self._SYSTEM_MESSAGE_FORCE_JSON),
                 ("user", "{prompt_content}"),
             ]
         )
@@ -190,10 +182,10 @@ class LiteLLMDetector:
     ) -> tuple[str, str]:
         """Build the final prompt by loading template and injecting text."""
         # Resolve the llm_prompt
-        resolved_prompt = _resolve_llm_prompt(llm_prompt, self._prompt_map)
+        resolved_prompt = _resolve_llm_prompt(llm_prompt)
 
         # Get the prompt filename from the map
-        prompt_filename = self._prompt_map.get(resolved_prompt)
+        prompt_filename = LLM_PROMPT_MAP.get(resolved_prompt)
         if not prompt_filename:
             raise RuntimeError(f"LLM prompt '{resolved_prompt}' not found in map")
 

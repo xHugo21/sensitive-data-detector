@@ -96,7 +96,7 @@ def test_read_document_with_file_path(tmp_path):
 
 
 def test_read_document_with_missing_file(tmp_path):
-    """Handle missing file gracefully"""
+    """Handle missing file gracefully and preserve existing raw_text"""
     missing_path = tmp_path / "missing.txt"
 
     state: GuardState = {
@@ -106,9 +106,48 @@ def test_read_document_with_missing_file(tmp_path):
     }
     result = read_document(state)
 
+    # raw_text should remain empty since there was no existing text
     assert result["raw_text"] == ""
     assert len(result["errors"]) > 0
     assert "File not found" in result["errors"][0]
+
+
+def test_read_document_preserves_text_on_file_error(tmp_path):
+    """Test that existing raw_text is preserved when file reading fails"""
+    missing_path = tmp_path / "missing.txt"
+
+    state: GuardState = {
+        "raw_text": "existing text",
+        "file_path": str(missing_path),
+        "warnings": [],
+        "errors": [],
+    }
+    result = read_document(state)
+
+    # Existing raw_text should be preserved even though file read failed
+    assert result["raw_text"] == "existing text"
+    assert len(result["errors"]) > 0
+    assert "File not found" in result["errors"][0]
+
+
+def test_read_document_appends_file_to_existing_text(tmp_path):
+    """Test that file content is appended to existing raw_text"""
+    file_path = tmp_path / "test.txt"
+    file_path.write_text("file content", encoding="utf-8")
+
+    state: GuardState = {
+        "raw_text": "existing text",
+        "file_path": str(file_path),
+        "warnings": [],
+        "errors": [],
+    }
+    result = read_document(state)
+
+    # Both existing text and file content should be present
+    assert "existing text" in result["raw_text"]
+    assert "file content" in result["raw_text"]
+    assert result["raw_text"] == "existing text\nfile content"
+
 
 
 

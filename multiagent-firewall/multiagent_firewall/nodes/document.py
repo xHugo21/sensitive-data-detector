@@ -124,6 +124,9 @@ def read_document(state: GuardState) -> GuardState:
     - For PDFs: Extract text using pdfplumber
     - For other files: Read as plain text
     """
+    if "raw_text" not in state:
+        state["raw_text"] = ""
+
     # Get file_path if provided
     file_path = state.get("file_path")
 
@@ -134,7 +137,6 @@ def read_document(state: GuardState) -> GuardState:
 
         if not os.path.exists(file_path_clean):
             append_error(state, f"File not found: {file_path}")
-            state["raw_text"] = ""
             return state
 
         # Detect file type and handle accordingly
@@ -153,7 +155,13 @@ def read_document(state: GuardState) -> GuardState:
 
                     # Extract text from OCR results
                     text = extract_text_from_ocr_fields(ocr_fields)
-                    state["raw_text"] = text
+
+                    # Append to existing raw_text
+                    existing_text = state.get("raw_text", "")
+                    if existing_text and text:
+                        state["raw_text"] = f"{existing_text}\n{text}"
+                    elif text:
+                        state["raw_text"] = text
 
                     if not text:
                         append_warning(
@@ -161,14 +169,12 @@ def read_document(state: GuardState) -> GuardState:
                         )
                 except Exception as e:
                     append_error(state, f"OCR detection failed: {str(e)}")
-                    state["raw_text"] = ""
                     state["ocr_fields"] = []
             else:
                 append_warning(
                     state,
                     f"Image file detected but no OCR detector available: {file_path}",
                 )
-                state["raw_text"] = ""
                 state["ocr_fields"] = []
         else:
             # Handle PDF and text files
@@ -176,9 +182,13 @@ def read_document(state: GuardState) -> GuardState:
 
             if text is None:
                 append_error(state, f"Failed to extract text from file: {file_path}")
-                state["raw_text"] = ""
             else:
-                state["raw_text"] = text
+                # Append to existing raw_text
+                existing_text = state.get("raw_text", "")
+                if existing_text and text:
+                    state["raw_text"] = f"{existing_text}\n{text}"
+                elif text:
+                    state["raw_text"] = text
 
             # Set file type metadata
             if "metadata" not in state:
@@ -190,7 +200,6 @@ def read_document(state: GuardState) -> GuardState:
 
     except Exception as e:
         append_error(state, f"Document extraction error: {str(e)}")
-        state["raw_text"] = ""
 
     return state
 

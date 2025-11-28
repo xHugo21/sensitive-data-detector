@@ -111,8 +111,8 @@ def test_orchestrator_run_with_file_path(mock_llm_from_env, tmp_path):
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_orchestrator_file_path_overrides_text(mock_llm_from_env, tmp_path):
-    """Test that when both text and file_path are provided, file_path is used (read_document overwrites)"""
+def test_orchestrator_combines_text_and_file(mock_llm_from_env, tmp_path):
+    """Test that both text and file_path content are combined in raw_text"""
     mock_detector = MagicMock()
     mock_detector.return_value = {"detected_fields": []}
     mock_llm_from_env.return_value = mock_detector
@@ -124,6 +124,26 @@ def test_orchestrator_file_path_overrides_text(mock_llm_from_env, tmp_path):
     orchestrator = GuardOrchestrator()
     result = orchestrator.run(text="Direct text", file_path=str(test_file))
     
-    # When both are provided, read_document is called and file content is used
-    assert result.get("raw_text") == "File content"
+    # Both should be present in raw_text
+    assert "Direct text" in result.get("raw_text")
+    assert "File content" in result.get("raw_text")
+
+
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
+def test_orchestrator_preserves_text_on_file_error(mock_llm_from_env, tmp_path):
+    """Test that direct text is preserved when file reading fails"""
+    mock_detector = MagicMock()
+    mock_detector.return_value = {"detected_fields": []}
+    mock_llm_from_env.return_value = mock_detector
+    
+    # Create path to non-existent file
+    missing_file = tmp_path / "missing.txt"
+    
+    orchestrator = GuardOrchestrator()
+    result = orchestrator.run(text="Direct text", file_path=str(missing_file))
+    
+    # Direct text should be preserved even though file reading failed
+    assert result.get("raw_text") == "Direct text"
+    assert len(result.get("errors", [])) > 0
+    assert any("File not found" in error for error in result.get("errors", []))
 

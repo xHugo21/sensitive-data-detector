@@ -104,6 +104,16 @@ The proxy adds detection metadata to response headers:
                          └──────────────┘
 ```
 
+## Manual test via cURL
+After enabling the proxy the following cURL request should return a 403 HTTP response with the headers mentioned above and a descriptive error with the response from the multiagent-firewall
+
+```bash
+curl -v -x http://127.0.0.1:8080 \
+  -X POST https://api.githubcopilot.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "My SSN is 123-45-6789"}]}'
+```
+
 ## License
 
 See LICENSE file in the root of the repository.

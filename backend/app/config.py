@@ -12,6 +12,7 @@ ALLOW_ORIGINS = [
     "http://localhost:8000",
 ]
 
+
 def _str_to_bool(value: str | None, default: bool) -> bool:
     if value is None:
         return default
@@ -32,4 +33,4 @@ def _parse_risk(value: str | None, default: str) -> str:
 
 
 MIN_BLOCK_RISK = _parse_risk(os.getenv("MIN_BLOCK_RISK"), "medium")
-LLM_PROMPT = os.getenv("LLM_PROMPT")  # None if not set, will use first key from LLM_PROMPT_MAP
+LLM_PROMPT = os.getenv("LLM_PROMPT")

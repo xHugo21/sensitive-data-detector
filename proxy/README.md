@@ -7,6 +7,7 @@ A transparent HTTP/HTTPS proxy built with `mitmproxy` that intercepts LLM API re
 - **Transparent Interception**: Works system-wide via `HTTP_PROXY`/`HTTPS_PROXY` environment variables
 - **Configurable Endpoints**: Define which API hosts and paths to monitor
 - **Sensitive Data Detection**: Integrates with the sensitive-data-detector backend
+- **Image Analysis**: Extracts and analyzes images from LLM API requests (OpenAI Vision, Claude, Copilot, Gemini)
 - **Risk-Based Blocking**: Uses backend policy (configured via backend `MIN_BLOCK_RISK`)
 - **Zero Code Changes**: No need to modify application code or API endpoints
 
@@ -71,8 +72,8 @@ If sensitive data is detected, the request will be blocked with a 403 response:
 
 1. **Interception**: mitmproxy intercepts all HTTP/HTTPS requests
 2. **Filtering**: Only requests to configured hosts/paths are analyzed
-3. **Extraction**: Request payloads are parsed to extract text (chat messages, prompts)
-4. **Detection**: Text is sent to the backend for sensitive data detection
+3. **Extraction**: Request payloads are parsed to extract text and images
+4. **Detection**: Content is sent to the backend for sensitive data detection
 5. **Blocking**: If risk level exceeds threshold, request is blocked with 403
 6. **Forwarding**: Safe requests are forwarded to the original destination
 7. **Headers**: Detection metadata is added to response headers
@@ -103,6 +104,44 @@ The proxy adds detection metadata to response headers:
                          │   Detector   │
                          └──────────────┘
 ```
+
+## Manual test via cURL
+
+### Text-Only Request
+After enabling the proxy, the following cURL request should return a 403 HTTP response with detection headers:
+
+```bash
+curl -v -x http://127.0.0.1:8080 \
+  -X POST https://api.githubcopilot.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "My SSN is 123-45-6789"}]}'
+```
+
+### Image Request (OpenAI Format)
+Test image analysis with a base64-encoded image containing sensitive data:
+
+```bash
+curl -v -x http://127.0.0.1:8080 \
+  -X POST https://api.openai.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4-vision-preview",
+    "messages": [{
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "What do you see?"},
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,<BASE64_IMAGE_DATA>"
+          }
+        }
+      ]
+    }]
+  }'
+```
+
+Replace `<BASE64_IMAGE_DATA>` with actual base64-encoded image data.
 
 ## License
 

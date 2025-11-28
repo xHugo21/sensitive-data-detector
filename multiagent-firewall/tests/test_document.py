@@ -79,31 +79,6 @@ def test_extract_text_from_file_reads_pdf(monkeypatch, tmp_path):
     assert content == "First page\nSecond page"
 
 
-def test_read_document_with_text_input():
-    """If raw_text is provided, skip file extraction"""
-    state: GuardState = {
-        "raw_text": "existing text",
-        "warnings": [],
-        "errors": [],
-    }
-    result = read_document(state)
-
-    assert result["raw_text"] == "existing text"
-    assert len(result.get("warnings", [])) == 0
-
-
-def test_read_document_with_no_input():
-    """If neither text nor file provided, set empty string with warning"""
-    state: GuardState = {
-        "warnings": [],
-        "errors": [],
-    }
-    result = read_document(state)
-
-    assert result["raw_text"] == ""
-    assert "No text or file provided" in result["warnings"][0]
-
-
 def test_read_document_with_file_path(tmp_path):
     """Extract text from file when file_path provided"""
     file_path = tmp_path / "test.txt"
@@ -135,21 +110,6 @@ def test_read_document_with_missing_file(tmp_path):
     assert len(result["errors"]) > 0
     assert "File not found" in result["errors"][0]
 
-
-def test_read_document_text_takes_precedence_over_file(tmp_path):
-    """If both text and file provided, text takes precedence"""
-    file_path = tmp_path / "test.txt"
-    file_path.write_text("file content", encoding="utf-8")
-
-    state: GuardState = {
-        "raw_text": "direct text",
-        "file_path": str(file_path),
-        "warnings": [],
-        "errors": [],
-    }
-    result = read_document(state)
-
-    assert result["raw_text"] == "direct text"
 
 
 def test_is_image_file_detects_png():

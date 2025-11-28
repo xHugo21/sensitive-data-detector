@@ -111,8 +111,8 @@ def test_orchestrator_run_with_file_path(mock_llm_from_env, tmp_path):
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_orchestrator_text_takes_precedence_over_file(mock_llm_from_env, tmp_path):
-    """Test that text parameter takes precedence over file_path"""
+def test_orchestrator_file_path_overrides_text(mock_llm_from_env, tmp_path):
+    """Test that when both text and file_path are provided, file_path is used (read_document overwrites)"""
     mock_detector = MagicMock()
     mock_detector.return_value = {"detected_fields": []}
     mock_llm_from_env.return_value = mock_detector
@@ -124,5 +124,6 @@ def test_orchestrator_text_takes_precedence_over_file(mock_llm_from_env, tmp_pat
     orchestrator = GuardOrchestrator()
     result = orchestrator.run(text="Direct text", file_path=str(test_file))
     
-    assert result.get("raw_text") == "Direct text"
+    # When both are provided, read_document is called and file content is used
+    assert result.get("raw_text") == "File content"
 

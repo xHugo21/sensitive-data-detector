@@ -15,12 +15,6 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".
 def sanitize_file_path(file_path: str) -> str:
     """
     Sanitize file path by decoding file:// URLs and handling platform differences.
-
-    Args:
-        file_path: File path that may be a file:// URL or regular path
-
-    Returns:
-        Sanitized file path
     """
     if file_path.startswith("file://"):
         parsed_path = urlparse(file_path).path
@@ -35,12 +29,6 @@ def sanitize_file_path(file_path: str) -> str:
 def is_image_file(file_path: str) -> bool:
     """
     Check if file is an image based on extension.
-
-    Args:
-        file_path: Path to file
-
-    Returns:
-        True if file has image extension, False otherwise
     """
     _, ext = os.path.splitext(file_path)
     return ext.lower() in IMAGE_EXTENSIONS
@@ -49,12 +37,6 @@ def is_image_file(file_path: str) -> bool:
 def read_pdf(file_path: str) -> str | None:
     """
     Extract text from PDF file using pdfplumber.
-
-    Args:
-        file_path: Path to PDF file
-
-    Returns:
-        Extracted text or None if extraction fails
     """
     try:
         import pdfplumber
@@ -73,12 +55,6 @@ def read_pdf(file_path: str) -> str | None:
 def read_text_file(file_path: str) -> str | None:
     """
     Read plain text file.
-
-    Args:
-        file_path: Path to text file
-
-    Returns:
-        File contents or None if read fails
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -90,12 +66,6 @@ def read_text_file(file_path: str) -> str | None:
 def extract_text_from_file(file_path: str) -> str | None:
     """
     Extract text from file based on extension.
-
-    Args:
-        file_path: Path to file
-
-    Returns:
-        Extracted text or None if extraction fails
     """
     try:
         file_path = sanitize_file_path(file_path)
@@ -103,7 +73,6 @@ def extract_text_from_file(file_path: str) -> str | None:
         if not os.path.exists(file_path):
             return None
 
-        # Check file extension
         if file_path.lower().endswith(".pdf"):
             return read_pdf(file_path)
         else:
@@ -116,12 +85,6 @@ def extract_text_from_file(file_path: str) -> str | None:
 def extract_text_from_ocr_fields(ocr_fields: FieldList) -> str:
     """
     Extract text from OCR fields to populate raw_text.
-
-    Args:
-        ocr_fields: List of OCR detection fields
-
-    Returns:
-        Concatenated text from all OCR fields
     """
     if not ocr_fields:
         return ""
@@ -139,16 +102,15 @@ def _get_default_ocr_detector():
     Get default OCR detector from environment.
 
     Returns None if Tesseract is not available or fails to initialize.
-    This allows graceful degradation when OCR dependencies are missing.
     """
     try:
+        # TODO: Same as LiteLLM, pass this arguments as parameters to the package instead of loading from env
         return TesseractOCRDetector.from_env()
     except Exception as e:
-        # Log warning but don't crash - OCR is optional
+        # Log warning but don't crash
         warnings.warn(
             f"Failed to initialize OCR detector: {e}. "
-            "Image text extraction will be disabled. "
-            "Install Tesseract: https://github.com/tesseract-ocr/tesseract",
+            "Image text extraction won't be executed. Install Tesseract.",
             RuntimeWarning,
         )
         return None
@@ -157,40 +119,17 @@ def _get_default_ocr_detector():
 def read_document(state: GuardState) -> GuardState:
     """
     Document ingestion node: Extracts text from file if file_path provided.
-    Automatically detects image files and runs OCR using the default detector.
 
-    The OCR detector is initialized from environment variables, ensuring
-    consistent configuration across the application.
-
-    Priority:
-    1. If raw_text is already provided, use it (skip file extraction)
-    2. If file_path provided:
-       - For images: Run OCR detector if available
-       - For PDFs: Extract text using pdfplumber
-       - For other files: Read as plain text
-    3. If neither provided, set empty string with warning
-
-    Args:
-        state: Current guard state
-
-    Returns:
-        Updated state with raw_text populated
+    - For images: Run OCR detector if available
+    - For PDFs: Extract text using pdfplumber
+    - For other files: Read as plain text
     """
-    # If raw_text already provided, skip file extraction
-    if state.get("raw_text"):
-        return state
-
     # Get file_path if provided
     file_path = state.get("file_path")
 
-    if not file_path:
-        # No input provided
-        state["raw_text"] = ""
-        append_warning(state, "No text or file provided for analysis")
-        return state
-
     # Sanitize and validate file path
     try:
+        assert isinstance(file_path, str), "file_path must be a string"
         file_path_clean = sanitize_file_path(file_path)
 
         if not os.path.exists(file_path_clean):

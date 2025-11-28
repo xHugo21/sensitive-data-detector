@@ -11,9 +11,6 @@ from ..constants import (
 def evaluate_risk(state: GuardState) -> GuardState:
     """
     Evaluate risk level based on detected fields.
-
-    Uses the default compute_risk_level function as the single
-    source of truth for risk evaluation logic.
     """
     detected = state.get("detected_fields", [])
     state["risk_level"] = compute_risk_level(detected)

@@ -104,7 +104,6 @@ def _get_default_ocr_detector():
     Returns None if Tesseract is not available or fails to initialize.
     """
     try:
-        # TODO: Same as LiteLLM, pass this arguments as parameters to the package instead of loading from env
         return TesseractOCRDetector.from_env()
     except Exception as e:
         # Log warning but don't crash

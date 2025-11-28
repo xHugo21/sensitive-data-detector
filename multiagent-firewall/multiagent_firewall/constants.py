@@ -1,24 +1,39 @@
 # Shared constants for multiagent-firewall
+# Prompts usable by the LLM detector agent and their locations under prompts/
 LLM_PROMPT_MAP = {
     "zero-shot": "zero-shot.txt",
     "enriched-zero-shot": "enriched-zero-shot.txt",
     "few-shot": "few-shot.txt",
 }
 
-# Regex patterns for DLP
+# Regex patterns for DLP detection agent
 REGEX_PATTERNS = {
     "SSN": r"\b\d{3}[\s\-]?\d{2}[\s\-]?\d{4}\b",
     "EMAIL": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
     "PHONENUMBER": r"\b\+?\d[\d\s\-\(\)]{7,}\d\b",
 }
 
-# Keyword lists for DLP
+# Keyword lists for DLP detection agent
 KEYWORDS = {
     "SSN": ["ssn", "social security", "social security number", "social"],
     "APIKEY": ["api_key", "apikey", "api-key", "api key"],
     "SECRET": ["secret"],
     "PASSWORD": ["password", "pwd"],
     "TOKEN": ["token", "bearer", "auth"],
+}
+
+# Defines the scoring value each detected field category sums
+RISK_SCORE = {
+    "high": 6,
+    "medium": 2,
+    "low": 1,
+}
+
+# Defines the threshold to calculate global risk value based on the sum of all detected fields.
+RISK_SCORE_THRESHOLDS = {
+    "high": 6,
+    "medium": (4, 5),
+    "low": (1, 3),
 }
 
 # Risk level field sets
@@ -117,16 +132,4 @@ LOW_RISK_FIELDS = {
     "SEXUALORIENTATION",
     "CHILDRENDATA",
     "LEGALDISCLOSURE",
-}
-
-RISK_SCORE = {
-    "high": 6,
-    "medium": 2,
-    "low": 1,
-}
-
-RISK_SCORE_THRESHOLDS = {
-    "high": 6,
-    "medium": (4, 5),
-    "low": (1, 3),
 }

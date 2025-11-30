@@ -133,7 +133,10 @@
 
       // Try to infer from context or structure
       const text = (node.textContent || "").toLowerCase();
-      const className = (node.className || "").toLowerCase();
+      const className =
+        typeof node.className === "string"
+          ? node.className.toLowerCase()
+          : node.className?.baseVal?.toLowerCase() || "";
 
       if (className.includes("assistant") || className.includes("claude")) {
         return "assistant";
@@ -151,7 +154,7 @@
 
       // Claude has a chat-input-grid-container that wraps the input area
       const chatInputContainer = document.querySelector(
-        '[data-testid="chat-input-grid-container"]'
+        '[data-testid="chat-input-grid-container"]',
       );
 
       if (chatInputContainer && chatInputContainer.parentElement) {

@@ -27,7 +27,7 @@
       if (qlEditor && qlEditor.offsetParent !== null) {
         return qlEditor;
       }
-      
+
       // Fallback: Find any contenteditable with role="textbox" inside rich-textarea
       const richTextarea = document.querySelector("rich-textarea");
       if (richTextarea) {
@@ -41,9 +41,9 @@
 
       // Generic fallback
       const generic = Array.from(
-        document.querySelectorAll('[contenteditable="true"][role="textbox"]')
-      ).find(el => el.offsetParent !== null && el.clientHeight > 0);
-      
+        document.querySelectorAll('[contenteditable="true"][role="textbox"]'),
+      ).find((el) => el.offsetParent !== null && el.clientHeight > 0);
+
       if (generic) {
         return generic;
       }
@@ -94,9 +94,12 @@
       }
 
       // Fallback: find button near composer in the input container
-      const inputContainer = composer.closest('.text-input-field_textarea-wrapper');
+      const inputContainer = composer.closest(
+        ".text-input-field_textarea-wrapper",
+      );
       if (inputContainer) {
-        const nearbyButton = inputContainer.parentElement?.querySelector("button");
+        const nearbyButton =
+          inputContainer.parentElement?.querySelector("button");
         if (nearbyButton) {
           return nearbyButton;
         }
@@ -176,8 +179,10 @@
         return "user";
       }
 
-      // Try to infer from context or structure
-      const className = (node.className || "").toLowerCase();
+      const className =
+        typeof node.className === "string"
+          ? node.className.toLowerCase()
+          : node.className?.baseVal?.toLowerCase() || "";
 
       if (
         className.includes("model") ||
@@ -198,10 +203,10 @@
       if (!composer) return null;
 
       // Try to find the input-area-container (main container for the entire input area)
-      const inputContainer = document.querySelector('.input-area-container');
+      const inputContainer = document.querySelector(".input-area-container");
       if (inputContainer) {
         // Find the input-area-v2 element to insert before
-        const inputAreaV2 = inputContainer.querySelector('input-area-v2');
+        const inputAreaV2 = inputContainer.querySelector("input-area-v2");
         if (inputAreaV2) {
           return {
             host: inputContainer,
@@ -215,21 +220,43 @@
     }
 
     isSendButton(button) {
-      if (!button || button.tagName !== 'BUTTON') return false;
+      if (!button || button.tagName !== "BUTTON") return false;
 
-      // Check Gemini-specific patterns
-      const ariaLabel = button.getAttribute('aria-label')?.toLowerCase() || '';
-      const className = button.className?.toLowerCase() || '';
-      const title = button.getAttribute('title')?.toLowerCase() || '';
+      const ariaLabel = button.getAttribute("aria-label") || "";
+      const className =
+        typeof button.className === "string"
+          ? button.className
+          : button.className?.baseVal || "";
+      const ariaDisabled = button.getAttribute("aria-disabled");
 
-      // Gemini uses .send-button class and multilingual aria-labels
-      if (className.includes('send-button')) return true;
-      if (ariaLabel.includes('send') || ariaLabel.includes('enviar')) return true;
-      if (ariaLabel.includes('submit')) return true;
-      if (title.includes('send') || title.includes('enviar')) return true;
+      const hasSendButtonClass = className.includes("send-button");
+      const hasSubmitClass = className.includes("submit");
+      const isNotDisabled = ariaDisabled !== "true";
 
-      // Fallback to base implementation
-      return super.isSendButton(button);
+      // Check for the exact mat-icon structure
+      const matIcon = button.querySelector(
+        'mat-icon[fonticon="send"][data-mat-icon-name="send"]',
+      );
+      const hasCorrectIcon = matIcon !== null;
+
+      // Check aria-label matches send message pattern
+      const ariaLabelLower = ariaLabel.toLowerCase();
+      const hasCorrectAriaLabel =
+        ariaLabelLower === "enviar mensaje" ||
+        ariaLabelLower === "send message";
+
+      // ALL conditions must be true
+      if (
+        hasSendButtonClass &&
+        hasSubmitClass &&
+        hasCorrectIcon &&
+        hasCorrectAriaLabel &&
+        isNotDisabled
+      ) {
+        return true;
+      }
+
+      return false;
     }
 
     initialize() {

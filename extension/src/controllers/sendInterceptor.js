@@ -32,11 +32,18 @@
   }
 
   function handleSendButtonClick(event) {
-    const btn = event.target.closest(
-      'button[type="submit"], [data-testid="send-button"]',
-    );
-    if (!btn) return;
-    if (btn.dataset.sgBypass === "true") return;
+    // Check if clicked element or its closest button ancestor is the send button
+    const clickedButton = event.target.tagName === 'BUTTON' 
+      ? event.target 
+      : event.target.closest('button');
+    
+    if (!clickedButton) return;
+    
+    // Use platform-specific button detection
+    const platform = sg.platformRegistry?.getActive();
+    if (!platform || !platform.isSendButton(clickedButton)) return;
+    
+    if (clickedButton.dataset.sgBypass === "true") return;
 
     const composer = sg.chatSelectors.findComposer();
     if (!composer) return;
@@ -45,7 +52,7 @@
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    analyzeBeforeSend({ composer, button: btn, text });
+    analyzeBeforeSend({ composer, button: clickedButton, text });
   }
 
   async function analyzeBeforeSend({ composer, button = null, text }) {
@@ -86,25 +93,8 @@
   }
 
   function dispatchSend(composer, button) {
-    const targetButton = button || sg.chatSelectors.findSendButton();
-    if (targetButton) {
-      targetButton.dataset.sgBypass = "true";
-      setTimeout(() => {
-        targetButton.click();
-        delete targetButton.dataset.sgBypass;
-      }, 10);
-      return;
-    }
-
-    const enterEvent = new KeyboardEvent("keydown", {
-      key: "Enter",
-      code: "Enter",
-      keyCode: 13,
-      which: 13,
-      bubbles: true,
-      cancelable: true,
-    });
-    composer.dispatchEvent(enterEvent);
+    // Use platform-specific send logic
+    sg.chatSelectors.triggerSend(composer, button);
   }
 
   function handleSendAnywayOverride() {

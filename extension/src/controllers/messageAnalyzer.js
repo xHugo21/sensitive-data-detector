@@ -22,17 +22,22 @@
           if (sg.chatSelectors.isMessageNode(node))
             analyzeMessageNode(node, "Response");
           if (node.querySelectorAll) {
-            node
-              .querySelectorAll("[data-message-author-role]")
-              .forEach((host) => analyzeMessageNode(host, "Response"));
+            // Try to find message nodes within the added node
+            const messageNodes = Array.from(node.querySelectorAll("*")).filter(
+              (el) => sg.chatSelectors.isMessageNode(el)
+            );
+            messageNodes.forEach((host) => analyzeMessageNode(host, "Response"));
           }
         });
     }
 
     if (sg.alertStore.isResponsePending()) {
-      const lastAssistant = [
-        ...document.querySelectorAll('[data-message-author-role="assistant"]'),
-      ].pop();
+      // Find the last assistant message using platform-agnostic detection
+      const allNodes = document.querySelectorAll("*");
+      const assistantMessages = Array.from(allNodes).filter(
+        (node) => sg.chatSelectors.getMessageRole(node) === "assistant"
+      );
+      const lastAssistant = assistantMessages[assistantMessages.length - 1];
       if (lastAssistant) analyzeMessageNode(lastAssistant, "Response");
     }
   }
@@ -43,9 +48,10 @@
     const host = node.closest?.("[data-message-author-role]") || node;
     if (!host || store.hasAnalyzed(host) || store.isInFlight(host)) return;
 
-    const roleAttr = host.getAttribute?.("data-message-author-role");
-    const isAssistant = roleAttr === "assistant";
-    const isUser = roleAttr === "user";
+    // Use platform-agnostic role detection
+    const messageRole = sg.chatSelectors.getMessageRole(host);
+    const isAssistant = messageRole === "assistant";
+    const isUser = messageRole === "user";
 
     if (isAssistant) {
       if (!store.isResponsePending()) return;
@@ -116,10 +122,12 @@
   }
 
   function scanExistingMessages() {
-    const nodes = document.querySelectorAll(
-      '[data-message-author-role], [data-testid="conversation-turn"], .markdown',
+    // Use platform-agnostic message detection
+    const allNodes = document.querySelectorAll("*");
+    const messageNodes = Array.from(allNodes).filter(
+      (node) => sg.chatSelectors.isMessageNode(node)
     );
-    nodes.forEach((n) => analyzeMessageNode(n, "Response"));
+    messageNodes.forEach((n) => analyzeMessageNode(n, "Response"));
   }
 
   sg.messageAnalyzer = {

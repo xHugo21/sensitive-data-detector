@@ -1,9 +1,29 @@
 (function initMain(root) {
   const sg = (root.SG = root.SG || {});
 
-  function bootstrap() {
+  /**
+   * Bootstrap the extension with platform detection
+   */
+  async function bootstrap() {
+    // Detect and activate the appropriate platform
+    const platform = await sg.platformRegistry.detectAndActivate();
+
+    if (!platform) {
+      console.warn(
+        "[SensitiveDataDetector] No supported platform detected on this page",
+      );
+      return;
+    }
+
+    console.log(
+      `[SensitiveDataDetector] Successfully initialized on ${platform.displayName}`,
+    );
+
+    // Initialize UI components
     sg.panel.ensure();
     sg.highlights.ensureHighlightCSS();
+
+    // Attach controllers
     sg.sendInterceptor.attach();
     sg.messageAnalyzer.start();
     sg.fileInterceptor.attach();

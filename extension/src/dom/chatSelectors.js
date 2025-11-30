@@ -1,65 +1,60 @@
+/**
+ * Chat Selectors
+ *
+ * This module allows delegating all DOM selector operations to the currently active platform adapter.
+ * This allows the extension to work across different chatbot platforms
+ */
 (function initChatSelectors(root) {
   const sg = (root.SG = root.SG || {});
 
-  function findComposer() {
-    const editable = Array.from(
-      document.querySelectorAll(
-        '[contenteditable="true"][role="textbox"], div[contenteditable="true"]',
-      ),
-    ).find((el) => el.offsetParent !== null && el.clientHeight > 0);
-    if (editable) return editable;
+  function getActivePlatform() {
+    const platform = sg.platformRegistry?.getActive();
+    if (!platform) {
+      console.warn("[SensitiveDataDetector] No active platform found");
+    }
+    return platform;
+  }
 
-    const textarea = Array.from(document.querySelectorAll("textarea")).find(
-      (el) => el.offsetParent !== null && el.clientHeight > 0,
-    );
-    return textarea || null;
+  function findComposer() {
+    const platform = getActivePlatform();
+    return platform ? platform.findComposer() : null;
   }
 
   function getComposerText(el) {
-    if (!el) return "";
-    if (el.tagName === "TEXTAREA") return el.value;
-    return (el.textContent || "").replace(/\u00A0/g, " ");
+    const platform = getActivePlatform();
+    return platform ? platform.getComposerText(el) : "";
   }
 
   function findSendButton() {
-    const composer = findComposer();
-    if (!composer) return null;
-    return (
-      composer.closest("form")?.querySelector('button[type="submit"]') ||
-      document.querySelector('[data-testid="send-button"]') ||
-      composer.parentElement?.querySelector("button")
-    );
+    const platform = getActivePlatform();
+    return platform ? platform.findSendButton() : null;
   }
 
   function extractMessageText(node) {
-    if (!node) return "";
-    return (node.innerText || node.textContent || "").trim();
+    const platform = getActivePlatform();
+    return platform ? platform.extractMessageText(node) : "";
   }
 
   function isMessageNode(n) {
-    if (!n || n.nodeType !== 1) return false;
-    const el = n;
-    if (el.hasAttribute?.("data-message-author-role")) return true;
-    if (el.closest?.("[data-message-author-role]")) return true;
-    if (el.matches && el.matches('[data-testid="conversation-turn"]'))
-      return true;
-    return false;
+    const platform = getActivePlatform();
+    return platform ? platform.isMessageNode(n) : false;
   }
 
   function findAssistantContentEl(host) {
-    const sels = [
-      ".markdown",
-      ".prose",
-      '[data-message-author-role="assistant"] .markdown',
-      '[data-message-author-role="assistant"] .prose',
-      '[data-message-author-role="assistant"] [class*=\"whitespace-pre-wrap\"]',
-      '[data-message-author-role="assistant"] [data-testid="assistant-response"]',
-    ];
-    for (const sel of sels) {
-      const el = host.querySelector?.(sel);
-      if (el && el.innerText?.trim()) return el;
+    const platform = getActivePlatform();
+    return platform ? platform.findAssistantContentEl(host) : host;
+  }
+
+  function getMessageRole(node) {
+    const platform = getActivePlatform();
+    return platform ? platform.getMessageRole(node) : null;
+  }
+
+  function triggerSend(composer, button) {
+    const platform = getActivePlatform();
+    if (platform) {
+      platform.customSendLogic(composer, button);
     }
-    return host;
   }
 
   sg.chatSelectors = {
@@ -69,5 +64,7 @@
     extractMessageText,
     isMessageNode,
     findAssistantContentEl,
+    getMessageRole,
+    triggerSend,
   };
 })(typeof window !== "undefined" ? window : globalThis);

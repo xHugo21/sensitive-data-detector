@@ -86,25 +86,8 @@
   }
 
   function dispatchSend(composer, button) {
-    const targetButton = button || sg.chatSelectors.findSendButton();
-    if (targetButton) {
-      targetButton.dataset.sgBypass = "true";
-      setTimeout(() => {
-        targetButton.click();
-        delete targetButton.dataset.sgBypass;
-      }, 10);
-      return;
-    }
-
-    const enterEvent = new KeyboardEvent("keydown", {
-      key: "Enter",
-      code: "Enter",
-      keyCode: 13,
-      which: 13,
-      bubbles: true,
-      cancelable: true,
-    });
-    composer.dispatchEvent(enterEvent);
+    // Use platform-specific send logic
+    sg.chatSelectors.triggerSend(composer, button);
   }
 
   function handleSendAnywayOverride() {

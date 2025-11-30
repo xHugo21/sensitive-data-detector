@@ -1,6 +1,6 @@
 {
   "name": "Sensitive Data Detector",
-  "description": "Analyses and warns you if your interaction with ChatGPT contains sensitive data",
+  "description": "Detect and prevent private data leakage in user-LLM interactions.",
   "version": "1.0.0",
   "manifest_version": 3,
   "icons": { "128": "icon128.png" },
@@ -8,7 +8,9 @@
     {
       "matches": [
         "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*"
       ],
       "js": [
         "src/config.js",
@@ -19,6 +21,11 @@
         "src/ui/panel.js",
         "src/ui/highlights.js",
         "src/ui/loadingState.js",
+        "src/platforms/base.js",
+        "src/platforms/chatgpt.js",
+        "src/platforms/claude.js",
+        "src/platforms/gemini.js",
+        "src/platforms/registry.js",
         "src/dom/chatSelectors.js",
         "src/controllers/sendInterceptor.js",
         "src/controllers/messageAnalyzer.js",

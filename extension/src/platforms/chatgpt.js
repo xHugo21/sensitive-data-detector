@@ -1,0 +1,161 @@
+/**
+ * ChatGPT Platform Adapter
+ */
+(function initChatGPTPlatform(root) {
+  const sg = (root.SG = root.SG || {});
+
+  class ChatGPTPlatform extends sg.BasePlatform {
+    get name() {
+      return "chatgpt";
+    }
+
+    get displayName() {
+      return "ChatGPT";
+    }
+
+    get urlPatterns() {
+      return ["chat.openai.com", "chatgpt.com"];
+    }
+
+    findComposer() {
+      // Try to find contenteditable elements first (ChatGPT's primary input method)
+      const editable = Array.from(
+        document.querySelectorAll(
+          '[contenteditable="true"][role="textbox"], div[contenteditable="true"]',
+        ),
+      ).find((el) => el.offsetParent !== null && el.clientHeight > 0);
+      if (editable) return editable;
+
+      // Fallback to textarea (older versions or alternative layouts)
+      const textarea = Array.from(document.querySelectorAll("textarea")).find(
+        (el) => el.offsetParent !== null && el.clientHeight > 0,
+      );
+      return textarea || null;
+    }
+
+    getComposerText(el) {
+      if (!el) return "";
+      if (el.tagName === "TEXTAREA") return el.value;
+      // For contenteditable divs, extract text and normalize non-breaking spaces
+      return (el.textContent || "").replace(/\u00A0/g, " ");
+    }
+
+    findSendButton() {
+      const composer = this.findComposer();
+      if (!composer) return null;
+
+      // Try to find button within the form containing the composer
+      const formButton = composer
+        .closest("form")
+        ?.querySelector('button[type="submit"]');
+      if (formButton) return formButton;
+
+      // Try ChatGPT's specific test ID
+      const testIdButton = document.querySelector(
+        '[data-testid="send-button"]',
+      );
+      if (testIdButton) return testIdButton;
+
+      // Fallback: find any button near the composer
+      return composer.parentElement?.querySelector("button") || null;
+    }
+
+    extractMessageText(node) {
+      if (!node) return "";
+      return (node.innerText || node.textContent || "").trim();
+    }
+
+    isMessageNode(n) {
+      if (!n || n.nodeType !== 1) return false;
+      const el = n;
+
+      // Check for ChatGPT's message author role attribute
+      if (el.hasAttribute?.("data-message-author-role")) return true;
+      if (el.closest?.("[data-message-author-role]")) return true;
+
+      // Check for conversation turn test ID
+      if (el.matches && el.matches('[data-testid="conversation-turn"]')) {
+        return true;
+      }
+
+      return false;
+    }
+
+    findAssistantContentEl(host) {
+      // List of selectors to try for finding assistant message content
+      const selectors = [
+        ".markdown",
+        ".prose",
+        '[data-message-author-role="assistant"] .markdown',
+        '[data-message-author-role="assistant"] .prose',
+        '[data-message-author-role="assistant"] [class*="whitespace-pre-wrap"]',
+        '[data-message-author-role="assistant"] [data-testid="assistant-response"]',
+      ];
+
+      for (const sel of selectors) {
+        const el = host.querySelector?.(sel);
+        if (el && el.innerText?.trim()) return el;
+      }
+
+      // Fallback to the host element itself
+      return host;
+    }
+
+    getMessageRole(node) {
+      if (!node) return null;
+
+      // Try to get role from data attribute
+      const host = node.closest?.("[data-message-author-role]") || node;
+      const roleAttr = host.getAttribute?.("data-message-author-role");
+
+      if (roleAttr === "assistant") return "assistant";
+      if (roleAttr === "user") return "user";
+
+      return null;
+    }
+
+    get shouldInterceptKeyboard() {
+      return true;
+    }
+
+    get shouldInterceptClick() {
+      return true;
+    }
+
+    customSendLogic(composer, button) {
+      const targetButton = button || this.findSendButton();
+      if (targetButton) {
+        // Mark button to bypass our own interception on the next click
+        targetButton.dataset.sgBypass = "true";
+        setTimeout(() => {
+          targetButton.click();
+          delete targetButton.dataset.sgBypass;
+        }, 10);
+        return;
+      }
+
+      // Fallback: dispatch Enter key event
+      const enterEvent = new KeyboardEvent("keydown", {
+        key: "Enter",
+        code: "Enter",
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true,
+      });
+      composer.dispatchEvent(enterEvent);
+    }
+
+    get fileInputSelector() {
+      return 'input[type="file"]';
+    }
+
+    initialize() {
+      console.log(
+        "[SensitiveDataDetector] ChatGPT platform adapter initialized",
+      );
+    }
+  }
+
+  sg.ChatGPTPlatform = ChatGPTPlatform;
+})(typeof window !== "undefined" ? window : globalThis);

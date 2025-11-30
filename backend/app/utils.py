@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.config import DEBUG_MODE
+from .config import DEBUG_MODE
 
 
 def debug_log(*args: Any, **kwargs: Any) -> None:
-    """Prints the message only when DEBUG_MODE is enabled."""
+    """Prints debug message based on DEBUG_MODE environment variable."""
     if not DEBUG_MODE:
         return
 

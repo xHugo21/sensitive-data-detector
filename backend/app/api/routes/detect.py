@@ -2,7 +2,7 @@ import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
-from app.utils.logger import debug_log
+from app.utils import debug_log
 from multiagent_firewall import GuardOrchestrator
 from app.config import MIN_BLOCK_RISK, LLM_PROMPT
 

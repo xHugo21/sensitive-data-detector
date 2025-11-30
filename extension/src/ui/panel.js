@@ -73,6 +73,7 @@
       fontSize: "14px",
       margin: "6px 0 12px",
       color: "#C5C5D2",
+      textAlign: "left",
     });
     panel.appendChild(policy);
 
@@ -180,9 +181,9 @@
 
     // Use platform-specific insertion point if available
     const platform = sg.platformRegistry?.getActive?.();
-    if (platform && typeof platform.findPanelInsertionPoint === 'function') {
+    if (platform && typeof platform.findPanelInsertionPoint === "function") {
       const insertionPoint = platform.findPanelInsertionPoint();
-      
+
       if (!insertionPoint || !insertionPoint.host) {
         // Fallback to floating panel if no insertion point found
         if (!panel.parentElement) fallbackParent.appendChild(panel);
@@ -396,6 +397,7 @@
         body.style.fontSize = "14px";
         body.style.marginTop = "4px";
         body.style.color = "#ECECF1";
+        body.style.textAlign = "left";
         const valuesOrdered = group.items.map((it) => it.value);
         body.textContent =
           valuesOrdered.slice(0, 4).join(", ") +

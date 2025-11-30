@@ -2,9 +2,6 @@
  * Claude Platform Adapter
  *
  * Implements platform-specific selectors and behaviors for Claude (claude.ai).
- *
- * Note: These selectors are based on common patterns observed in Claude's interface.
- * They may need adjustment based on actual DOM structure when testing.
  */
 (function initClaudePlatform(root) {
   const sg = (root.SG = root.SG || {});
@@ -24,11 +21,9 @@
 
     findComposer() {
       // Claude typically uses a contenteditable div or textarea
-      // Try contenteditable first
       const editable = Array.from(
         document.querySelectorAll('[contenteditable="true"]'),
       ).find((el) => {
-        // Check if visible and not nested inside other contenteditable elements
         return (
           el.offsetParent !== null &&
           el.clientHeight > 0 &&
@@ -37,7 +32,7 @@
       });
       if (editable) return editable;
 
-      // Try textarea fallback
+      // Try textarea as fallback
       const textarea = Array.from(document.querySelectorAll("textarea")).find(
         (el) => el.offsetParent !== null && el.clientHeight > 0,
       );
@@ -54,14 +49,12 @@
       const composer = this.findComposer();
       if (!composer) return null;
 
-      // Try to find button within the same form or parent container
       const form = composer.closest("form");
       if (form) {
         const submitButton = form.querySelector('button[type="submit"]');
         if (submitButton) return submitButton;
       }
 
-      // Try to find button by common attributes or aria labels
       const buttons = document.querySelectorAll("button");
       for (const btn of buttons) {
         const ariaLabel = btn.getAttribute("aria-label")?.toLowerCase() || "";
@@ -91,7 +84,6 @@
       if (!n || n.nodeType !== 1) return false;
       const el = n;
 
-      // Claude's messages often have specific data attributes or class patterns
       // Check for common message container patterns
       if (
         el.hasAttribute?.("data-message") ||
@@ -203,32 +195,6 @@
       console.log(
         "[SensitiveDataDetector] Claude platform adapter initialized",
       );
-    }
-
-    async waitForReady() {
-      // Claude may take longer to load, increase timeout
-      return new Promise((resolve) => {
-        const maxAttempts = 60;
-        let attempts = 0;
-
-        const check = () => {
-          attempts++;
-          if (this.findComposer()) {
-            resolve(true);
-            return;
-          }
-          if (attempts >= maxAttempts) {
-            console.warn(
-              `[SensitiveDataDetector] Claude platform not ready after ${maxAttempts} attempts`,
-            );
-            resolve(false);
-            return;
-          }
-          setTimeout(check, 200);
-        };
-
-        check();
-      });
     }
   }
 

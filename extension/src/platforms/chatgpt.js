@@ -18,7 +18,7 @@
     }
 
     findComposer() {
-      // Try to find contenteditable elements first (ChatGPT's primary input method)
+      // Try to find contenteditable elements first
       const editable = Array.from(
         document.querySelectorAll(
           '[contenteditable="true"][role="textbox"], div[contenteditable="true"]',
@@ -26,7 +26,7 @@
       ).find((el) => el.offsetParent !== null && el.clientHeight > 0);
       if (editable) return editable;
 
-      // Fallback to textarea (older versions or alternative layouts)
+      // Fallback to textarea
       const textarea = Array.from(document.querySelectorAll("textarea")).find(
         (el) => el.offsetParent !== null && el.clientHeight > 0,
       );
@@ -36,7 +36,6 @@
     getComposerText(el) {
       if (!el) return "";
       if (el.tagName === "TEXTAREA") return el.value;
-      // For contenteditable divs, extract text and normalize non-breaking spaces
       return (el.textContent || "").replace(/\u00A0/g, " ");
     }
 
@@ -44,13 +43,11 @@
       const composer = this.findComposer();
       if (!composer) return null;
 
-      // Try to find button within the form containing the composer
       const formButton = composer
         .closest("form")
         ?.querySelector('button[type="submit"]');
       if (formButton) return formButton;
 
-      // Try ChatGPT's specific test ID
       const testIdButton = document.querySelector(
         '[data-testid="send-button"]',
       );

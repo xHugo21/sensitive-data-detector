@@ -2,9 +2,6 @@
  * Gemini Platform Adapter
  *
  * Implements platform-specific selectors and behaviors for Google Gemini (gemini.google.com).
- *
- * Note: These selectors are based on common patterns observed in Gemini's interface.
- * They may need adjustment based on actual DOM structure when testing.
  */
 (function initGeminiPlatform(root) {
   const sg = (root.SG = root.SG || {});
@@ -24,7 +21,6 @@
 
     findComposer() {
       // Gemini typically uses a rich text editor or contenteditable div
-      // Try contenteditable with role="textbox" first
       const editable = Array.from(
         document.querySelectorAll(
           '[contenteditable="true"][role="textbox"], [contenteditable="true"]',
@@ -39,7 +35,7 @@
       });
       if (editable) return editable;
 
-      // Try textarea fallback
+      // Try textarea as fallback
       const textarea = Array.from(document.querySelectorAll("textarea")).find(
         (el) => el.offsetParent !== null && el.clientHeight > 0,
       );
@@ -63,7 +59,7 @@
         if (submitButton) return submitButton;
       }
 
-      // Try to find button by aria-label (Gemini often uses descriptive labels)
+      // Try to find button by aria-label
       const buttons = document.querySelectorAll("button");
       for (const btn of buttons) {
         const ariaLabel = btn.getAttribute("aria-label")?.toLowerCase() || "";
@@ -221,32 +217,6 @@
       console.log(
         "[SensitiveDataDetector] Gemini platform adapter initialized",
       );
-    }
-
-    async waitForReady() {
-      // Gemini may take longer to load
-      return new Promise((resolve) => {
-        const maxAttempts = 60;
-        let attempts = 0;
-
-        const check = () => {
-          attempts++;
-          if (this.findComposer()) {
-            resolve(true);
-            return;
-          }
-          if (attempts >= maxAttempts) {
-            console.warn(
-              `[SensitiveDataDetector] Gemini platform not ready after ${maxAttempts} attempts`,
-            );
-            resolve(false);
-            return;
-          }
-          setTimeout(check, 200);
-        };
-
-        check();
-      });
     }
   }
 

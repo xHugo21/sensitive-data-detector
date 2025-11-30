@@ -7,7 +7,8 @@ PORT = int(os.getenv("PORT", "8000"))
 
 ALLOW_ORIGINS = [
     "https://chatgpt.com",
-    "https://chat.openai.com",
+    "https://claude.ai",
+    "https://gemini.google.ai",
     "http://127.0.0.1:8000",
     "http://localhost:8000",
 ]

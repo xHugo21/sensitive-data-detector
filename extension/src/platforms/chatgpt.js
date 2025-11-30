@@ -14,7 +14,7 @@
     }
 
     get urlPatterns() {
-      return ["chat.openai.com", "chatgpt.com"];
+      return ["chatgpt.com"];
     }
 
     findComposer() {

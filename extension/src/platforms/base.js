@@ -64,7 +64,13 @@
      * @returns {string} The text content
      */
     getComposerText(element) {
-      throw new Error("Platform must implement 'getComposerText' method");
+      if (!element) return "";
+      if (element.tagName === "TEXTAREA") return element.value;
+      // For contenteditable divs, extract text and normalize non-breaking spaces
+      return (element.textContent || element.innerText || "").replace(
+        /\u00A0/g,
+        " ",
+      );
     }
 
     /**
@@ -81,7 +87,8 @@
      * @returns {string} The extracted text
      */
     extractMessageText(node) {
-      throw new Error("Platform must implement 'extractMessageText' method");
+      if (!node) return "";
+      return (node.innerText || node.textContent || "").trim();
     }
 
     /**
@@ -118,22 +125,6 @@
      */
 
     /**
-     * Should keyboard events (Enter key) be intercepted?
-     * @returns {boolean}
-     */
-    get shouldInterceptKeyboard() {
-      return true;
-    }
-
-    /**
-     * Should click events on send button be intercepted?
-     * @returns {boolean}
-     */
-    get shouldInterceptClick() {
-      return true;
-    }
-
-    /**
      * Custom send logic for platforms with special requirements
      * @param {Element} composer - The composer element
      * @param {Element|null} button - The send button (if available)
@@ -154,14 +145,6 @@
         cancelable: true,
       });
       composer.dispatchEvent(enterEvent);
-    }
-
-    /**
-     * Query selector for file input elements (for file upload interception)
-     * @returns {string|null} CSS selector for file inputs, or null if not applicable
-     */
-    get fileInputSelector() {
-      return 'input[type="file"]';
     }
 
     /**

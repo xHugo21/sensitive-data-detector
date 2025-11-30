@@ -33,12 +33,6 @@
       return textarea || null;
     }
 
-    getComposerText(el) {
-      if (!el) return "";
-      if (el.tagName === "TEXTAREA") return el.value;
-      return (el.textContent || "").replace(/\u00A0/g, " ");
-    }
-
     findSendButton() {
       const composer = this.findComposer();
       if (!composer) return null;
@@ -55,11 +49,6 @@
 
       // Fallback: find any button near the composer
       return composer.parentElement?.querySelector("button") || null;
-    }
-
-    extractMessageText(node) {
-      if (!node) return "";
-      return (node.innerText || node.textContent || "").trim();
     }
 
     isMessageNode(n) {
@@ -109,42 +98,6 @@
       if (roleAttr === "user") return "user";
 
       return null;
-    }
-
-    get shouldInterceptKeyboard() {
-      return true;
-    }
-
-    get shouldInterceptClick() {
-      return true;
-    }
-
-    customSendLogic(composer, button) {
-      const targetButton = button || this.findSendButton();
-      if (targetButton) {
-        // Mark button to bypass our own interception on the next click
-        targetButton.dataset.sgBypass = "true";
-        setTimeout(() => {
-          targetButton.click();
-          delete targetButton.dataset.sgBypass;
-        }, 10);
-        return;
-      }
-
-      // Fallback: dispatch Enter key event
-      const enterEvent = new KeyboardEvent("keydown", {
-        key: "Enter",
-        code: "Enter",
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true,
-      });
-      composer.dispatchEvent(enterEvent);
-    }
-
-    get fileInputSelector() {
-      return 'input[type="file"]';
     }
 
     initialize() {

@@ -165,6 +165,27 @@
     }
 
     /**
+     * Find the DOM location where the risk panel should be inserted
+     * @returns {Object|null} Object with {host, referenceNode} or null for floating panel
+     *   - host: The parent element where the panel should be inserted
+     *   - referenceNode: The element to insert before (or null to append to host)
+     */
+    findPanelInsertionPoint() {
+      const composer = this.findComposer();
+      if (!composer) return null;
+
+      // Default implementation: insert before form or composer
+      const form = composer.closest?.("form");
+      const host = form?.parentElement || composer.parentElement;
+      if (!host) return null;
+
+      return {
+        host: host,
+        referenceNode: form || composer,
+      };
+    }
+
+    /**
      * Initialize platform-specific event listeners or setup
      * Called when the platform is activated
      */

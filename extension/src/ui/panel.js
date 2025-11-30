@@ -176,8 +176,55 @@
   }
 
   function mountPanel(panel) {
-    const composer = sg.chatSelectors?.findComposer?.();
     const fallbackParent = document.body || document.documentElement;
+
+    // Use platform-specific insertion point if available
+    const platform = sg.platformRegistry?.getActive?.();
+    if (platform && typeof platform.findPanelInsertionPoint === 'function') {
+      const insertionPoint = platform.findPanelInsertionPoint();
+      
+      if (!insertionPoint || !insertionPoint.host) {
+        // Fallback to floating panel if no insertion point found
+        if (!panel.parentElement) fallbackParent.appendChild(panel);
+        applyFloatingPanelStyles(panel);
+        return;
+      }
+
+      const { host, referenceNode } = insertionPoint;
+
+      // Check if we need to move the anchor
+      let anchor = document.getElementById("sg-llm-panel-anchor");
+      if (anchor && anchor.parentElement && anchor.parentElement !== host) {
+        anchor.parentElement.removeChild(anchor);
+        anchor = null;
+      } else if (anchor && !anchor.parentElement) {
+        anchor = null;
+      }
+
+      if (!anchor) {
+        anchor = document.createElement("div");
+        anchor.id = "sg-llm-panel-anchor";
+        Object.assign(anchor.style, {
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: "16px",
+          marginTop: "4px",
+          padding: "0 8px",
+          boxSizing: "border-box",
+        });
+        host.insertBefore(anchor, referenceNode);
+      }
+
+      if (panel.parentElement !== anchor) {
+        anchor.appendChild(panel);
+      }
+      applyInlinePanelStyles(panel);
+      return;
+    }
+
+    // Fallback to old logic if platform doesn't have findPanelInsertionPoint
+    const composer = sg.chatSelectors?.findComposer?.();
     if (!composer || !composer.parentElement) {
       if (!panel.parentElement) fallbackParent.appendChild(panel);
       applyFloatingPanelStyles(panel);

@@ -20,40 +20,53 @@
     }
 
     findComposer() {
-      // Gemini typically uses a rich text editor or contenteditable div
-      const editable = Array.from(
-        document.querySelectorAll(
-          '[contenteditable="true"][role="textbox"], [contenteditable="true"]',
-        ),
-      ).find((el) => {
-        return (
-          el.offsetParent !== null &&
-          el.clientHeight > 0 &&
-          !el.closest('[role="dialog"]') &&
-          !el.closest('[aria-hidden="true"]')
-        );
-      });
-      if (editable) return editable;
-
-      // Try textarea as fallback
-      const textarea = Array.from(document.querySelectorAll("textarea")).find(
-        (el) => el.offsetParent !== null && el.clientHeight > 0,
+      // Gemini uses Quill editor inside a <rich-textarea> component
+      const qlEditor = document.querySelector(
+        'rich-textarea .ql-editor[contenteditable="true"][role="textbox"]',
       );
-      return textarea || null;
+      if (qlEditor && qlEditor.offsetParent !== null) {
+        return qlEditor;
+      }
+      
+      // Fallback: Find any contenteditable with role="textbox" inside rich-textarea
+      const richTextarea = document.querySelector("rich-textarea");
+      if (richTextarea) {
+        const editable = richTextarea.querySelector(
+          '[contenteditable="true"][role="textbox"]',
+        );
+        if (editable && editable.offsetParent !== null) {
+          return editable;
+        }
+      }
+
+      // Generic fallback
+      const generic = Array.from(
+        document.querySelectorAll('[contenteditable="true"][role="textbox"]')
+      ).find(el => el.offsetParent !== null && el.clientHeight > 0);
+      
+      if (generic) {
+        return generic;
+      }
+
+      return null;
     }
 
     findSendButton() {
       const composer = this.findComposer();
-      if (!composer) return null;
+      if (!composer) {
+        return null;
+      }
 
       // Try to find button within the same form or parent container
       const form = composer.closest("form");
       if (form) {
         const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton) return submitButton;
+        if (submitButton) {
+          return submitButton;
+        }
       }
 
-      // Try to find button by aria-label
+      // Try to find button by aria-label (including Spanish/multilingual support)
       const buttons = document.querySelectorAll("button");
       for (const btn of buttons) {
         const ariaLabel = btn.getAttribute("aria-label")?.toLowerCase() || "";
@@ -61,8 +74,10 @@
         if (
           ariaLabel.includes("send") ||
           ariaLabel.includes("submit") ||
+          ariaLabel.includes("enviar") || // Spanish
           title.includes("send") ||
-          title.includes("submit")
+          title.includes("submit") ||
+          title.includes("enviar")
         ) {
           if (btn.offsetParent !== null) {
             return btn;
@@ -74,9 +89,20 @@
       const dataButton = document.querySelector(
         '[data-test-id*="send"], [data-testid*="send"]',
       );
-      if (dataButton) return dataButton;
+      if (dataButton) {
+        return dataButton;
+      }
 
-      // Fallback: find button near composer
+      // Fallback: find button near composer in the input container
+      const inputContainer = composer.closest('.text-input-field_textarea-wrapper');
+      if (inputContainer) {
+        const nearbyButton = inputContainer.parentElement?.querySelector("button");
+        if (nearbyButton) {
+          return nearbyButton;
+        }
+      }
+
+      // Last resort: find button near composer
       return composer.parentElement?.querySelector("button") || null;
     }
 
@@ -165,6 +191,45 @@
       }
 
       return null;
+    }
+
+    findPanelInsertionPoint() {
+      const composer = this.findComposer();
+      if (!composer) return null;
+
+      // Try to find the input-area-container (main container for the entire input area)
+      const inputContainer = document.querySelector('.input-area-container');
+      if (inputContainer) {
+        // Find the input-area-v2 element to insert before
+        const inputAreaV2 = inputContainer.querySelector('input-area-v2');
+        if (inputAreaV2) {
+          return {
+            host: inputContainer,
+            referenceNode: inputAreaV2,
+          };
+        }
+      }
+
+      // Fallback: Use the default behavior from BasePlatform
+      return super.findPanelInsertionPoint();
+    }
+
+    isSendButton(button) {
+      if (!button || button.tagName !== 'BUTTON') return false;
+
+      // Check Gemini-specific patterns
+      const ariaLabel = button.getAttribute('aria-label')?.toLowerCase() || '';
+      const className = button.className?.toLowerCase() || '';
+      const title = button.getAttribute('title')?.toLowerCase() || '';
+
+      // Gemini uses .send-button class and multilingual aria-labels
+      if (className.includes('send-button')) return true;
+      if (ariaLabel.includes('send') || ariaLabel.includes('enviar')) return true;
+      if (ariaLabel.includes('submit')) return true;
+      if (title.includes('send') || title.includes('enviar')) return true;
+
+      // Fallback to base implementation
+      return super.isSendButton(button);
     }
 
     initialize() {

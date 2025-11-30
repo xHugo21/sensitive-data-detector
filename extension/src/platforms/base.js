@@ -125,6 +125,21 @@
      */
 
     /**
+     * Check if a button element is the send button
+     * @param {Element} button - The button element to check
+     * @returns {boolean} True if this is the send button
+     */
+    isSendButton(button) {
+      if (!button || button.tagName !== 'BUTTON') return false;
+      
+      // Check standard attributes
+      if (button.type === 'submit') return true;
+      if (button.dataset.testid === 'send-button') return true;
+      
+      return false;
+    }
+
+    /**
      * Custom send logic for platforms with special requirements
      * @param {Element} composer - The composer element
      * @param {Element|null} button - The send button (if available)

@@ -32,11 +32,18 @@
   }
 
   function handleSendButtonClick(event) {
-    const btn = event.target.closest(
-      'button[type="submit"], [data-testid="send-button"]',
-    );
-    if (!btn) return;
-    if (btn.dataset.sgBypass === "true") return;
+    // Check if clicked element or its closest button ancestor is the send button
+    const clickedButton = event.target.tagName === 'BUTTON' 
+      ? event.target 
+      : event.target.closest('button');
+    
+    if (!clickedButton) return;
+    
+    // Use platform-specific button detection
+    const platform = sg.platformRegistry?.getActive();
+    if (!platform || !platform.isSendButton(clickedButton)) return;
+    
+    if (clickedButton.dataset.sgBypass === "true") return;
 
     const composer = sg.chatSelectors.findComposer();
     if (!composer) return;
@@ -45,7 +52,7 @@
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    analyzeBeforeSend({ composer, button: btn, text });
+    analyzeBeforeSend({ composer, button: clickedButton, text });
   }
 
   async function analyzeBeforeSend({ composer, button = null, text }) {

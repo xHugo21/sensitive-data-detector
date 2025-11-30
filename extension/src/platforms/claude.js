@@ -1,8 +1,8 @@
 /**
  * Claude Platform Adapter
- * 
+ *
  * Implements platform-specific selectors and behaviors for Claude (claude.ai).
- * 
+ *
  * Note: These selectors are based on common patterns observed in Claude's interface.
  * They may need adjustment based on actual DOM structure when testing.
  */
@@ -19,23 +19,21 @@
     }
 
     get urlPatterns() {
-      return [
-        "claude.ai",
-      ];
+      return ["claude.ai"];
     }
 
     findComposer() {
       // Claude typically uses a contenteditable div or textarea
       // Try contenteditable first
       const editable = Array.from(
-        document.querySelectorAll(
-          '[contenteditable="true"]',
-        ),
+        document.querySelectorAll('[contenteditable="true"]'),
       ).find((el) => {
         // Check if visible and not nested inside other contenteditable elements
-        return el.offsetParent !== null && 
-               el.clientHeight > 0 && 
-               !el.closest('[role="dialog"]');
+        return (
+          el.offsetParent !== null &&
+          el.clientHeight > 0 &&
+          !el.closest('[role="dialog"]')
+        );
       });
       if (editable) return editable;
 
@@ -64,12 +62,16 @@
       }
 
       // Try to find button by common attributes or aria labels
-      const buttons = document.querySelectorAll('button');
+      const buttons = document.querySelectorAll("button");
       for (const btn of buttons) {
-        const ariaLabel = btn.getAttribute('aria-label')?.toLowerCase() || '';
-        const text = btn.textContent?.toLowerCase() || '';
-        if (ariaLabel.includes('send') || text.includes('send') || 
-            ariaLabel.includes('submit') || btn.getAttribute('type') === 'submit') {
+        const ariaLabel = btn.getAttribute("aria-label")?.toLowerCase() || "";
+        const text = btn.textContent?.toLowerCase() || "";
+        if (
+          ariaLabel.includes("send") ||
+          text.includes("send") ||
+          ariaLabel.includes("submit") ||
+          btn.getAttribute("type") === "submit"
+        ) {
           if (btn.offsetParent !== null) {
             return btn;
           }
@@ -91,21 +93,27 @@
 
       // Claude's messages often have specific data attributes or class patterns
       // Check for common message container patterns
-      if (el.hasAttribute?.("data-message") || 
-          el.hasAttribute?.("data-message-id")) {
+      if (
+        el.hasAttribute?.("data-message") ||
+        el.hasAttribute?.("data-message-id")
+      ) {
         return true;
       }
 
       // Check for role-based attributes
-      if (el.getAttribute?.("role") === "article" || 
-          el.getAttribute?.("role") === "region") {
+      if (
+        el.getAttribute?.("role") === "article" ||
+        el.getAttribute?.("role") === "region"
+      ) {
         return true;
       }
 
       // Check for class patterns common in message containers
       const className = el.className || "";
-      if (typeof className === 'string' && 
-          (className.includes('message') || className.includes('chat'))) {
+      if (
+        typeof className === "string" &&
+        (className.includes("message") || className.includes("chat"))
+      ) {
         return true;
       }
 
@@ -116,10 +124,10 @@
       // Try to find the main content area within the message
       const selectors = [
         '[role="article"]',
-        '.message-content',
-        '[data-message-content]',
+        ".message-content",
+        "[data-message-content]",
         'div[class*="content"]',
-        'p',
+        "p",
       ];
 
       for (const sel of selectors) {
@@ -132,26 +140,27 @@
 
     getMessageRole(node) {
       if (!node) return null;
-      
+
       // Try to determine role from data attributes
-      const role = node.getAttribute?.("data-role") || 
-                   node.getAttribute?.("data-author") ||
-                   node.getAttribute?.("data-message-role");
-      
+      const role =
+        node.getAttribute?.("data-role") ||
+        node.getAttribute?.("data-author") ||
+        node.getAttribute?.("data-message-role");
+
       if (role === "assistant" || role === "claude") return "assistant";
       if (role === "user" || role === "human") return "user";
 
       // Try to infer from context or structure
       const text = (node.textContent || "").toLowerCase();
       const className = (node.className || "").toLowerCase();
-      
-      if (className.includes('assistant') || className.includes('claude')) {
+
+      if (className.includes("assistant") || className.includes("claude")) {
         return "assistant";
       }
-      if (className.includes('user') || className.includes('human')) {
+      if (className.includes("user") || className.includes("human")) {
         return "user";
       }
-      
+
       return null;
     }
 
@@ -191,7 +200,9 @@
     }
 
     initialize() {
-      console.log("[SensitiveDataDetector] Claude platform adapter initialized");
+      console.log(
+        "[SensitiveDataDetector] Claude platform adapter initialized",
+      );
     }
 
     async waitForReady() {
@@ -207,7 +218,9 @@
             return;
           }
           if (attempts >= maxAttempts) {
-            console.warn(`[SensitiveDataDetector] Claude platform not ready after ${maxAttempts} attempts`);
+            console.warn(
+              `[SensitiveDataDetector] Claude platform not ready after ${maxAttempts} attempts`,
+            );
             resolve(false);
             return;
           }
@@ -220,4 +233,9 @@
   }
 
   sg.ClaudePlatform = ClaudePlatform;
+
+  // Self-register when script loads
+  if (sg.platformRegistry) {
+    sg.platformRegistry.register(ClaudePlatform);
+  }
 })(typeof window !== "undefined" ? window : globalThis);

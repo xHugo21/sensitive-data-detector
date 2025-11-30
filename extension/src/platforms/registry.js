@@ -1,6 +1,6 @@
 /**
  * Platform Registry
- * 
+ *
  * Central registry for managing all platform adapters.
  * Handles platform registration, detection, and retrieval.
  */
@@ -21,16 +21,20 @@
       try {
         const instance = new platformClass();
         const name = instance.name;
-        
+
         if (this.platforms.has(name)) {
-          console.warn(`[SensitiveDataDetector] Platform ${name} is already registered`);
+          console.warn(
+            `[SensitiveDataDetector] Platform ${name} is already registered`,
+          );
           return;
         }
 
         this.platforms.set(name, instance);
-        console.log(`[SensitiveDataDetector] Registered platform: ${instance.displayName}`);
       } catch (error) {
-        console.error(`[SensitiveDataDetector] Failed to register platform:`, error);
+        console.error(
+          `[SensitiveDataDetector] Failed to register platform:`,
+          error,
+        );
       }
     }
 
@@ -59,12 +63,16 @@
     detectPlatform(url = window.location.href) {
       for (const platform of this.platforms.values()) {
         if (platform.matches(url)) {
-          console.log(`[SensitiveDataDetector] Detected platform: ${platform.displayName}`);
+          console.log(
+            `[SensitiveDataDetector] Detected platform: ${platform.displayName}`,
+          );
           return platform;
         }
       }
-      
-      console.warn(`[SensitiveDataDetector] No matching platform found for URL: ${url}`);
+
+      console.warn(
+        `[SensitiveDataDetector] No matching platform found for URL: ${url}`,
+      );
       return null;
     }
 
@@ -85,22 +93,29 @@
       }
 
       this.activePlatform = platform;
-      
+
       try {
         // Initialize the platform
         platform.initialize();
-        
+
         // Wait for platform to be ready
         const ready = await platform.waitForReady();
         if (!ready) {
-          console.warn(`[SensitiveDataDetector] Platform ${platform.displayName} failed to become ready`);
+          console.warn(
+            `[SensitiveDataDetector] Platform ${platform.displayName} failed to become ready`,
+          );
           return false;
         }
 
-        console.log(`[SensitiveDataDetector] Platform ${platform.displayName} activated successfully`);
+        console.log(
+          `[SensitiveDataDetector] Platform ${platform.displayName} activated successfully`,
+        );
         return true;
       } catch (error) {
-        console.error(`[SensitiveDataDetector] Failed to activate platform ${platform.displayName}:`, error);
+        console.error(
+          `[SensitiveDataDetector] Failed to activate platform ${platform.displayName}:`,
+          error,
+        );
         return false;
       }
     }
@@ -141,7 +156,7 @@
      * @returns {Array<string>} Array of platform display names
      */
     getSupportedPlatforms() {
-      return Array.from(this.platforms.values()).map(p => p.displayName);
+      return Array.from(this.platforms.values()).map((p) => p.displayName);
     }
   }
 

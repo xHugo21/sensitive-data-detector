@@ -72,7 +72,12 @@ Platform adapter handles sending via customSendLogic()
 
 ## Adding a New Platform
 
-To add support for a new chatbot platform:
+To add support for a new chatbot platform, you only need **2 simple steps**:
+
+1. Create a platform adapter file
+2. Add it to manifest.json
+
+**That's it!** The platform will automatically register itself when its script loads. No need to modify `main.js` or any other core files.
 
 ### Step 1: Create Platform Adapter
 
@@ -146,12 +151,18 @@ Create a new file `src/platforms/newplatform.js`:
   }
 
   sg.NewPlatform = NewPlatform;
+
+  // Self-register when script loads - this is automatic!
+  if (sg.platformRegistry) {
+    sg.platformRegistry.register(NewPlatform);
+    console.log("[SensitiveDataDetector] New Platform auto-registered");
+  }
 })(typeof window !== "undefined" ? window : globalThis);
 ```
 
 ### Step 2: Register in manifest.json
 
-Add URLs to `manifest.json`:
+Add URLs and script to `manifest.json`:
 
 ```json
 {
@@ -164,7 +175,7 @@ Add URLs to `manifest.json`:
         "https://gemini.google.com/*",
         "https://x.com/*",
         "https://twitter.com/*",
-        "https://newplatform.com/*"  // Add new platform
+        "https://newplatform.com/*"  // Add new platform URL
       ],
       "js": [
         "src/config.js",
@@ -176,12 +187,12 @@ Add URLs to `manifest.json`:
         "src/ui/highlights.js",
         "src/ui/loadingState.js",
         "src/platforms/base.js",
+        "src/platforms/registry.js",
         "src/platforms/chatgpt.js",
         "src/platforms/claude.js",
         "src/platforms/gemini.js",
         "src/platforms/grok.js",
         "src/platforms/newplatform.js",  // Add new platform script
-        "src/platforms/registry.js",
         "src/dom/chatSelectors.js",
         "src/controllers/sendInterceptor.js",
         "src/controllers/messageAnalyzer.js",
@@ -193,35 +204,7 @@ Add URLs to `manifest.json`:
 }
 ```
 
-### Step 3: Register in main.js
-
-Add registration in `src/main.js`:
-
-```javascript
-function initializePlatforms() {
-  console.log("[SensitiveDataDetector] Initializing platform system...");
-  
-  if (sg.ChatGPTPlatform) {
-    sg.platformRegistry.register(sg.ChatGPTPlatform);
-  }
-  if (sg.ClaudePlatform) {
-    sg.platformRegistry.register(sg.ClaudePlatform);
-  }
-  if (sg.GeminiPlatform) {
-    sg.platformRegistry.register(sg.GeminiPlatform);
-  }
-  if (sg.GrokPlatform) {
-    sg.platformRegistry.register(sg.GrokPlatform);
-  }
-  if (sg.NewPlatform) {  // Add this
-    sg.platformRegistry.register(sg.NewPlatform);
-  }
-
-  console.log("[SensitiveDataDetector] Supported platforms:", sg.platformRegistry.getSupportedPlatforms());
-}
-```
-
-### Step 4: Test the Platform
+**That's it!** The platform will auto-register when the script loads. No need to modify `main.js`!
 
 1. Load the extension in Chrome
 2. Navigate to the new platform's URL

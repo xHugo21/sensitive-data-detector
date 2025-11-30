@@ -158,4 +158,9 @@
   }
 
   sg.ChatGPTPlatform = ChatGPTPlatform;
+
+  // Self-register when script loads
+  if (sg.platformRegistry) {
+    sg.platformRegistry.register(ChatGPTPlatform);
+  }
 })(typeof window !== "undefined" ? window : globalThis);

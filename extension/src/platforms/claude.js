@@ -195,42 +195,16 @@
       const composer = this.findComposer();
       if (!composer) return null;
 
-      // Traverse up to find the main chat input container
-      let current = composer;
-      let iterations = 0;
-      const maxIterations = 10;
+      // Claude has a chat-input-grid-container that wraps the input area
+      const chatInputContainer = document.querySelector(
+        '[data-testid="chat-input-grid-container"]'
+      );
 
-      // Walk up the DOM tree to find a suitable container
-      // Look for a container that's wide enough and has reasonable positioning
-      while (current && current.parentElement && iterations < maxIterations) {
-        const parent = current.parentElement;
-
-        // Stop if we hit the body or a main landmark
-        if (parent.tagName === "BODY" || parent.tagName === "MAIN") {
-          break;
-        }
-
-        // Look for a container that seems to be the chat input area
-        const computedStyle = window.getComputedStyle(parent);
-        const width = parent.offsetWidth;
-
-        // If we find a wide container use its parent
-        if (width > 500 && computedStyle.position !== "fixed") {
-          const form = current.closest("form");
-          if (form && form.parentElement) {
-            return {
-              host: form.parentElement,
-              referenceNode: form,
-            };
-          }
-          return {
-            host: parent,
-            referenceNode: current,
-          };
-        }
-
-        current = parent;
-        iterations++;
+      if (chatInputContainer && chatInputContainer.parentElement) {
+        return {
+          host: chatInputContainer.parentElement,
+          referenceNode: chatInputContainer,
+        };
       }
 
       // Fallback to form-based insertion
@@ -242,11 +216,8 @@
         };
       }
 
-      // Last resort: use a higher-level parent
-      return {
-        host: composer.parentElement?.parentElement || composer.parentElement,
-        referenceNode: composer.parentElement || composer,
-      };
+      // Last resort: use default behavior
+      return null;
     }
 
     initialize() {

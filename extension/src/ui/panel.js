@@ -97,6 +97,7 @@
     const btnSendAnyway = document.createElement("button");
     btnSendAnyway.id = "sg-llm-override";
     btnSendAnyway.textContent = "Send anyway";
+    btnSendAnyway.dataset.sgPanelButton = "true";
     Object.assign(btnSendAnyway.style, {
       flex: 1,
       border: "none",
@@ -112,6 +113,7 @@
 
     const btnDismiss = document.createElement("button");
     btnDismiss.textContent = "Dismiss";
+    btnDismiss.dataset.sgPanelButton = "true";
     Object.assign(btnDismiss.style, {
       flex: 0,
       borderRadius: "12px",

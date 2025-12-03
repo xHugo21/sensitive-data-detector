@@ -21,6 +21,10 @@
 
   function handleComposerKeydown(event) {
     if (event.key !== "Enter" || event.shiftKey) return;
+    
+    // Allow send if override is active
+    if (sg.alertStore.isOverrideActive()) return;
+    
     const composer = sg.chatSelectors.findComposer();
     if (!composer) return;
     const text = sg.chatSelectors.getComposerText(composer);
@@ -43,7 +47,9 @@
     const platform = sg.platformRegistry?.getActive();
     if (!platform || !platform.isSendButton(clickedButton)) return;
     
+    // Allow send if override is active or bypass flag is set
     if (clickedButton.dataset.sgBypass === "true") return;
+    if (sg.alertStore.isOverrideActive()) return;
 
     const composer = sg.chatSelectors.findComposer();
     if (!composer) return;

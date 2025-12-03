@@ -41,8 +41,11 @@
       // Hide loading state
       sg.loadingState.hide();
 
-      // Display results if not suppressed
-      if (!sg.alertStore.shouldSuppressUserAlerts()) {
+      // Only display panel if blocked
+      if (
+        sg.riskUtils.shouldBlock(result) &&
+        !sg.alertStore.shouldSuppressUserAlerts()
+      ) {
         const displayName = `${fileInfo.label}: ${file.name}`;
         sg.panel.render(result, "User", displayName);
       }

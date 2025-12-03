@@ -132,6 +132,10 @@
     isSendButton(button) {
       if (!button || button.tagName !== 'BUTTON') return false;
       
+      // Exclude panel buttons explicitly (applies to all platforms)
+      if (button.dataset.sgPanelButton === 'true') return false;
+      if (button.closest('#sg-llm-panel')) return false;
+      
       // Check standard attributes
       if (button.type === 'submit') return true;
       if (button.dataset.testid === 'send-button') return true;

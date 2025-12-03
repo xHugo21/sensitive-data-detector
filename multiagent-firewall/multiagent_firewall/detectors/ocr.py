@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from ..types import GuardState, FieldList
+from ..types import GuardState
 
 
 class TesseractOCRDetector:
@@ -28,18 +28,18 @@ class TesseractOCRDetector:
 
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
-    def __call__(self, state: GuardState) -> FieldList:
+    def __call__(self, state: GuardState) -> str:
         """
         Extract text from image file in state.
-        Returns a list of detected text fields with confidence scores.
+        Returns the extracted text as a plain string.
         """
         file_path = state.get("file_path")
 
         if not file_path:
-            return []
+            return ""
 
         if not os.path.exists(file_path):
-            return []
+            return ""
 
         try:
             import pytesseract
@@ -54,7 +54,7 @@ class TesseractOCRDetector:
                 output_type=pytesseract.Output.DICT,
             )
 
-            fields: FieldList = []
+            text_parts = []
 
             # Process each detected text element
             n_boxes = len(ocr_data["text"])
@@ -66,30 +66,9 @@ class TesseractOCRDetector:
                 if not text or conf < self.confidence_threshold:
                     continue
 
-                x = ocr_data["left"][i]
-                y = ocr_data["top"][i]
-                w = ocr_data["width"][i]
-                h = ocr_data["height"][i]
+                text_parts.append(text)
 
-                fields.append(
-                    {
-                        "field": "TEXT_IN_IMAGE",
-                        "value": text,
-                        "source": "ocr",
-                        "confidence": conf,
-                        "metadata": {
-                            "bbox": {
-                                "x": x,
-                                "y": y,
-                                "width": w,
-                                "height": h,
-                            },
-                            "level": ocr_data["level"][i],
-                        },
-                    }
-                )
-
-            return fields
+            return " ".join(text_parts)
 
         except Exception as e:
             raise RuntimeError(

@@ -5,7 +5,7 @@ import warnings
 from urllib.parse import urlparse, unquote
 
 from ..detectors import TesseractOCRDetector
-from ..types import GuardState, FieldList
+from ..types import GuardState
 from ..utils import append_error, append_warning
 
 # Supported image file extensions for automatic OCR detection
@@ -82,21 +82,6 @@ def extract_text_from_file(file_path: str) -> str | None:
         return None
 
 
-def extract_text_from_ocr_fields(ocr_fields: FieldList) -> str:
-    """
-    Extract text from OCR fields to populate raw_text.
-    """
-    if not ocr_fields:
-        return ""
-
-    text_parts = []
-    for field in ocr_fields:
-        if isinstance(field, dict) and field.get("value"):
-            text_parts.append(str(field["value"]))
-
-    return " ".join(text_parts)
-
-
 def _get_default_ocr_detector():
     """
     Get default OCR detector from environment.
@@ -148,12 +133,8 @@ def read_document(state: GuardState) -> GuardState:
             ocr_detector = _get_default_ocr_detector()
             if ocr_detector:
                 try:
-                    # Call OCR detector with current state
-                    ocr_fields = ocr_detector(state) or []
-                    state["ocr_fields"] = ocr_fields
-
-                    # Extract text from OCR results
-                    text = extract_text_from_ocr_fields(ocr_fields)
+                    # Call OCR detector with current state - returns plain text
+                    text = ocr_detector(state) or ""
 
                     # Append to existing raw_text
                     existing_text = state.get("raw_text", "")
@@ -168,13 +149,11 @@ def read_document(state: GuardState) -> GuardState:
                         )
                 except Exception as e:
                     append_error(state, f"OCR detection failed: {str(e)}")
-                    state["ocr_fields"] = []
             else:
                 append_warning(
                     state,
                     f"Image file detected but no OCR detector available: {file_path}",
                 )
-                state["ocr_fields"] = []
         else:
             # Handle PDF and text files
             text = extract_text_from_file(file_path_clean)

@@ -30,7 +30,7 @@ def normalize(state: GuardState) -> GuardState:
 def merge_detections(state: GuardState) -> GuardState:
     merged: FieldList = []
     seen = set()
-    for key in ("llm_fields", "dlp_fields", "ocr_fields"):
+    for key in ("llm_fields", "dlp_fields"):
         for item in state.get(key, []) or []:
             if not isinstance(item, dict):
                 continue

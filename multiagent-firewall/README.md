@@ -10,24 +10,24 @@ The firewall uses a multi-agent architecture built on LangGraph with conditional
 flowchart TD
     Start(INPUT) --> HasFile{has file_path?}
     
-    HasFile -->|Yes| Document[Read Document<br/>Extract text, auto-detect images/PDFs]
+    HasFile -->|Yes| Document[Document Parsing]
     HasFile -->|No| Normalize[Normalize<br/>Preprocess text]
     
     Document --> Normalize
-    Normalize --> DLP[DLP Detector<br/>Regex, Keywords, Checksums<br/>+OCR for images]
+    Normalize --> DLP[DLP Detector]
     
-    DLP --> MergeDLP[Merge Detections<br/>DLP findings]
-    MergeDLP --> RiskDLP[Risk Evaluation<br/>Calculate risk level]
-    RiskDLP --> PolicyDLP[Policy Check<br/>Evaluate initial risk]
+    DLP --> MergeDLP[Merge Detections]
+    MergeDLP --> RiskDLP[Risk Evaluation]
+    RiskDLP --> PolicyDLP[Policy Check]
     
     PolicyDLP --> LowRisk{Risk Low/None?}
     
-    LowRisk -->|Yes| LLM[LLM Detector<br/>Deep semantic analysis]
-    LowRisk -->|No| Remediation[Remediation<br/>Final decision + action]
+    LowRisk -->|Yes| LLM[LLM Detector]
+    LowRisk -->|No| Remediation[Remediation]
     
-    LLM --> MergeFinal[Merge Final<br/>Combine DLP + LLM findings]
-    MergeFinal --> RiskFinal[Risk Final<br/>Recalculate risk level]
-    RiskFinal --> PolicyFinal[Policy Final<br/>Final decision]
+    LLM --> MergeFinal[Merge Detections]
+    MergeFinal --> RiskFinal[Risk Evaluations]
+    RiskFinal --> PolicyFinal[Policy Check]
     
     PolicyFinal --> Remediation
     

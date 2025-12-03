@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
@@ -21,17 +22,18 @@ def test_tesseract_detector_initialization():
 
 def test_tesseract_detector_custom_parameters():
     """Test initialization with custom parameters"""
-    detector = TesseractOCRDetector(
-        lang='spa',
-        config='--psm 6',
-        confidence_threshold=70,
-        tesseract_cmd='/usr/local/bin/tesseract'
-    )
-    
-    assert detector.lang == 'spa'
-    assert detector.config == '--psm 6'
-    assert detector.confidence_threshold == 70
-    assert detector.tesseract_cmd == '/usr/local/bin/tesseract'
+    with patch.dict('sys.modules', {'pytesseract': MagicMock()}):
+        detector = TesseractOCRDetector(
+            lang='spa',
+            config='--psm 6',
+            confidence_threshold=70,
+            tesseract_cmd='/usr/local/bin/tesseract'
+        )
+        
+        assert detector.lang == 'spa'
+        assert detector.config == '--psm 6'
+        assert detector.confidence_threshold == 70
+        assert detector.tesseract_cmd == '/usr/local/bin/tesseract'
 
 
 def test_tesseract_detector_from_env_defaults():
@@ -55,12 +57,13 @@ def test_tesseract_detector_from_env_custom():
     }
     
     with patch.dict(os.environ, env_vars, clear=False):
-        detector = TesseractOCRDetector.from_env()
-        
-        assert detector.lang == 'spa+eng'
-        assert detector.config == '--psm 6 --oem 3'
-        assert detector.confidence_threshold == 75
-        assert detector.tesseract_cmd == '/custom/path/tesseract'
+        with patch.dict('sys.modules', {'pytesseract': MagicMock()}):
+            detector = TesseractOCRDetector.from_env()
+            
+            assert detector.lang == 'spa+eng'
+            assert detector.config == '--psm 6 --oem 3'
+            assert detector.confidence_threshold == 75
+            assert detector.tesseract_cmd == '/custom/path/tesseract'
 
 
 def test_tesseract_detector_from_env_invalid_threshold():
@@ -84,35 +87,39 @@ def test_tesseract_detector_from_env_threshold_clamping():
 
 
 def test_tesseract_detector_returns_empty_for_missing_file_path():
-    """Test detector returns empty list when file_path is not in state"""
+    """Test detector returns empty string when file_path is not in state"""
     detector = TesseractOCRDetector()
     state: GuardState = {}
     
     result = detector(state)
-    assert result == []
+    assert result == ""
 
 
 def test_tesseract_detector_returns_empty_for_nonexistent_file():
-    """Test detector returns empty list when file doesn't exist"""
+    """Test detector returns empty string when file doesn't exist"""
     detector = TesseractOCRDetector()
     state: GuardState = {
         "file_path": "/nonexistent/path/image.png"
     }
     
     result = detector(state)
-    assert result == []
+    assert result == ""
 
 
-@patch('PIL.Image.open')
-@patch('pytesseract.image_to_data')
-def test_tesseract_detector_extracts_text(mock_image_to_data, mock_image_open):
+def test_tesseract_detector_extracts_text():
     """Test successful text extraction from image"""
-    # Mock PIL Image
+    import tempfile
+    
+    # Create mocks
+    mock_pytesseract = MagicMock()
+    mock_pil = MagicMock()
     mock_image = MagicMock()
-    mock_image_open.return_value = mock_image
+    
+    # Setup PIL mock
+    mock_pil.Image.open.return_value = mock_image
     
     # Mock Tesseract OCR data output
-    mock_image_to_data.return_value = {
+    mock_pytesseract.image_to_data.return_value = {
         'level': [1, 2, 3, 4, 5],
         'page_num': [1, 1, 1, 1, 1],
         'block_num': [0, 1, 1, 1, 1],
@@ -126,40 +133,36 @@ def test_tesseract_detector_extracts_text(mock_image_to_data, mock_image_open):
         'conf': ['-1', '-1', '-1', '95', '87'],
         'text': ['', '', '', 'Hello', 'World']
     }
+    mock_pytesseract.Output.DICT = 'dict'
     
     # Create a temporary file
-    import tempfile
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         tmp_path = tmp.name
     
     try:
-        detector = TesseractOCRDetector(confidence_threshold=50)
-        state: GuardState = {"file_path": tmp_path}
-        
-        result = detector(state)
-        
-        assert len(result) == 2
-        assert result[0]["field"] == "TEXT_IN_IMAGE"
-        assert result[0]["value"] == "Hello"
-        assert result[0]["source"] == "ocr"
-        assert result[0]["confidence"] == 95
-        assert "bbox" in result[0]["metadata"]
-        assert result[0]["metadata"]["bbox"]["x"] == 30
-        
-        assert result[1]["value"] == "World"
-        assert result[1]["confidence"] == 87
+        with patch.dict('sys.modules', {'pytesseract': mock_pytesseract, 'PIL': mock_pil}):
+            detector = TesseractOCRDetector(confidence_threshold=50)
+            state: GuardState = {"file_path": tmp_path}
+            
+            result = detector(state)
+            
+            # Should return plain text string with words separated by spaces
+            assert result == "Hello World"
     finally:
         os.unlink(tmp_path)
 
 
-@patch('PIL.Image.open')
-@patch('pytesseract.image_to_data')
-def test_tesseract_detector_filters_by_confidence(mock_image_to_data, mock_image_open):
+def test_tesseract_detector_filters_by_confidence():
     """Test that low-confidence results are filtered out"""
-    mock_image = MagicMock()
-    mock_image_open.return_value = mock_image
+    import tempfile
     
-    mock_image_to_data.return_value = {
+    mock_pytesseract = MagicMock()
+    mock_pil = MagicMock()
+    mock_image = MagicMock()
+    
+    mock_pil.Image.open.return_value = mock_image
+    
+    mock_pytesseract.image_to_data.return_value = {
         'level': [5, 5],
         'page_num': [1, 1],
         'block_num': [1, 1],
@@ -173,32 +176,35 @@ def test_tesseract_detector_filters_by_confidence(mock_image_to_data, mock_image
         'conf': ['95', '30'],
         'text': ['HighConfidence', 'LowConfidence']
     }
+    mock_pytesseract.Output.DICT = 'dict'
     
-    import tempfile
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         tmp_path = tmp.name
     
     try:
-        detector = TesseractOCRDetector(confidence_threshold=50)
-        state: GuardState = {"file_path": tmp_path}
-        
-        result = detector(state)
-        
-        # Only high confidence result should be included
-        assert len(result) == 1
-        assert result[0]["value"] == "HighConfidence"
+        with patch.dict('sys.modules', {'pytesseract': mock_pytesseract, 'PIL': mock_pil}):
+            detector = TesseractOCRDetector(confidence_threshold=50)
+            state: GuardState = {"file_path": tmp_path}
+            
+            result = detector(state)
+            
+            # Only high confidence result should be included
+            assert result == "HighConfidence"
     finally:
         os.unlink(tmp_path)
 
 
-@patch('PIL.Image.open')
-@patch('pytesseract.image_to_data')
-def test_tesseract_detector_skips_empty_text(mock_image_to_data, mock_image_open):
+def test_tesseract_detector_skips_empty_text():
     """Test that empty or whitespace-only text is skipped"""
-    mock_image = MagicMock()
-    mock_image_open.return_value = mock_image
+    import tempfile
     
-    mock_image_to_data.return_value = {
+    mock_pytesseract = MagicMock()
+    mock_pil = MagicMock()
+    mock_image = MagicMock()
+    
+    mock_pil.Image.open.return_value = mock_image
+    
+    mock_pytesseract.image_to_data.return_value = {
         'level': [5, 5, 5],
         'page_num': [1, 1, 1],
         'block_num': [1, 1, 1],
@@ -212,41 +218,44 @@ def test_tesseract_detector_skips_empty_text(mock_image_to_data, mock_image_open
         'conf': ['95', '95', '95'],
         'text': ['ValidText', '   ', '']
     }
+    mock_pytesseract.Output.DICT = 'dict'
     
-    import tempfile
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         tmp_path = tmp.name
     
     try:
-        detector = TesseractOCRDetector()
-        state: GuardState = {"file_path": tmp_path}
-        
-        result = detector(state)
-        
-        # Only valid text should be included
-        assert len(result) == 1
-        assert result[0]["value"] == "ValidText"
+        with patch.dict('sys.modules', {'pytesseract': mock_pytesseract, 'PIL': mock_pil}):
+            detector = TesseractOCRDetector()
+            state: GuardState = {"file_path": tmp_path}
+            
+            result = detector(state)
+            
+            # Only valid text should be included
+            assert result == "ValidText"
     finally:
         os.unlink(tmp_path)
 
 
-@patch('PIL.Image.open')
-@patch('pytesseract.image_to_data')
-def test_tesseract_detector_raises_on_processing_error(mock_image_to_data, mock_image_open):
+def test_tesseract_detector_raises_on_processing_error():
     """Test that processing errors are raised"""
-    mock_image = MagicMock()
-    mock_image_open.return_value = mock_image
-    mock_image_to_data.side_effect = RuntimeError("OCR processing failed")
-    
     import tempfile
+    
+    mock_pytesseract = MagicMock()
+    mock_pil = MagicMock()
+    mock_image = MagicMock()
+    
+    mock_pil.Image.open.return_value = mock_image
+    mock_pytesseract.image_to_data.side_effect = RuntimeError("OCR processing failed")
+    
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         tmp_path = tmp.name
     
     try:
-        detector = TesseractOCRDetector()
-        state: GuardState = {"file_path": tmp_path}
-        
-        with pytest.raises(RuntimeError, match="Tesseract OCR failed to process image"):
-            detector(state)
+        with patch.dict('sys.modules', {'pytesseract': mock_pytesseract, 'PIL': mock_pil}):
+            detector = TesseractOCRDetector()
+            state: GuardState = {"file_path": tmp_path}
+            
+            with pytest.raises(RuntimeError, match="Tesseract OCR failed to process image"):
+                detector(state)
     finally:
         os.unlink(tmp_path)

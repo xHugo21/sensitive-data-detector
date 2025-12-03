@@ -175,14 +175,7 @@ def test_read_document_with_image_file_and_ocr_detector(mock_ocr_from_env, tmp_p
     image_path.write_bytes(b"fake image data")
 
     mock_detector = MagicMock()
-    mock_detector.return_value = [
-        {
-            "field": "TEXT_IN_IMAGE",
-            "value": "Some text from image",
-            "source": "ocr",
-        },
-        {"field": "EMAIL", "value": "test@example.com", "source": "ocr"},
-    ]
+    mock_detector.return_value = "Some text from image test@example.com"
     mock_ocr_from_env.return_value = mock_detector
 
     state: GuardState = {
@@ -196,8 +189,6 @@ def test_read_document_with_image_file_and_ocr_detector(mock_ocr_from_env, tmp_p
 
     assert result["raw_text"] == "Some text from image test@example.com"
     assert result.get("metadata", {}).get("file_type") == "image"
-    assert "ocr_fields" in result
-    assert len(result["ocr_fields"]) == 2
 
 
 @patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
@@ -223,7 +214,6 @@ def test_read_document_with_image_file_no_ocr_detector(mock_ocr_from_env, tmp_pa
     assert result["raw_text"] == ""
     assert "Image file detected but no OCR detector available" in result["warnings"][0]
     assert result.get("metadata", {}).get("file_type") == "image"
-    assert result.get("ocr_fields") == []
 
 
 def test_read_document_sets_file_type_metadata_for_pdf(tmp_path):
@@ -281,4 +271,3 @@ def test_read_document_handles_ocr_exception(mock_ocr_from_env, tmp_path):
 
     assert result["raw_text"] == ""
     assert any("OCR detection failed" in e for e in result["errors"])
-    assert result.get("ocr_fields") == []

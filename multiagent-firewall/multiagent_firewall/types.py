@@ -23,7 +23,6 @@ class GuardState(TypedDict, total=False):
     # DETECTION
     llm_fields: FieldList
     dlp_fields: FieldList
-    ocr_fields: FieldList
     detected_fields: FieldList
 
     # DECISION

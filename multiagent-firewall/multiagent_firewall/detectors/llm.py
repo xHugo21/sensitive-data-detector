@@ -11,6 +11,7 @@ from langchain_litellm import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate
 
 from ..constants import LLM_PROMPT_MAP
+from ..utils import build_litellm_model_string
 
 
 def safe_json_from_text(s: str) -> dict:
@@ -42,16 +43,6 @@ def _str_to_bool(value: str | None, default: bool) -> bool:
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _maybe_prefix_model(model: str | None, provider: str) -> str | None:
-    if not model:
-        return model
-    if provider == "openai":
-        return model
-    if model.startswith(f"{provider}/"):
-        return model
-    return f"{provider}/{model}"
 
 
 def _resolve_llm_prompt(llm_prompt: str | None) -> str:
@@ -130,9 +121,8 @@ class LiteLLMDetector:
             # Default: detectors/../prompts
             self._prompt_dir = Path(__file__).resolve().parent.parent / "prompts"
 
-        model_id = _maybe_prefix_model(self._model, self._provider)
+        model_id = build_litellm_model_string(self._model, self._provider)
         if llm is None:
-            assert model_id is not None, "Model ID cannot be None"
             self._llm = ChatLiteLLM(model=model_id, **config.client_params)
         else:
             self._llm = llm

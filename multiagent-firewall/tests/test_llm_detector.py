@@ -3,6 +3,7 @@ from pathlib import Path
 
 from multiagent_firewall.detectors import llm
 from multiagent_firewall.constants import LLM_PROMPT_MAP
+from multiagent_firewall.utils import build_litellm_model_string
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):
@@ -55,11 +56,14 @@ def test_config_from_env_includes_optional_fields(monkeypatch):
 
 
 def test_maybe_prefix_model_handles_providers():
-    assert llm._maybe_prefix_model(None, "openai") is None
-    assert llm._maybe_prefix_model("gpt-4o", "openai") == "gpt-4o"
-    assert llm._maybe_prefix_model("claude-3", "anthropic") == "anthropic/claude-3"
+    """Test build_litellm_model_string utility function"""
+    # OpenAI doesn't get prefixed
+    assert build_litellm_model_string("gpt-4o", "openai") == "gpt-4o"
+    # Other providers get prefixed
+    assert build_litellm_model_string("claude-3", "anthropic") == "anthropic/claude-3"
+    # Already prefixed models stay as-is
     assert (
-        llm._maybe_prefix_model("anthropic/claude-3", "anthropic")
+        build_litellm_model_string("anthropic/claude-3", "anthropic")
         == "anthropic/claude-3"
     )
 

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from ..types import GuardState
+from ..utils import build_litellm_model_string
 
 
 class TesseractOCRDetector:
-    """
-    OCR detector using Tesseract
-    """
+    """OCR detector using Tesseract"""
 
     def __init__(
         self,
@@ -29,10 +29,7 @@ class TesseractOCRDetector:
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
     def __call__(self, state: GuardState) -> str:
-        """
-        Extract text from image file in state.
-        Returns the extracted text as a plain string.
-        """
+        """Extract text from image file in state. Returns the extracted text as a plain string."""
         file_path = state.get("file_path")
 
         if not file_path:
@@ -108,4 +105,105 @@ class TesseractOCRDetector:
         )
 
 
-__all__ = ["TesseractOCRDetector"]
+class LLMOCRDetector:
+    """LLM-based OCR detector"""
+
+    def __init__(
+        self,
+        *,
+        provider: str = "openai",
+        model: str = "gpt-4o",
+        api_key: str | None = None,
+        base_url: str | None = None,
+    ):
+        self.provider = provider
+        self.model = model
+        self.api_key = api_key
+        self.base_url = base_url
+
+        from langchain_litellm import ChatLiteLLM
+
+        model_string = build_litellm_model_string(self.model, self.provider)
+
+        # Build client params
+        client_params = {}
+        if api_key:
+            client_params["api_key"] = api_key
+        if base_url:
+            client_params["api_base"] = base_url
+
+        self._llm = ChatLiteLLM(model=model_string, **client_params)
+
+    def __call__(self, state: GuardState) -> str:
+        file_path = state.get("file_path")
+
+        if not file_path:
+            return ""
+
+        if not os.path.exists(file_path):
+            return ""
+
+        try:
+            import base64
+            from langchain_core.messages import HumanMessage
+            import mimetypes
+
+            mime_type, _ = mimetypes.guess_type(file_path)
+
+            # Default to image/jpeg if not recognized or not an image type
+            if not mime_type or not mime_type.startswith("image/"):
+                mime_type = "image/jpeg"
+
+            with open(file_path, "rb") as f:
+                image_data = base64.b64encode(f.read()).decode("utf-8")
+
+            data_url = f"data:{mime_type};base64,{image_data}"
+
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "text",
+                        "text": "Extract all visible text from this image. Return only the text content you see, maintaining the original layout as much as possible. Do not provide explanations, descriptions, or any additional commentary.",
+                    },
+                    {"type": "image_url", "image_url": {"url": data_url}},
+                ]
+            )
+
+            response = self._llm.invoke([message])
+
+            if hasattr(response, "content"):
+                content: Any = response.content
+                if isinstance(content, str):
+                    return content.strip()
+                return ""
+            return str(response).strip()
+
+        except Exception as e:
+            raise RuntimeError(f"LLM OCR failed to process image: {str(e)}") from e
+
+    @classmethod
+    def from_env(cls) -> "LLMOCRDetector":
+        """
+        Create LLM OCR detector from environment variables.
+        Falls back to LLM_* variables if LLM_OCR_* not set.
+        """
+        provider = os.getenv("LLM_OCR_PROVIDER") or os.getenv("LLM_PROVIDER", "openai")
+        model = os.getenv("LLM_OCR_MODEL") or os.getenv("LLM_MODEL", "gpt-4o")
+        api_key = os.getenv("LLM_OCR_API_KEY") or os.getenv("LLM_API_KEY")
+        base_url = os.getenv("LLM_OCR_BASE_URL") or os.getenv("LLM_BASE_URL")
+
+        if not api_key:
+            raise RuntimeError(
+                f"Missing API key for LLM OCR provider '{provider}'. "
+                "Set LLM_OCR_API_KEY or LLM_API_KEY environment variable."
+            )
+
+        return cls(
+            provider=provider.lower(),
+            model=model,
+            api_key=api_key,
+            base_url=base_url,
+        )
+
+
+__all__ = ["TesseractOCRDetector", "LLMOCRDetector"]

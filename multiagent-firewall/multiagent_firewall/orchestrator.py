@@ -38,9 +38,31 @@ def _should_run_llm(state: GuardState) -> str:
 
 def _route_after_dlp(state: GuardState) -> str:
     """Skip DLP risk/policy if no DLP detections were found."""
+    state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
     if state.get("dlp_fields"):
         return "risk_dlp"
     return "llm_detector"
+
+
+def _route_after_merge_final(state: GuardState) -> str:
+    """Avoid redundant final risk/policy when nothing new was added."""
+    detected_fields = state.get("detected_fields") or []
+    llm_fields = state.get("llm_fields") or []
+    dlp_detected_count = state.get("_dlp_detected_count")
+
+    if not detected_fields:
+        return "risk_final"
+
+    no_new_fields = (
+        dlp_detected_count is not None
+        and len(detected_fields) == dlp_detected_count
+    )
+    if no_new_fields and state.get("decision"):
+        return "remediation"
+    if not llm_fields and state.get("decision"):
+        return "remediation"
+
+    return "risk_final"
 
 
 class GuardOrchestrator:
@@ -118,7 +140,14 @@ class GuardOrchestrator:
         graph.add_edge("risk_dlp", "policy_dlp")
         graph.add_conditional_edges("policy_dlp", _should_run_llm)
         graph.add_edge("llm_detector", "merge_final")
-        graph.add_edge("merge_final", "risk_final")
+        graph.add_conditional_edges(
+            "merge_final",
+            _route_after_merge_final,
+            path_map={
+                "risk_final": "risk_final",
+                "remediation": "remediation",
+            },
+        )
         graph.add_edge("risk_final", "policy_final")
         graph.add_edge("policy_final", "remediation")
         graph.add_edge("remediation", END)

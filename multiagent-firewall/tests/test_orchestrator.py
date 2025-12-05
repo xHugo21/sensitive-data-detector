@@ -61,7 +61,7 @@ def test_orchestrator_run_empty_text(mock_llm_from_env):
 
 
 def test_orchestrator_skips_dlp_policy_when_no_dlp_hits():
-    """DLP misses should route straight to LLM without DLP risk/policy evaluation."""
+    """DLP misses should route straight to LLM and bypass DLP risk/policy."""
     mock_detector = MagicMock()
     mock_detector.return_value = {"detected_fields": []}
 
@@ -75,9 +75,47 @@ def test_orchestrator_skips_dlp_policy_when_no_dlp_hits():
         orchestrator = GuardOrchestrator()
         result = orchestrator.run(text="The sky is clear today.")
 
-    assert mock_evaluate_risk.call_count == 1
+    assert mock_evaluate_risk.call_count == 1  # final risk/policy only
     assert mock_apply_policy.call_count == 1
+    assert result.get("risk_level") == "none"
     assert result.get("decision") == "allow"
+
+
+@patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector")
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector.from_env")
+def test_orchestrator_short_circuits_on_empty_text(mock_llm_from_env, mock_dlp_detector):
+    """Empty text should still run DLP and allow."""
+    mock_llm_from_env.return_value = MagicMock()
+    mock_dlp_detector.side_effect = lambda state: state
+    orchestrator = GuardOrchestrator()
+
+    result = orchestrator.run(text="")
+
+    mock_dlp_detector.assert_called_once()
+    mock_llm_from_env.assert_not_called()
+    assert result.get("decision") == "allow"
+    assert result.get("risk_level") == "none"
+    assert not result.get("detected_fields")
+
+
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector.from_env")
+def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(mock_llm_from_env):
+    """Skip final risk/policy when LLM does not add new fields."""
+    mock_detector = MagicMock()
+    mock_detector.return_value = {"detected_fields": []}
+    mock_llm_from_env.return_value = mock_detector
+
+    with (
+        patch("multiagent_firewall.nodes.evaluate_risk", wraps=risk.evaluate_risk) as mock_evaluate_risk,
+        patch("multiagent_firewall.nodes.apply_policy", wraps=policy.apply_policy) as mock_apply_policy,
+    ):
+        orchestrator = GuardOrchestrator()
+        result = orchestrator.run(text="Reach me at test@example.com", min_block_risk="high")
+
+    assert mock_evaluate_risk.call_count == 1  # Only DLP path
+    assert mock_apply_policy.call_count == 1
+    assert result.get("decision") == "allow_with_warning"
+    assert result.get("risk_level") == "medium"
 
 
 def test_orchestrator_graph_structure():

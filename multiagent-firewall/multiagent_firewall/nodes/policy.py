@@ -33,9 +33,10 @@ def apply_policy(state: GuardState) -> GuardState:
 
 def generate_remediation(state: GuardState) -> GuardState:
     if state.get("decision") == "block":
-        fields = ", ".join(
+        unique_fields = {
             item.get("field", "unknown") for item in state.get("detected_fields", [])
-        )
+        }
+        fields = ", ".join(unique_fields)
         state["remediation"] = (
             f"Sensitive data detected ({fields or 'unspecified'}). "
             "Redact or remove the flagged content before resubmitting."

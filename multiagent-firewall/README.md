@@ -21,16 +21,22 @@ flowchart TD
     Normalize --> DLP[DLP Detector]
     
     DLP --> MergeDLP[Merge Detections]
-    MergeDLP --> RiskDLP[Risk Evaluation]
+    MergeDLP --> HasDLP{Any DLP hits?}
+    HasDLP -->|Yes| RiskDLP[Risk Evaluation]
+    HasDLP -->|No| LLM[LLM Detector]
+    
     RiskDLP --> PolicyDLP[Policy Check]
     
     PolicyDLP --> LowRisk{Risk Low/None?}
     
-    LowRisk -->|Yes| LLM[LLM Detector]
+    LowRisk -->|Yes| LLM
     LowRisk -->|No| Remediation[Remediation]
     
     LLM --> MergeFinal[Merge Detections]
-    MergeFinal --> RiskFinal[Risk Evaluations]
+    MergeFinal --> FinalRoute{New detections?}
+    FinalRoute -->|None| RiskFinal[Risk Evaluations]
+    FinalRoute -->|No new vs DLP| Remediation
+    FinalRoute -->|New| RiskFinal
     RiskFinal --> PolicyFinal[Policy Check]
     
     PolicyFinal --> Remediation
@@ -41,6 +47,8 @@ flowchart TD
     style End fill:#e1f5ff,stroke:#333,color:#000
     style HasFile fill:#fff4e6,stroke:#333,color:#000
     style NeedsLLMOCR fill:#fff4e6,stroke:#333,color:#000
+    style HasDLP fill:#fff4e6,stroke:#333,color:#000
+    style FinalRoute fill:#fff4e6,stroke:#333,color:#000
     style LowRisk fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLMOCR fill:#f0e6ff,stroke:#333,color:#000

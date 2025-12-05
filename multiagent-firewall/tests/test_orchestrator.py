@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock, patch
 from multiagent_firewall.orchestrator import GuardOrchestrator
+from multiagent_firewall.nodes import policy, risk
 from multiagent_firewall.types import GuardState
 
 
@@ -57,6 +58,26 @@ def test_orchestrator_run_empty_text(mock_llm_from_env):
     
     assert result.get("raw_text") == ""
     assert "warnings" in result
+
+
+def test_orchestrator_skips_dlp_policy_when_no_dlp_hits():
+    """DLP misses should route straight to LLM without DLP risk/policy evaluation."""
+    mock_detector = MagicMock()
+    mock_detector.return_value = {"detected_fields": []}
+
+    with (
+        patch("multiagent_firewall.nodes.detection.LiteLLMDetector.from_env") as mock_llm_from_env,
+        patch("multiagent_firewall.nodes.evaluate_risk", wraps=risk.evaluate_risk) as mock_evaluate_risk,
+        patch("multiagent_firewall.nodes.apply_policy", wraps=policy.apply_policy) as mock_apply_policy,
+    ):
+        mock_llm_from_env.return_value = mock_detector
+
+        orchestrator = GuardOrchestrator()
+        result = orchestrator.run(text="The sky is clear today.")
+
+    assert mock_evaluate_risk.call_count == 1
+    assert mock_apply_policy.call_count == 1
+    assert result.get("decision") == "allow"
 
 
 def test_orchestrator_graph_structure():
@@ -146,4 +167,3 @@ def test_orchestrator_preserves_text_on_file_error(mock_llm_from_env, tmp_path):
     assert result.get("raw_text") == "Direct text"
     assert len(result.get("errors", [])) > 0
     assert any("File not found" in error for error in result.get("errors", []))
-

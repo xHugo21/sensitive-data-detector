@@ -36,6 +36,13 @@ def _should_run_llm(state: GuardState) -> str:
     return "remediation"
 
 
+def _route_after_dlp(state: GuardState) -> str:
+    """Skip DLP risk/policy if no DLP detections were found."""
+    if state.get("dlp_fields"):
+        return "risk_dlp"
+    return "llm_detector"
+
+
 class GuardOrchestrator:
     """Orchestrates the sensitive data detection pipeline."""
 
@@ -103,7 +110,11 @@ class GuardOrchestrator:
         graph.add_edge("llm_ocr", "normalize")
         graph.add_edge("normalize", "dlp_detector")
         graph.add_edge("dlp_detector", "merge_dlp")
-        graph.add_edge("merge_dlp", "risk_dlp")
+        graph.add_conditional_edges(
+            "merge_dlp",
+            _route_after_dlp,
+            path_map={"risk_dlp": "risk_dlp", "llm_detector": "llm_detector"},
+        )
         graph.add_edge("risk_dlp", "policy_dlp")
         graph.add_conditional_edges("policy_dlp", _should_run_llm)
         graph.add_edge("llm_detector", "merge_final")

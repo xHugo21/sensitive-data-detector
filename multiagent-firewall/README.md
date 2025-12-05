@@ -129,7 +129,6 @@ LLM_PROVIDER=openai          # LLM provider (openai, ollama, etc.)
 LLM_MODEL=gpt-4o-mini        # Model name
 LLM_API_KEY=sk-xxx           # API key for the provider
 LLM_BASE_URL=https://...     # Optional: custom API base URL
-LLM_SUPPORTS_JSON_MODE=true  # Optional: enable JSON mode
 ```
 
 #### OCR Configuration (Optional)

@@ -4,12 +4,11 @@ import os
 from typing import Any
 
 from ..types import GuardState
+from ..utils import build_litellm_model_string
 
 
 class TesseractOCRDetector:
-    """
-    OCR detector using Tesseract
-    """
+    """OCR detector using Tesseract"""
 
     def __init__(
         self,
@@ -30,10 +29,7 @@ class TesseractOCRDetector:
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
     def __call__(self, state: GuardState) -> str:
-        """
-        Extract text from image file in state.
-        Returns the extracted text as a plain string.
-        """
+        """Extract text from image file in state. Returns the extracted text as a plain string."""
         file_path = state.get("file_path")
 
         if not file_path:
@@ -110,9 +106,7 @@ class TesseractOCRDetector:
 
 
 class LLMOCRDetector:
-    """
-    LLM-based OCR detector
-    """
+    """LLM-based OCR detector"""
 
     def __init__(
         self,
@@ -129,7 +123,7 @@ class LLMOCRDetector:
 
         from langchain_litellm import ChatLiteLLM
 
-        model_string = self._build_model_string()
+        model_string = build_litellm_model_string(self.model, self.provider)
 
         # Build client params
         client_params = {}
@@ -139,16 +133,6 @@ class LLMOCRDetector:
             client_params["api_base"] = base_url
 
         self._llm = ChatLiteLLM(model=model_string, **client_params)
-
-    def _build_model_string(self) -> str:
-        """Build the model string with provider prefix."""
-        # OpenAI doesn't need prefix
-        if self.provider == "openai":
-            return self.model
-        # Other providers need prefix
-        if self.model.startswith(f"{self.provider}/"):
-            return self.model
-        return f"{self.provider}/{self.model}"
 
     def __call__(self, state: GuardState) -> str:
         file_path = state.get("file_path")

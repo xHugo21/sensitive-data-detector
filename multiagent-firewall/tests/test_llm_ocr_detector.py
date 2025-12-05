@@ -8,6 +8,7 @@ import pytest
 
 from multiagent_firewall.detectors.ocr import LLMOCRDetector
 from multiagent_firewall.types import GuardState
+from multiagent_firewall.utils import build_litellm_model_string
 
 
 def test_llm_ocr_detector_initialization():
@@ -114,31 +115,17 @@ def test_llm_ocr_detector_from_env_missing_api_key():
 
 def test_llm_ocr_detector_build_model_string_openai():
     """Test model string building for OpenAI (no prefix)"""
-    detector = LLMOCRDetector(
-        provider="openai", model="gpt-4o", api_key="test-key"
-    )
-
-    assert detector._build_model_string() == "gpt-4o"
+    assert build_litellm_model_string("gpt-4o", "openai") == "gpt-4o"
 
 
 def test_llm_ocr_detector_build_model_string_with_prefix():
     """Test model string building for non-OpenAI providers"""
-    detector = LLMOCRDetector(
-        provider="anthropic", model="claude-3-opus", api_key="test-key"
-    )
-
-    assert detector._build_model_string() == "anthropic/claude-3-opus"
+    assert build_litellm_model_string("claude-3-opus", "anthropic") == "anthropic/claude-3-opus"
 
 
 def test_llm_ocr_detector_build_model_string_already_prefixed():
     """Test model string when already prefixed"""
-    detector = LLMOCRDetector(
-        provider="anthropic",
-        model="anthropic/claude-3-opus",
-        api_key="test-key",
-    )
-
-    assert detector._build_model_string() == "anthropic/claude-3-opus"
+    assert build_litellm_model_string("anthropic/claude-3-opus", "anthropic") == "anthropic/claude-3-opus"
 
 
 def test_llm_ocr_detector_returns_empty_for_missing_file_path():

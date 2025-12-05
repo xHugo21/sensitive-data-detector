@@ -33,3 +33,13 @@ def append_warning(state: GuardState, message: str) -> None:
     if "warnings" not in state:
         state["warnings"] = []
     state["warnings"].append(message)
+
+
+def build_litellm_model_string(model: str, provider: str) -> str:
+    """Build model string with provider prefix for LiteLLM."""
+    # OpenAI doesn't need prefix
+    if provider == "openai":
+        return model
+    if model.startswith(f"{provider}/"):
+        return model
+    return f"{provider}/{model}"

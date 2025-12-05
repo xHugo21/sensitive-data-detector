@@ -41,13 +41,11 @@ def test_config_from_env_includes_optional_fields(monkeypatch):
     monkeypatch.setenv("LLM_EXTRA_PARAMS", '{"timeout": 10, "top_p": 0.5}')
     monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("LLM_MODEL", "sonnet")
-    monkeypatch.setenv("LLM_SUPPORTS_JSON_MODE", "false")
 
     config = llm.LiteLLMConfig.from_env()
 
     assert config.provider == "anthropic"
     assert config.model == "sonnet"
-    assert config.supports_json_mode is False
     assert config.client_params["api_key"] == "secret-key"
     assert config.client_params["api_base"] == "https://example.com"
     assert config.client_params["api_version"] == "v1"

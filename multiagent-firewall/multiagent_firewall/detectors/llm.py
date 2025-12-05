@@ -39,12 +39,6 @@ def _json_env(var_name: str) -> Dict[str, Any]:
     return parsed
 
 
-def _str_to_bool(value: str | None, default: bool) -> bool:
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
 def _resolve_llm_prompt(llm_prompt: str | None) -> str:
     """Resolve LLM prompt: use explicit prompt if valid, otherwise fallback to first key."""
     fallback = next(iter(LLM_PROMPT_MAP))
@@ -64,7 +58,6 @@ def _inject_text(template: str, text: str) -> str:
 class LiteLLMConfig:
     provider: str
     model: str
-    supports_json_mode: bool
     client_params: Dict[str, Any]
 
     # TODO: Consume LLM configuration params from package parameters instead of env variables
@@ -75,10 +68,6 @@ class LiteLLMConfig:
         api_key = os.getenv("LLM_API_KEY")
         base_url = os.getenv("LLM_BASE_URL")
         api_version = os.getenv("LLM_API_VERSION")
-        supports_json_mode = _str_to_bool(
-            os.getenv("LLM_SUPPORTS_JSON_MODE"),
-            provider in {"openai", "groq"},
-        )
 
         if not api_key:
             raise RuntimeError(f"Missing API key for provider '{provider}'. ")
@@ -93,7 +82,6 @@ class LiteLLMConfig:
         return cls(
             provider=provider,
             model=model,
-            supports_json_mode=supports_json_mode,
             client_params=client_params,
         )
 
@@ -147,9 +135,7 @@ class LiteLLMDetector:
         try:
             prompt_content, prompt_info = self._build_prompt(text, llm_prompt)
             try:
-                content = self._invoke(
-                    prompt_content, json_mode=self._config.supports_json_mode
-                )
+                content = self._invoke(prompt_content, json_mode=True)
             except Exception:
                 content = self._invoke(prompt_content, json_mode=False)
 

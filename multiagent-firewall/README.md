@@ -10,10 +10,14 @@ The firewall uses a multi-agent architecture built on LangGraph with conditional
 flowchart TD
     Start(INPUT) --> HasFile{has file_path?}
     
-    HasFile -->|Yes| Document[Document Parsing]
+    HasFile -->|Yes| Document[Document Parsing<br/>+ Tesseract OCR]
     HasFile -->|No| Normalize[Normalize<br/>Preprocess text]
     
-    Document --> Normalize
+    Document --> NeedsLLMOCR{Image and no<br/>text found?}
+    NeedsLLMOCR -->|Yes| LLMOCR[LLM OCR<br/>Vision Model]
+    NeedsLLMOCR -->|No| Normalize
+    
+    LLMOCR --> Normalize
     Normalize --> DLP[DLP Detector]
     
     DLP --> MergeDLP[Merge Detections]
@@ -36,8 +40,10 @@ flowchart TD
     style Start fill:#e1f5ff,stroke:#333,color:#000
     style End fill:#e1f5ff,stroke:#333,color:#000
     style HasFile fill:#fff4e6,stroke:#333,color:#000
+    style NeedsLLMOCR fill:#fff4e6,stroke:#333,color:#000
     style LowRisk fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
+    style LLMOCR fill:#f0e6ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000
@@ -131,6 +137,17 @@ LLM_SUPPORTS_JSON_MODE=true  # Optional: enable JSON mode
 OCR_LANG=eng                 # Tesseract language code (default: eng, more languages: install specific language for tesseract and add it (e.g: eng+esp))
 OCR_CONFIDENCE_THRESHOLD=60  # Minimum confidence 0-100 (default: 0)
 TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
+```
+
+#### LLM OCR Fallback (Optional)
+
+The firewall includes an intelligent OCR fallback system. When Tesseract OCR fails to extract text from an image, the system automatically falls back to using vision-capable LLMs.
+
+```bash
+LLM_OCR_PROVIDER=openai              # LLM provider (openai, anthropic, google, ollama, etc.)
+LLM_OCR_MODEL=gpt-4o                 # Vision-capable model name
+LLM_OCR_API_KEY=sk-xxx               # API key for the LLM provider
+LLM_OCR_BASE_URL=https://...         # Custom API endpoint (optional)
 ```
 
 #### LLM Prompt Template

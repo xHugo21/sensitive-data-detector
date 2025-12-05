@@ -1,5 +1,5 @@
 from .detection import run_dlp_detector, run_llm_detector
-from .document import read_document
+from .document import read_document, llm_ocr_document
 from .policy import apply_policy, generate_remediation
 from .risk import evaluate_risk
 from .preprocessing import merge_detections, normalize
@@ -7,6 +7,7 @@ from .risk import compute_risk_level
 
 __all__ = [
     "read_document",
+    "llm_ocr_document",
     "normalize",
     "merge_detections",
     "run_llm_detector",

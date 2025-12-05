@@ -4,7 +4,7 @@ import os
 import warnings
 from urllib.parse import urlparse, unquote
 
-from ..detectors import TesseractOCRDetector
+from ..detectors import TesseractOCRDetector, LLMOCRDetector
 from ..types import GuardState
 from ..utils import append_error, append_warning
 
@@ -136,6 +136,10 @@ def read_document(state: GuardState) -> GuardState:
                     # Call OCR detector with current state - returns plain text
                     text = ocr_detector(state) or ""
 
+                    # Track OCR metadata
+                    state["metadata"]["ocr_attempted"] = True
+                    state["metadata"]["tesseract_text_found"] = bool(text)
+
                     # Append to existing raw_text
                     existing_text = state.get("raw_text", "")
                     if existing_text and text:
@@ -143,7 +147,9 @@ def read_document(state: GuardState) -> GuardState:
                     elif text:
                         state["raw_text"] = text
 
-                    if not text:
+                    if text:
+                        state["metadata"]["ocr_method"] = "tesseract"
+                    else:
                         append_warning(
                             state, f"No text extracted from image: {file_path}"
                         )
@@ -182,8 +188,54 @@ def read_document(state: GuardState) -> GuardState:
     return state
 
 
+def llm_ocr_document(state: GuardState) -> GuardState:
+    """
+    LLM OCR fallback node: Uses vision-capable LLM to extract text from images
+    when Tesseract OCR fails or returns empty results.
+
+    Only runs if:
+    1. File is an image (metadata["file_type"] == "image")
+    2. No text was extracted (raw_text is empty or whitespace)
+    """
+    # Check if this is an image with no extracted text
+    metadata = state.get("metadata", {})
+    raw_text = (state.get("raw_text") or "").strip()
+    is_image = metadata.get("file_type") == "image"
+
+    if not is_image or raw_text:
+        return state
+
+    try:
+        llm_ocr = LLMOCRDetector.from_env()
+
+        text = llm_ocr(state) or ""
+
+        if text:
+            existing_text = state.get("raw_text", "")
+            if existing_text and text:
+                state["raw_text"] = f"{existing_text}\n{text}"
+            elif text:
+                state["raw_text"] = text
+
+            if "metadata" not in state:
+                state["metadata"] = {}
+            state["metadata"]["llm_ocr_used"] = True
+            state["metadata"]["ocr_method"] = "llm"
+        else:
+            append_warning(
+                state,
+                f"LLM OCR did not extract any text from image: {state.get('file_path')}",
+            )
+
+    except Exception as e:
+        append_error(state, f"LLM OCR failed: {str(e)}")
+
+    return state
+
+
 __all__ = [
     "read_document",
+    "llm_ocr_document",
     "sanitize_file_path",
     "extract_text_from_file",
     "is_image_file",

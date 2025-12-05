@@ -17,6 +17,17 @@ def _should_read_document(state: GuardState) -> str:
     return "normalize"
 
 
+def _should_run_llm_ocr(state: GuardState) -> str:
+    """Route to llm_ocr if image file with no extracted text."""
+    metadata = state.get("metadata", {})
+    raw_text = (state.get("raw_text") or "").strip()
+    is_image = metadata.get("file_type") == "image"
+
+    if is_image and not raw_text:
+        return "llm_ocr"
+    return "normalize"
+
+
 def _should_run_llm(state: GuardState) -> str:
     """Route to llm_detector if global risk level detected is none or low."""
     risk_level = (state.get("risk_level") or "").lower()
@@ -26,9 +37,7 @@ def _should_run_llm(state: GuardState) -> str:
 
 
 class GuardOrchestrator:
-    """
-    Orchestrates the sensitive data detection pipeline.
-    """
+    """Orchestrates the sensitive data detection pipeline."""
 
     def __init__(self) -> None:
         self._graph = self._build_graph()
@@ -70,6 +79,7 @@ class GuardOrchestrator:
         graph = StateGraph(GuardState)
 
         graph.add_node("read_document", nodes.read_document)
+        graph.add_node("llm_ocr", nodes.llm_ocr_document)
         graph.add_node("normalize", nodes.normalize)
         graph.add_node("dlp_detector", nodes.run_dlp_detector)
         graph.add_node("merge_dlp", nodes.merge_detections)
@@ -85,7 +95,12 @@ class GuardOrchestrator:
             _should_read_document,
             path_map={"read_document": "read_document", "normalize": "normalize"},
         )
-        graph.add_edge("read_document", "normalize")
+        graph.add_conditional_edges(
+            "read_document",
+            _should_run_llm_ocr,
+            path_map={"llm_ocr": "llm_ocr", "normalize": "normalize"},
+        )
+        graph.add_edge("llm_ocr", "normalize")
         graph.add_edge("normalize", "dlp_detector")
         graph.add_edge("dlp_detector", "merge_dlp")
         graph.add_edge("merge_dlp", "risk_dlp")

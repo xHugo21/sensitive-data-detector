@@ -326,8 +326,9 @@ def test_llm_ocr_detector_encodes_image_as_base64():
 
 
 def test_llm_ocr_detector_handles_different_image_types():
-    """Test handling different image MIME types"""
-    for ext, mime_type in [(".jpg", "image/jpeg"), (".gif", "image/gif"), (".webp", "image/webp")]:
+    """Test handling different image MIME types recognized by Python's mimetypes module"""
+    # Test with commonly recognized formats
+    for ext, mime_type in [(".jpg", "image/jpeg"), (".png", "image/png"), (".gif", "image/gif")]:
         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
             tmp_path = tmp.name
             tmp.write(b"test image")
@@ -358,3 +359,38 @@ def test_llm_ocr_detector_handles_different_image_types():
                 assert result == "Text"
         finally:
             os.unlink(tmp_path)
+
+
+def test_llm_ocr_detector_handles_unknown_image_type():
+    """Test that unknown image types fall back to image/jpeg"""
+    # Use a fake extension that Python won't recognize
+    with tempfile.NamedTemporaryFile(suffix=".xyz", delete=False) as tmp:
+        tmp_path = tmp.name
+        tmp.write(b"test image")
+
+    try:
+        mock_response = MagicMock()
+        mock_response.content = "Text"
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = mock_response
+
+        with patch(
+            "langchain_litellm.ChatLiteLLM", return_value=mock_llm
+        ):
+            detector = LLMOCRDetector(
+                provider="openai", model="gpt-4o", api_key="test-key"
+            )
+            state: GuardState = {"file_path": tmp_path}
+
+            result = detector(state)
+
+            # Check that fallback MIME type was used
+            call_args = mock_llm.invoke.call_args[0][0]
+            message = call_args[0]
+            image_url = message.content[1]["image_url"]["url"]
+            assert "data:image/jpeg;base64," in image_url
+
+            assert result == "Text"
+    finally:
+        os.unlink(tmp_path)

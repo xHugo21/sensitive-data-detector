@@ -164,20 +164,11 @@ class LLMOCRDetector:
             from langchain_core.messages import HumanMessage
             import mimetypes
 
-            # Common image MIME types mapping (for formats not in mimetypes)
-            IMAGE_MIME_TYPES = {
-                ".webp": "image/webp",
-                ".avif": "image/avif",
-                ".heic": "image/heic",
-                ".heif": "image/heif",
-            }
-
-            # Detect MIME type
             mime_type, _ = mimetypes.guess_type(file_path)
 
+            # Default to image/jpeg if not recognized or not an image type
             if not mime_type or not mime_type.startswith("image/"):
-                ext = os.path.splitext(file_path)[1].lower()
-                mime_type = IMAGE_MIME_TYPES.get(ext, "image/jpeg")
+                mime_type = "image/jpeg"
 
             with open(file_path, "rb") as f:
                 image_data = base64.b64encode(f.read()).decode("utf-8")

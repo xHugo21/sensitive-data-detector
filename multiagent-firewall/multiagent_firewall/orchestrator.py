@@ -6,34 +6,15 @@ from typing import cast
 from langgraph.graph import END, StateGraph
 
 from . import nodes
+from .routers import (
+    _route_after_dlp,
+    _route_after_merge_final,
+    _should_read_document,
+    _should_run_llm,
+    _should_run_llm_ocr,
+)
 from .types import GuardState
 from .utils import debug_invoke
-
-
-def _should_read_document(state: GuardState) -> str:
-    """Route to document reader only if file_path is provided."""
-    if state.get("file_path"):
-        return "read_document"
-    return "normalize"
-
-
-def _should_run_llm_ocr(state: GuardState) -> str:
-    """Route to llm_ocr if image file with no extracted text."""
-    metadata = state.get("metadata", {})
-    raw_text = (state.get("raw_text") or "").strip()
-    is_image = metadata.get("file_type") == "image"
-
-    if is_image and not raw_text:
-        return "llm_ocr"
-    return "normalize"
-
-
-def _should_run_llm(state: GuardState) -> str:
-    """Route to llm_detector if global risk level detected is none or low."""
-    risk_level = (state.get("risk_level") or "").lower()
-    if risk_level in {"low", "none"}:
-        return "llm_detector"
-    return "remediation"
 
 
 class GuardOrchestrator:
@@ -103,11 +84,22 @@ class GuardOrchestrator:
         graph.add_edge("llm_ocr", "normalize")
         graph.add_edge("normalize", "dlp_detector")
         graph.add_edge("dlp_detector", "merge_dlp")
-        graph.add_edge("merge_dlp", "risk_dlp")
+        graph.add_conditional_edges(
+            "merge_dlp",
+            _route_after_dlp,
+            path_map={"risk_dlp": "risk_dlp", "llm_detector": "llm_detector"},
+        )
         graph.add_edge("risk_dlp", "policy_dlp")
         graph.add_conditional_edges("policy_dlp", _should_run_llm)
         graph.add_edge("llm_detector", "merge_final")
-        graph.add_edge("merge_final", "risk_final")
+        graph.add_conditional_edges(
+            "merge_final",
+            _route_after_merge_final,
+            path_map={
+                "risk_final": "risk_final",
+                "remediation": "remediation",
+            },
+        )
         graph.add_edge("risk_final", "policy_final")
         graph.add_edge("policy_final", "remediation")
         graph.add_edge("remediation", END)

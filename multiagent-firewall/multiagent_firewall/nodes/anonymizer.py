@@ -13,7 +13,7 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
     detected = state.get("detected_fields") or []
 
     if not text or not detected:
-        state["llm_input_text"] = text
+        state["anonymized_text"] = text
         return state
 
     placeholder_map: Dict[str, str] = {}
@@ -42,7 +42,7 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
     ):
         masked_text = re.sub(re.escape(original), placeholder, masked_text)
 
-    state["llm_input_text"] = masked_text
+    state["anonymized_text"] = masked_text
 
     metadata = state.setdefault("metadata", {})
     metadata["llm_placeholders"] = {

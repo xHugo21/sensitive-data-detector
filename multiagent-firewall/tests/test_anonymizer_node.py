@@ -20,7 +20,7 @@ def test_anonymize_llm_input_masks_detected_fields(monkeypatch):
 
     result = anonymize_llm_input(state)
 
-    masked = result.get("llm_input_text", "")
+    masked = result.get("anonymized_text", "")
     assert "<<EMAIL_1>>" in masked
     assert "<<NAME_1>>" in masked
     placeholders = result.get("metadata", {}).get("llm_placeholders", {})
@@ -39,7 +39,7 @@ def test_anonymize_llm_input_disabled(monkeypatch):
 
     result = anonymize_llm_input(state)
 
-    assert result.get("llm_input_text") != "Email john@example.com"
+    assert result.get("anonymized_text") != "Email john@example.com"
     placeholders = result.get("metadata", {}).get("llm_placeholders")
     assert placeholders is not None
     assert placeholders.get("enabled") is True

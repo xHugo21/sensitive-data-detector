@@ -6,63 +6,15 @@ from typing import cast
 from langgraph.graph import END, StateGraph
 
 from . import nodes
+from .routers import (
+    _route_after_dlp,
+    _route_after_merge_final,
+    _should_read_document,
+    _should_run_llm,
+    _should_run_llm_ocr,
+)
 from .types import GuardState
 from .utils import debug_invoke
-
-
-def _should_read_document(state: GuardState) -> str:
-    """Route to document reader only if file_path is provided."""
-    if state.get("file_path"):
-        return "read_document"
-    return "normalize"
-
-
-def _should_run_llm_ocr(state: GuardState) -> str:
-    """Route to llm_ocr if image file with no extracted text."""
-    metadata = state.get("metadata", {})
-    raw_text = (state.get("raw_text") or "").strip()
-    is_image = metadata.get("file_type") == "image"
-
-    if is_image and not raw_text:
-        return "llm_ocr"
-    return "normalize"
-
-
-def _should_run_llm(state: GuardState) -> str:
-    """Route to llm_detector unless policy already blocks."""
-    decision = (state.get("decision") or "").lower()
-    if decision == "block":
-        return "remediation"
-    return "llm_detector"
-
-
-def _route_after_dlp(state: GuardState) -> str:
-    """Skip DLP risk/policy if no DLP detections were found."""
-    state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
-    if state.get("dlp_fields"):
-        return "risk_dlp"
-    return "llm_detector"
-
-
-def _route_after_merge_final(state: GuardState) -> str:
-    """Avoid redundant final risk/policy when nothing new was added."""
-    detected_fields = state.get("detected_fields") or []
-    llm_fields = state.get("llm_fields") or []
-    dlp_detected_count = state.get("_dlp_detected_count")
-
-    if not detected_fields:
-        return "risk_final"
-
-    no_new_fields = (
-        dlp_detected_count is not None
-        and len(detected_fields) == dlp_detected_count
-    )
-    if no_new_fields and state.get("decision"):
-        return "remediation"
-    if not llm_fields and state.get("decision"):
-        return "remediation"
-
-    return "risk_final"
 
 
 class GuardOrchestrator:

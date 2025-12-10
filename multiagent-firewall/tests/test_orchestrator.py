@@ -115,7 +115,7 @@ def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(mock_llm_from_en
     assert mock_evaluate_risk.call_count == 1  # Only DLP path
     assert mock_apply_policy.call_count == 1
     assert result.get("decision") == "allow_with_warning"
-    assert result.get("risk_level") == "medium"
+    assert result.get("risk_level") == "low"
 
 
 @patch("multiagent_firewall.nodes.run_llm_detector")

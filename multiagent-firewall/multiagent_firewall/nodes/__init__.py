@@ -4,12 +4,14 @@ from .policy import apply_policy, generate_remediation
 from .risk import evaluate_risk
 from .preprocessing import merge_detections, normalize
 from .risk import compute_risk_level
+from .anonymizer import anonymize_llm_input
 
 __all__ = [
     "read_document",
     "llm_ocr_document",
     "normalize",
     "merge_detections",
+    "anonymize_llm_input",
     "run_llm_detector",
     "run_dlp_detector",
     "evaluate_risk",

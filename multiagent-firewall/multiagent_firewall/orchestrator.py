@@ -7,11 +7,11 @@ from langgraph.graph import END, StateGraph
 
 from . import nodes
 from .routers import (
-    _route_after_dlp,
-    _route_after_merge_final,
-    _should_read_document,
-    _should_run_llm,
-    _should_run_llm_ocr,
+    route_after_dlp,
+    route_after_merge_final,
+    should_read_document,
+    should_run_llm,
+    should_run_llm_ocr,
 )
 from .types import GuardState
 from .utils import debug_invoke
@@ -64,6 +64,7 @@ class GuardOrchestrator:
         graph.add_node("normalize", nodes.normalize)
         graph.add_node("dlp_detector", nodes.run_dlp_detector)
         graph.add_node("merge_dlp", nodes.merge_detections)
+        graph.add_node("anonymize_llm", nodes.anonymize_llm_input)
         graph.add_node("risk_dlp", nodes.evaluate_risk)
         graph.add_node("policy_dlp", nodes.apply_policy)
         graph.add_node("llm_detector", nodes.run_llm_detector)
@@ -73,12 +74,12 @@ class GuardOrchestrator:
         graph.add_node("remediation", nodes.generate_remediation)
 
         graph.set_conditional_entry_point(
-            _should_read_document,
+            should_read_document,
             path_map={"read_document": "read_document", "normalize": "normalize"},
         )
         graph.add_conditional_edges(
             "read_document",
-            _should_run_llm_ocr,
+            should_run_llm_ocr,
             path_map={"llm_ocr": "llm_ocr", "normalize": "normalize"},
         )
         graph.add_edge("llm_ocr", "normalize")
@@ -86,15 +87,19 @@ class GuardOrchestrator:
         graph.add_edge("dlp_detector", "merge_dlp")
         graph.add_conditional_edges(
             "merge_dlp",
-            _route_after_dlp,
-            path_map={"risk_dlp": "risk_dlp", "llm_detector": "llm_detector"},
+            route_after_dlp,
+            path_map={"risk_dlp": "risk_dlp", "llm_detector": "anonymize_llm"},
         )
         graph.add_edge("risk_dlp", "policy_dlp")
-        graph.add_conditional_edges("policy_dlp", _should_run_llm)
+        graph.add_conditional_edges(
+            "policy_dlp",
+            should_run_llm,
+        )
+        graph.add_edge("anonymize_llm", "llm_detector")
         graph.add_edge("llm_detector", "merge_final")
         graph.add_conditional_edges(
             "merge_final",
-            _route_after_merge_final,
+            route_after_merge_final,
             path_map={
                 "risk_final": "risk_final",
                 "remediation": "remediation",

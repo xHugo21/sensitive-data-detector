@@ -11,7 +11,7 @@ def run_llm_detector(state: GuardState) -> GuardState:
     """
     Run LLM-based detection
     """
-    text = state.get("normalized_text") or ""
+    text = state.get("llm_input_text") or state.get("normalized_text") or ""
     if not text:
         state["llm_fields"] = []
         return state

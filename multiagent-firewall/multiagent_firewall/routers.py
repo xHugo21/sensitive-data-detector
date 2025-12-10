@@ -3,14 +3,14 @@ from __future__ import annotations
 from .types import GuardState
 
 
-def _should_read_document(state: GuardState) -> str:
+def should_read_document(state: GuardState) -> str:
     """Route to document reader only if file_path is provided."""
     if state.get("file_path"):
         return "read_document"
     return "normalize"
 
 
-def _should_run_llm_ocr(state: GuardState) -> str:
+def should_run_llm_ocr(state: GuardState) -> str:
     """Route to llm_ocr if image file with no extracted text."""
     metadata = state.get("metadata", {})
     raw_text = (state.get("raw_text") or "").strip()
@@ -21,15 +21,15 @@ def _should_run_llm_ocr(state: GuardState) -> str:
     return "normalize"
 
 
-def _should_run_llm(state: GuardState) -> str:
-    """Route to llm_detector unless policy already blocks."""
+def should_run_llm(state: GuardState) -> str:
+    """Route to anonymize_llm unless policy already blocks."""
     decision = (state.get("decision") or "").lower()
     if decision == "block":
         return "remediation"
-    return "llm_detector"
+    return "anonymize_llm"
 
 
-def _route_after_dlp(state: GuardState) -> str:
+def route_after_dlp(state: GuardState) -> str:
     """Skip DLP risk/policy if no DLP detections were found."""
     state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
     if state.get("dlp_fields"):
@@ -37,7 +37,7 @@ def _route_after_dlp(state: GuardState) -> str:
     return "llm_detector"
 
 
-def _route_after_merge_final(state: GuardState) -> str:
+def route_after_merge_final(state: GuardState) -> str:
     """Avoid redundant final risk/policy when nothing new was added."""
     detected_fields = state.get("detected_fields") or []
     llm_fields = state.get("llm_fields") or []
@@ -47,8 +47,7 @@ def _route_after_merge_final(state: GuardState) -> str:
         return "risk_final"
 
     no_new_fields = (
-        dlp_detected_count is not None
-        and len(detected_fields) == dlp_detected_count
+        dlp_detected_count is not None and len(detected_fields) == dlp_detected_count
     )
     if no_new_fields and state.get("decision"):
         return "remediation"

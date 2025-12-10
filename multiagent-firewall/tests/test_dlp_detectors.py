@@ -14,14 +14,17 @@ from multiagent_firewall.detectors.dlp import (
 
 
 def test_detect_keywords_default():
-    text = "My api_key is secret123 and token is abc"
+    text = """
+    Here is my key:
+    -----BEGIN PRIVATE KEY-----
+    super-secret-material
+    -----END PRIVATE KEY-----
+    """
     findings = detect_keywords(text)
     
-    assert len(findings) >= 3
+    assert len(findings) >= 1
     field_names = [f["field"] for f in findings]
-    assert "APIKEY" in field_names
     assert "SECRET" in field_names
-    assert "TOKEN" in field_names
 
 
 def test_detect_keywords_custom():
@@ -37,11 +40,11 @@ def test_detect_keywords_custom():
 
 
 def test_detect_keywords_case_insensitive():
-    text = "My API_KEY is here"
+    text = "ssh key header -----begin private key----- content"
     findings = detect_keywords(text)
     
     field_names = [f["field"] for f in findings]
-    assert "APIKEY" in field_names
+    assert "SECRET" in field_names
 
 
 def test_detect_keywords_empty_text():
@@ -221,56 +224,11 @@ def test_detect_regex_time():
 # Extended Keyword Tests
 # ============================================================================
 
-def test_detect_keywords_credentials():
-    text = "Enter your credentials to login"
+def test_detect_keywords_ignores_generic_terms():
+    text = "Enter your credentials to login with fingerprint and medical info"
     findings = detect_keywords(text)
-    
-    field_names = [f["field"] for f in findings]
-    assert "CREDENTIALS" in field_names
 
-
-def test_detect_keywords_biometric():
-    text = "Fingerprint authentication and iris scan required"
-    findings = detect_keywords(text)
-    
-    field_names = [f["field"] for f in findings]
-    assert "BIOMETRICDATA" in field_names
-
-
-def test_detect_keywords_health():
-    text = "Medical records and patient diagnosis"
-    findings = detect_keywords(text)
-    
-    field_names = [f["field"] for f in findings]
-    assert "HEALTHDATA" in field_names
-
-
-def test_detect_keywords_financial():
-    text = "Bank account number and IBAN details"
-    findings = detect_keywords(text)
-    
-    field_names = [f["field"] for f in findings]
-    assert "ACCOUNTNUMBER" in field_names
-    assert "IBAN" in field_names
-
-
-def test_detect_keywords_crypto():
-    text = "Bitcoin address and Ethereum wallet"
-    findings = detect_keywords(text)
-    
-    field_names = [f["field"] for f in findings]
-    assert "BITCOINADDRESS" in field_names
-    assert "ETHEREUMADDRESS" in field_names
-
-
-def test_detect_keywords_location():
-    text = "Street address in the city with zip code"
-    findings = detect_keywords(text)
-    
-    field_names = [f["field"] for f in findings]
-    assert "STREET" in field_names
-    assert "CITY" in field_names
-    assert "ZIPCODE" in field_names
+    assert findings == []
 
 
 # ============================================================================
@@ -400,8 +358,9 @@ def test_detect_checksums_invalid_mixed():
 def test_integration_high_risk_data():
     text = """
     User credentials:
-    Password: mySecret123
-    API Key: sk-1234567890abcdef
+    -----BEGIN PRIVATE KEY-----
+    mySecret123
+    -----END PRIVATE KEY-----
     Credit Card: 4532-0151-1283-0366
     SSN: 123-45-6789
     """
@@ -414,8 +373,6 @@ def test_integration_high_risk_data():
     all_findings = keyword_findings + regex_findings + checksum_findings
     field_names = [f["field"] for f in all_findings]
     
-    assert "PASSWORD" in field_names
-    assert "APIKEY" in field_names
     assert "SECRET" in field_names
     # Credit card and SSN should be detected by both regex and checksum
     assert "CREDITCARDNUMBER" in field_names
@@ -438,5 +395,4 @@ def test_integration_medium_risk_data():
     
     assert "EMAIL" in field_names
     assert "PHONENUMBER" in field_names
-    assert "COMPANYNAME" in field_names
-
+    assert "SECRET" not in field_names

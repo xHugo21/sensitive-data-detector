@@ -93,7 +93,7 @@ def test_run_dlp_detector_with_regex():
 def test_run_dlp_detector_with_keywords():
     """Test DLP detector with keywords (uses constants by default)"""
     state: GuardState = {
-        "normalized_text": "My api_key is secret123",
+        "normalized_text": "key header -----BEGIN PRIVATE KEY----- data",
         "warnings": [],
         "errors": [],
     }

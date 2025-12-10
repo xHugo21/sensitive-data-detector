@@ -97,6 +97,40 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_from_env):
     assert sources == ["llm_explicit", "llm_inferred"]
 
 
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
+def test_run_llm_detector_deanonymizes_and_skips_placeholders(mock_llm_from_env):
+    """Placeholders should be mapped back; placeholder tokens should be dropped"""
+    mock_detector = MagicMock()
+    mock_detector.return_value = {
+        "detected_fields": [
+            {"field": "TIME", "value": "<<TIME_1>>", "source": "Explicit"},
+            {"field": "USERNAME", "value": "john_doe_2024", "source": "Explicit"},
+            {"field": "EMAIL", "value": "<<UNKNOWN_1>>", "source": "Explicit"},
+            {"field": "TIME", "value": "TIME_1", "source": "Explicit"},
+        ]
+    }
+    mock_llm_from_env.return_value = mock_detector
+
+    state: GuardState = {
+        "normalized_text": "My username is john_doe_2024 and it is 13:15",
+        "anonymized_text": "My username is john_doe_2024 and it is <<TIME_1>>",
+        "metadata": {
+            "llm_placeholders": {"mapping": {"13:15": "<<TIME_1>>"}}
+        },
+        "warnings": [],
+        "errors": [],
+    }
+
+    result = run_llm_detector(state)
+
+    values = {f["field"]: f["value"] for f in result.get("llm_fields", [])}
+    assert values["TIME"] == "13:15"
+    assert values["USERNAME"] == "john_doe_2024"
+    assert "EMAIL" not in values  # unknown placeholder skipped
+    assert list(values.values()).count("13:15") == 1  # dropped raw placeholder token
+    assert all(f["source"].startswith("llm_") for f in result.get("llm_fields", []))
+
+
 def test_run_dlp_detector_with_regex():
     """Test DLP detector with regex patterns (uses constants by default)"""
     state: GuardState = {

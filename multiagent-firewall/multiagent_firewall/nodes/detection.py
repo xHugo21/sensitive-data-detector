@@ -12,6 +12,13 @@ def run_llm_detector(state: GuardState) -> GuardState:
     Run LLM-based detection
     """
     text = state.get("anonymized_text") or state.get("normalized_text") or ""
+    placeholders = (
+        state.get("metadata", {}).get("llm_placeholders", {}).get("mapping", {}) or {}
+    )
+    reverse_placeholders = {v: k for k, v in placeholders.items()}
+    placeholder_tokens = set(placeholders.values())
+    placeholder_stripped = {token.strip("<>") for token in placeholder_tokens}
+
     if not text:
         state["llm_fields"] = []
         return state
@@ -21,11 +28,22 @@ def run_llm_detector(state: GuardState) -> GuardState:
             text,
             state.get("llm_prompt"),
         )
-        fields = [
-            {**item, "source": _normalize_llm_source(item.get("source"))}
-            for item in result.get("detected_fields", [])
-            if isinstance(item, dict)
-        ]
+        fields = []
+        for item in result.get("detected_fields", []):
+            if not isinstance(item, dict):
+                continue
+            value = item.get("value")
+            if isinstance(value, str):
+                if value in reverse_placeholders:
+                    item = {**item, "value": reverse_placeholders[value]}
+                elif (
+                    value in placeholder_tokens
+                    or _is_placeholder(value)
+                    or value in placeholder_stripped
+                ):
+                    # Skip unknown placeholders to avoid surfacing obfuscated values
+                    continue
+            fields.append({**item, "source": _normalize_llm_source(item.get("source"))})
         state["llm_fields"] = fields
     except Exception as exc:
         append_error(state, f"LLM detector failed: {exc}")
@@ -46,6 +64,10 @@ def _normalize_llm_source(raw_source: object | None) -> str:
         if normalized.startswith("llm_"):
             return normalized
     return str(raw_source)
+
+
+def _is_placeholder(value: str) -> bool:
+    return value.startswith("<<") and value.endswith(">>")
 
 
 def run_dlp_detector(state: GuardState) -> GuardState:

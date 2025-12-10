@@ -75,12 +75,10 @@ class GuardOrchestrator:
 
         graph.set_conditional_entry_point(
             should_read_document,
-            path_map={"read_document": "read_document", "normalize": "normalize"},
         )
         graph.add_conditional_edges(
             "read_document",
             should_run_llm_ocr,
-            path_map={"llm_ocr": "llm_ocr", "normalize": "normalize"},
         )
         graph.add_edge("llm_ocr", "normalize")
         graph.add_edge("normalize", "dlp_detector")
@@ -88,31 +86,17 @@ class GuardOrchestrator:
         graph.add_conditional_edges(
             "merge_dlp",
             route_after_dlp,
-            path_map={
-                "risk_dlp": "risk_dlp",
-                "anonymize_llm": "anonymize_llm",
-                "llm_detector": "llm_detector",
-            },
         )
         graph.add_edge("risk_dlp", "policy_dlp")
         graph.add_conditional_edges(
             "policy_dlp",
             should_run_llm,
-            path_map={
-                "remediation": "remediation",
-                "anonymize_llm": "anonymize_llm",
-                "llm_detector": "llm_detector",
-            },
         )
         graph.add_edge("anonymize_llm", "llm_detector")
         graph.add_edge("llm_detector", "merge_final")
         graph.add_conditional_edges(
             "merge_final",
             route_after_merge_final,
-            path_map={
-                "risk_final": "risk_final",
-                "remediation": "remediation",
-            },
         )
         graph.add_edge("risk_final", "policy_final")
         graph.add_edge("policy_final", "remediation")

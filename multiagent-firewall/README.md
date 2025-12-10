@@ -23,14 +23,18 @@ flowchart TD
     DLP --> MergeDLP[Merge Detections]
     MergeDLP --> HasDLP{Any DLP hits?}
     HasDLP -->|Yes| RiskDLP[Risk Evaluation]
-    HasDLP -->|No| LLM[LLM Detector]
+    HasDLP -->|No| ShouldAnonymize{Cloud LLM provider & ANONYMIZE_FOR_REMOTE_LLM true?}
     
     RiskDLP --> PolicyDLP[Policy Check]
     
     PolicyDLP --> DecisionBlock{Decision = block?}
     
     DecisionBlock -->|Yes| Remediation[Remediation]
-    DecisionBlock -->|No| LLM[LLM Detector]
+    DecisionBlock -->|No| ShouldAnonymize
+    
+    ShouldAnonymize -->|Yes| Anonymize[Anonymize Detected Values]
+    ShouldAnonymize -->|No| LLM[LLM Detector]
+    Anonymize --> LLM[LLM Detector]
     
     LLM --> MergeFinal[Merge Detections]
     MergeFinal --> FinalRoute{LLM added new fields?}
@@ -51,6 +55,8 @@ flowchart TD
     style DecisionBlock fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLMOCR fill:#f0e6ff,stroke:#333,color:#000
+    style ShouldAnonymize fill:#fff4e6,stroke:#333,color:#000
+    style Anonymize fill:#f0e6ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000

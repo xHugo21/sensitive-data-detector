@@ -16,7 +16,7 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
         state["anonymized_text"] = text
         return state
 
-    placeholder_map: Dict[str, str] = {}
+    anonymized_map: Dict[str, str] = {}
     field_counts: Dict[str, int] = {}
 
     for item in detected:
@@ -27,28 +27,28 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
             continue
         field = (item.get("field") or item.get("type") or "FIELD").strip().upper()
 
-        # Reuse the same placeholder if we've already seen this exact value
-        if value in placeholder_map:
+        # Reuse the same anonymized token if we've already seen this exact value
+        if value in anonymized_map:
             continue
 
         field_counts[field] = field_counts.get(field, 0) + 1
-        placeholder = f"<<{field}_{field_counts[field]}>>"
-        placeholder_map[value] = placeholder
+        anonymized_token = f"<<{field}_{field_counts[field]}>>"
+        anonymized_map[value] = anonymized_token
 
     # Apply replacements longest-first to avoid partial overlaps
     masked_text = text
-    for original, placeholder in sorted(
-        placeholder_map.items(), key=lambda kv: len(kv[0]), reverse=True
+    for original, anonymized_token in sorted(
+        anonymized_map.items(), key=lambda kv: len(kv[0]), reverse=True
     ):
-        masked_text = re.sub(re.escape(original), placeholder, masked_text)
+        masked_text = re.sub(re.escape(original), anonymized_token, masked_text)
 
     state["anonymized_text"] = masked_text
 
     metadata = state.setdefault("metadata", {})
-    metadata["llm_placeholders"] = {
+    metadata["llm_anonymized_values"] = {
         "enabled": True,
         "provider": _provider(),
-        "mapping": placeholder_map,
+        "mapping": anonymized_map,
     }
     return state
 

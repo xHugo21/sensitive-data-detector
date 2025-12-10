@@ -12,12 +12,15 @@ def run_llm_detector(state: GuardState) -> GuardState:
     Run LLM-based detection
     """
     text = state.get("anonymized_text") or state.get("normalized_text") or ""
-    placeholders = (
-        state.get("metadata", {}).get("llm_placeholders", {}).get("mapping", {}) or {}
+    anonymized_map = (
+        state.get("metadata", {})
+        .get("llm_anonymized_values", {})
+        .get("mapping", {})
+        or {}
     )
-    reverse_placeholders = {v: k for k, v in placeholders.items()}
-    placeholder_tokens = set(placeholders.values())
-    placeholder_stripped = {token.strip("<>") for token in placeholder_tokens}
+    reverse_map = {v: k for k, v in anonymized_map.items()}
+    anonymized_tokens = set(anonymized_map.values())
+    anonymized_stripped = {token.strip("<>") for token in anonymized_tokens}
 
     if not text:
         state["llm_fields"] = []
@@ -34,14 +37,14 @@ def run_llm_detector(state: GuardState) -> GuardState:
                 continue
             value = item.get("value")
             if isinstance(value, str):
-                if value in reverse_placeholders:
-                    item = {**item, "value": reverse_placeholders[value]}
+                if value in reverse_map:
+                    item = {**item, "value": reverse_map[value]}
                 elif (
-                    value in placeholder_tokens
-                    or _is_placeholder(value)
-                    or value in placeholder_stripped
+                    value in anonymized_tokens
+                    or _is_anonymized_token(value)
+                    or value in anonymized_stripped
                 ):
-                    # Skip unknown placeholders to avoid surfacing obfuscated values
+                    # Skip unknown anonymized values to avoid surfacing obfuscated values
                     continue
             fields.append({**item, "source": _normalize_llm_source(item.get("source"))})
         state["llm_fields"] = fields
@@ -66,7 +69,7 @@ def _normalize_llm_source(raw_source: object | None) -> str:
     return str(raw_source)
 
 
-def _is_placeholder(value: str) -> bool:
+def _is_anonymized_token(value: str) -> bool:
     return value.startswith("<<") and value.endswith(">>")
 
 

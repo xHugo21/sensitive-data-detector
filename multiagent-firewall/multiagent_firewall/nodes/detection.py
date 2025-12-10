@@ -22,7 +22,7 @@ def run_llm_detector(state: GuardState) -> GuardState:
             state.get("llm_prompt"),
         )
         fields = [
-            {**item, "source": item.get("source", "llm_detector")}
+            {**item, "source": _normalize_llm_source(item.get("source"))}
             for item in result.get("detected_fields", [])
             if isinstance(item, dict)
         ]
@@ -31,6 +31,21 @@ def run_llm_detector(state: GuardState) -> GuardState:
         append_error(state, f"LLM detector failed: {exc}")
         state["llm_fields"] = []
     return state
+
+
+def _normalize_llm_source(raw_source: object | None) -> str:
+    """Normalize the LLM detector source label so it is identifiable as LLM output."""
+    if not raw_source:
+        return "llm_detector"
+    if isinstance(raw_source, str):
+        normalized = raw_source.strip().lower()
+        if normalized == "explicit":
+            return "llm_explicit"
+        if normalized == "inferred":
+            return "llm_inferred"
+        if normalized.startswith("llm_"):
+            return normalized
+    return str(raw_source)
 
 
 def run_dlp_detector(state: GuardState) -> GuardState:

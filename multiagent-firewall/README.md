@@ -27,10 +27,10 @@ flowchart TD
     
     RiskDLP --> PolicyDLP[Policy Check]
     
-    PolicyDLP --> LowRisk{Risk Low/None?}
+    PolicyDLP --> DecisionBlock{Decision = block?}
     
-    LowRisk -->|Yes| LLM
-    LowRisk -->|No| Remediation[Remediation]
+    DecisionBlock -->|Yes| Remediation[Remediation]
+    DecisionBlock -->|No| LLM[LLM Detector]
     
     LLM --> MergeFinal[Merge Detections]
     MergeFinal --> FinalRoute{LLM added new fields?}
@@ -48,7 +48,7 @@ flowchart TD
     style NeedsLLMOCR fill:#fff4e6,stroke:#333,color:#000
     style HasDLP fill:#fff4e6,stroke:#333,color:#000
     style FinalRoute fill:#fff4e6,stroke:#333,color:#000
-    style LowRisk fill:#fff4e6,stroke:#333,color:#000
+    style DecisionBlock fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLMOCR fill:#f0e6ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000

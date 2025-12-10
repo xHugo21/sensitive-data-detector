@@ -118,6 +118,33 @@ def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(mock_llm_from_en
     assert result.get("risk_level") == "medium"
 
 
+@patch("multiagent_firewall.nodes.run_llm_detector")
+@patch("multiagent_firewall.nodes.apply_policy")
+@patch("multiagent_firewall.nodes.evaluate_risk")
+@patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector")
+def test_orchestrator_skips_llm_when_policy_blocks(mock_dlp, mock_evaluate_risk, mock_apply_policy, mock_run_llm):
+    """If policy decides to block, LLM detector should be skipped."""
+    def fake_dlp(state: GuardState):
+        state["dlp_fields"] = [{"type": "EMAIL", "value": "x@example.com"}]
+        state["detected_fields"] = state["dlp_fields"]
+        return state
+
+    mock_dlp.side_effect = fake_dlp
+    mock_evaluate_risk.side_effect = lambda state: state | {"risk_level": "high"}
+
+    def block_policy(state: GuardState):
+        state["decision"] = "block"
+        return state
+
+    mock_apply_policy.side_effect = block_policy
+
+    orchestrator = GuardOrchestrator()
+    result = orchestrator.run(text="x@example.com")
+
+    mock_run_llm.assert_not_called()
+    assert result.get("decision") == "block"
+
+
 def test_orchestrator_graph_structure():
     """Test orchestrator graph structure"""
     orchestrator = GuardOrchestrator()

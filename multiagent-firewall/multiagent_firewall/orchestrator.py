@@ -29,11 +29,11 @@ def _should_run_llm_ocr(state: GuardState) -> str:
 
 
 def _should_run_llm(state: GuardState) -> str:
-    """Route to llm_detector if global risk level detected is none or low."""
-    risk_level = (state.get("risk_level") or "").lower()
-    if risk_level in {"low", "none"}:
-        return "llm_detector"
-    return "remediation"
+    """Route to llm_detector unless policy already blocks."""
+    decision = (state.get("decision") or "").lower()
+    if decision == "block":
+        return "remediation"
+    return "llm_detector"
 
 
 def _route_after_dlp(state: GuardState) -> str:

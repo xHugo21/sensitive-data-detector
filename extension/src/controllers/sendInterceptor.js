@@ -21,10 +21,10 @@
 
   function handleComposerKeydown(event) {
     if (event.key !== "Enter" || event.shiftKey) return;
-    
+
     // Allow send if override is active
     if (sg.alertStore.isOverrideActive()) return;
-    
+
     const composer = sg.chatSelectors.findComposer();
     if (!composer) return;
     const text = sg.chatSelectors.getComposerText(composer);
@@ -37,16 +37,17 @@
 
   function handleSendButtonClick(event) {
     // Check if clicked element or its closest button ancestor is the send button
-    const clickedButton = event.target.tagName === 'BUTTON' 
-      ? event.target 
-      : event.target.closest('button');
-    
+    const clickedButton =
+      event.target.tagName === "BUTTON"
+        ? event.target
+        : event.target.closest("button");
+
     if (!clickedButton) return;
-    
+
     // Use platform-specific button detection
     const platform = sg.platformRegistry?.getActive();
     if (!platform || !platform.isSendButton(clickedButton)) return;
-    
+
     // Allow send if override is active or bypass flag is set
     if (clickedButton.dataset.sgBypass === "true") return;
     if (sg.alertStore.isOverrideActive()) return;
@@ -99,8 +100,12 @@
   }
 
   function dispatchSend(composer, button) {
-    // Use platform-specific send logic
-    sg.chatSelectors.triggerSend(composer, button);
+    sg.alertStore.setOverrideActive(true);
+    try {
+      sg.chatSelectors.triggerSend(composer, button);
+    } finally {
+      setTimeout(() => sg.alertStore.setOverrideActive(false), 150);
+    }
   }
 
   function handleSendAnywayOverride() {

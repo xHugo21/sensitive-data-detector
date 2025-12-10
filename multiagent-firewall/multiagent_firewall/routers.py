@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from .types import GuardState
 
 
@@ -26,7 +28,7 @@ def should_run_llm(state: GuardState) -> str:
     decision = (state.get("decision") or "").lower()
     if decision == "block":
         return "remediation"
-    return "anonymize_llm"
+    return "anonymize_llm" if _use_anonymizer() else "llm_detector"
 
 
 def route_after_dlp(state: GuardState) -> str:
@@ -34,7 +36,7 @@ def route_after_dlp(state: GuardState) -> str:
     state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
     if state.get("dlp_fields"):
         return "risk_dlp"
-    return "llm_detector"
+    return "anonymize_llm" if _use_anonymizer() else "llm_detector"
 
 
 def route_after_merge_final(state: GuardState) -> str:
@@ -55,3 +57,14 @@ def route_after_merge_final(state: GuardState) -> str:
         return "remediation"
 
     return "risk_final"
+
+
+def _use_anonymizer() -> bool:
+    enabled = (os.getenv("ANONYMIZE_FOR_REMOTE_LLM") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    provider = (os.getenv("LLM_PROVIDER") or "openai").strip().lower()
+    return enabled and provider != "ollama"

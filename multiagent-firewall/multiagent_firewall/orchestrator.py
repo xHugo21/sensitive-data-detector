@@ -88,12 +88,21 @@ class GuardOrchestrator:
         graph.add_conditional_edges(
             "merge_dlp",
             route_after_dlp,
-            path_map={"risk_dlp": "risk_dlp", "llm_detector": "anonymize_llm"},
+            path_map={
+                "risk_dlp": "risk_dlp",
+                "anonymize_llm": "anonymize_llm",
+                "llm_detector": "llm_detector",
+            },
         )
         graph.add_edge("risk_dlp", "policy_dlp")
         graph.add_conditional_edges(
             "policy_dlp",
             should_run_llm,
+            path_map={
+                "remediation": "remediation",
+                "anonymize_llm": "anonymize_llm",
+                "llm_detector": "llm_detector",
+            },
         )
         graph.add_edge("anonymize_llm", "llm_detector")
         graph.add_edge("llm_detector", "merge_final")

@@ -9,10 +9,6 @@ from ..types import GuardState
 
 def anonymize_llm_input(state: GuardState) -> GuardState:
     """Obfuscate detected sensitive values before sending text to remote LLMs."""
-    if not _should_anonymize():
-        state["llm_input_text"] = state.get("normalized_text") or ""
-        return state
-
     text = state.get("normalized_text") or ""
     detected = state.get("detected_fields") or []
 
@@ -55,17 +51,6 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
         "mapping": placeholder_map,
     }
     return state
-
-
-def _should_anonymize() -> bool:
-    """Enable anonymization only for remote providers when explicitly configured."""
-    enabled = (os.getenv("ANONYMIZE_FOR_REMOTE_LLM") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
-    return enabled and _provider() != "ollama"
 
 
 def _provider() -> str:

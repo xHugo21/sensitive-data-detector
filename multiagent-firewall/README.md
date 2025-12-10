@@ -33,10 +33,9 @@ flowchart TD
     LowRisk -->|No| Remediation[Remediation]
     
     LLM --> MergeFinal[Merge Detections]
-    MergeFinal --> FinalRoute{New detections?}
-    FinalRoute -->|None| RiskFinal[Risk Evaluations]
-    FinalRoute -->|No new vs DLP| Remediation
-    FinalRoute -->|New| RiskFinal
+    MergeFinal --> FinalRoute{LLM added new fields?}
+    FinalRoute -->|No & prior decision| Remediation
+    FinalRoute -->|Yes or no decision| RiskFinal[Risk Evaluation]
     RiskFinal --> PolicyFinal[Policy Check]
     
     PolicyFinal --> Remediation

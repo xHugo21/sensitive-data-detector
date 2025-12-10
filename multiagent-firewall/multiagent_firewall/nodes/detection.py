@@ -11,7 +11,17 @@ def run_llm_detector(state: GuardState) -> GuardState:
     """
     Run LLM-based detection
     """
-    text = state.get("normalized_text") or ""
+    text = state.get("anonymized_text") or state.get("normalized_text") or ""
+    anonymized_map = (
+        state.get("metadata", {})
+        .get("llm_anonymized_values", {})
+        .get("mapping", {})
+        or {}
+    )
+    reverse_map = {v: k for k, v in anonymized_map.items()}
+    anonymized_tokens = set(anonymized_map.values())
+    anonymized_stripped = {token.strip("<>") for token in anonymized_tokens}
+
     if not text:
         state["llm_fields"] = []
         return state
@@ -21,11 +31,22 @@ def run_llm_detector(state: GuardState) -> GuardState:
             text,
             state.get("llm_prompt"),
         )
-        fields = [
-            {**item, "source": _normalize_llm_source(item.get("source"))}
-            for item in result.get("detected_fields", [])
-            if isinstance(item, dict)
-        ]
+        fields = []
+        for item in result.get("detected_fields", []):
+            if not isinstance(item, dict):
+                continue
+            value = item.get("value")
+            if isinstance(value, str):
+                if value in reverse_map:
+                    item = {**item, "value": reverse_map[value]}
+                elif (
+                    value in anonymized_tokens
+                    or _is_anonymized_token(value)
+                    or value in anonymized_stripped
+                ):
+                    # Skip unknown anonymized values to avoid surfacing obfuscated values
+                    continue
+            fields.append({**item, "source": _normalize_llm_source(item.get("source"))})
         state["llm_fields"] = fields
     except Exception as exc:
         append_error(state, f"LLM detector failed: {exc}")
@@ -46,6 +67,10 @@ def _normalize_llm_source(raw_source: object | None) -> str:
         if normalized.startswith("llm_"):
             return normalized
     return str(raw_source)
+
+
+def _is_anonymized_token(value: str) -> bool:
+    return value.startswith("<<") and value.endswith(">>")
 
 
 def run_dlp_detector(state: GuardState) -> GuardState:

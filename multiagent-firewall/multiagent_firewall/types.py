@@ -15,6 +15,7 @@ class GuardState(TypedDict, total=False):
     min_block_risk: NotRequired[str | None]
 
     # PROCESSING
+    anonymized_text: NotRequired[str]
     normalized_text: str
     metadata: Dict[str, Any]
     warnings: List[str]

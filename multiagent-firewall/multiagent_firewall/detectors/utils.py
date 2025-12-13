@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 
 def build_litellm_model_string(model: str, provider: str) -> str:
-    """Build model string with provider prefix for LiteLLM."""
+    """Build LiteLLM model id from provider + model."""
     if provider == "openai":
         return model
     if model.startswith(f"{provider}/"):
@@ -15,6 +15,7 @@ def build_litellm_model_string(model: str, provider: str) -> str:
 
 
 def build_chat_litellm(*, provider: str, model: str, client_params: Dict[str, Any]):
+    """Construct a ChatLiteLLM client using normalized model id + params."""
     from langchain_litellm import ChatLiteLLM
 
     model_id = build_litellm_model_string(model, provider)
@@ -22,6 +23,7 @@ def build_chat_litellm(*, provider: str, model: str, client_params: Dict[str, An
 
 
 def coerce_litellm_content_to_text(response: Any) -> str:
+    """Coerce a LangChain/LiteLLM response into a plain string."""
     content = getattr(response, "content", None)
     if content is None:
         return str(response).strip()
@@ -31,6 +33,7 @@ def coerce_litellm_content_to_text(response: Any) -> str:
 
 
 def json_env(var_name: str) -> Dict[str, Any]:
+    """Parse an env var as a JSON object (or return {})."""
     raw = os.getenv(var_name)
     if not raw:
         return {}
@@ -44,6 +47,7 @@ def json_env(var_name: str) -> Dict[str, Any]:
 
 
 def json_env_with_fallback(primary: str, fallback: str | None) -> Dict[str, Any]:
+    """Merge JSON env objects, with primary overriding fallback."""
     merged: Dict[str, Any] = {}
     if fallback:
         merged.update(json_env(fallback))
@@ -52,6 +56,7 @@ def json_env_with_fallback(primary: str, fallback: str | None) -> Dict[str, Any]
 
 
 def env_with_fallback(primary: str, fallback: str | None) -> str | None:
+    """Read an env var with optional fallback env var name."""
     value = os.getenv(primary)
     if value:
         return value
@@ -68,6 +73,7 @@ def load_litellm_env(
     default_model: str,
     require_api_key: bool = True,
 ) -> tuple[str, str, Dict[str, Any]]:
+    """Load LiteLLM env configuration for a prefix with optional fallback prefix."""
     provider = (
         env_with_fallback(f"{prefix}_PROVIDER", f"{fallback_prefix}_PROVIDER")
         or default_provider

@@ -77,6 +77,7 @@ def test_prompt_map_has_expected_modes():
     assert "zero-shot" in LLM_PROMPT_MAP
     assert "enriched-zero-shot" in LLM_PROMPT_MAP
     assert "few-shot" in LLM_PROMPT_MAP
+    assert "generic" in LLM_PROMPT_MAP
     assert len(LLM_PROMPT_MAP) >= 3
 
 
@@ -146,3 +147,17 @@ def test_inject_text_preserves_formatting():
     assert "Line 2" in result
     assert "inserted" in result
     assert "Line 4" in result
+
+
+def test_inject_sensitive_fields_replaces_placeholder():
+    template = "Header\n{sensitive_fields}\nFooter"
+    result = llm._inject_sensitive_fields(template)
+    assert "{sensitive_fields}" not in result
+    assert "- " in result
+
+
+def test_inject_sensitive_fields_includes_all_risk_sets():
+    block = llm._build_sensitive_fields_block()
+    assert "- PASSWORD" in block
+    assert "- EMAIL" in block
+    assert "- FIRSTNAME" in block

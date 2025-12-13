@@ -12,15 +12,44 @@ _system_reminder_re = re.compile(
 )
 
 
+def _normalize_field_name(name: str) -> str:
+    return (name or "").strip().upper().replace("-", "").replace("_", "")
+
+
+def _canonical_fields_by_normalized() -> dict[str, str]:
+    canonical: dict[str, str] = {}
+    for group in (HIGH_RISK_FIELDS, MEDIUM_RISK_FIELDS, LOW_RISK_FIELDS):
+        for field in group:
+            canonical[_normalize_field_name(field)] = field
+    return canonical
+
+
+_CANONICAL_FIELDS = _canonical_fields_by_normalized()
+
+
+def _canonicalize_field(item: dict) -> dict:
+    raw_field = item.get("field") or item.get("type") or ""
+    raw_source = item.get("source")
+    source = raw_source if isinstance(raw_source, str) else ""
+
+    normalized = _normalize_field_name(str(raw_field))
+    canonical = _CANONICAL_FIELDS.get(normalized)
+    if canonical:
+        return {**item, "field": canonical}
+    if source and source.lower().startswith("llm_"):
+        return {**item, "field": "OTHER"}
+    return item
+
+
 def normalize(state: GuardState) -> GuardState:
     text = state.get("raw_text") or ""
-    
+
     # Remove system tags (e.g., OpenCode CLI artifacts)
     text = _system_reminder_re.sub("", text)
-    
+
     # Normalize whitespace
     normalized = _whitespace_re.sub(" ", text).strip()
-    
+
     state["normalized_text"] = normalized
     if not normalized:
         _append(state, "warnings", "No text provided for analysis.")
@@ -34,6 +63,7 @@ def merge_detections(state: GuardState) -> GuardState:
         for item in state.get(key, []) or []:
             if not isinstance(item, dict):
                 continue
+            item = _canonicalize_field(item)
             field = (item.get("field") or "").strip()
             value = (item.get("value") or "").strip()
             signature = (field.lower(), value.lower())
@@ -53,23 +83,15 @@ def _append(state: GuardState, key: str, value: Any) -> None:
     state[key].append(value)
 
 
-def _normalize_field_name(name: str) -> str:
-    return (
-        (name or "")
-        .strip()
-        .upper()
-        .replace("-", "")
-        .replace("_", "")
-    )
-
-
 def _field_risk(item: dict) -> str:
     name = item.get("field") or item.get("type") or ""
-    normalized = _normalize_field_name(name)
-    if normalized in HIGH_RISK_FIELDS:
+    field = str(name).strip()
+    if field == "OTHER":
         return "high"
-    if normalized in MEDIUM_RISK_FIELDS:
+    if field in HIGH_RISK_FIELDS:
+        return "high"
+    if field in MEDIUM_RISK_FIELDS:
         return "medium"
-    if normalized in LOW_RISK_FIELDS:
+    if field in LOW_RISK_FIELDS:
         return "low"
     return "medium"

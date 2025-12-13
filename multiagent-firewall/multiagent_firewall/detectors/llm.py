@@ -8,7 +8,12 @@ from typing import Any, Dict
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from ..constants import LLM_PROMPT_MAP
+from ..constants import (
+    HIGH_RISK_FIELDS,
+    LOW_RISK_FIELDS,
+    LLM_PROMPT_MAP,
+    MEDIUM_RISK_FIELDS,
+)
 from .utils import (
     build_chat_litellm,
     coerce_litellm_content_to_text,
@@ -41,6 +46,23 @@ def _inject_text(template: str, text: str) -> str:
     if "{text}" in template:
         return template.replace("{text}", text)
     return f"{template.rstrip()}\n\nText:\n'''{text}'''"
+
+
+def _build_sensitive_fields_block() -> str:
+    """Build the sensitive fields list for prompts (no risk labels, stable order)."""
+    lines: list[str] = []
+    for group in (HIGH_RISK_FIELDS, MEDIUM_RISK_FIELDS, LOW_RISK_FIELDS):
+        for field in sorted(group, key=lambda s: s.lower()):
+            lines.append(f"- {field}")
+    return "\n".join(lines)
+
+
+def _inject_sensitive_fields(template: str) -> str:
+    """Inject sensitive fields into template, using {sensitive_fields} placeholder when present."""
+    if "{sensitive_fields}" not in template:
+        return template
+    block = _build_sensitive_fields_block()
+    return template.replace("{sensitive_fields}", block)
 
 
 @dataclass(frozen=True)
@@ -147,6 +169,8 @@ class LiteLLMDetector:
             raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
 
         template = prompt_path.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
+
+        template = _inject_sensitive_fields(template)
 
         # Inject the text into the template
         final_prompt = _inject_text(template, text)

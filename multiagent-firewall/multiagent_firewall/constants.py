@@ -4,6 +4,7 @@ LLM_PROMPT_MAP = {
     "zero-shot": "zero-shot.txt",
     "enriched-zero-shot": "enriched-zero-shot.txt",
     "few-shot": "few-shot.txt",
+    "generic": "generic.txt",
 }
 
 # Regex patterns for DLP detection agent

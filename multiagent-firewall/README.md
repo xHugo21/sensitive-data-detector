@@ -164,7 +164,7 @@ LLM_OCR_BASE_URL=https://...         # Custom API endpoint (optional)
 
 #### LLM Prompt Template
 ```bash
-LLM_PROMPT=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot
+LLM_PROMPT=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot, generic
 ```
 
 #### Blocking Policy

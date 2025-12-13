@@ -33,6 +33,7 @@ def test_run_llm_detector_success(mock_llm_from_env):
     assert "llm_fields" in result
     assert len(result.get("llm_fields", [])) == 2
     assert all(f["source"] == "llm_detector" for f in result.get("llm_fields", []))
+    assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
@@ -95,6 +96,7 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_from_env):
 
     sources = [f["source"] for f in result.get("llm_fields", [])]
     assert sources == ["llm_explicit", "llm_inferred"]
+    assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')

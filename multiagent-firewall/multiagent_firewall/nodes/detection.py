@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..detectors import LiteLLMDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
-from ..constants import REGEX_PATTERNS, KEYWORDS
+from ..constants import KEYWORDS, REGEX_PATTERNS
 from ..types import FieldList, GuardState
 from ..utils import append_error
 

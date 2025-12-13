@@ -3,7 +3,7 @@ from pathlib import Path
 
 from multiagent_firewall.detectors import llm
 from multiagent_firewall.constants import LLM_PROMPT_MAP
-from multiagent_firewall.utils import build_litellm_model_string
+from multiagent_firewall.detectors.llm import build_litellm_model_string
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):

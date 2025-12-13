@@ -8,7 +8,7 @@ import pytest
 
 from multiagent_firewall.detectors.ocr import LLMOCRDetector
 from multiagent_firewall.types import GuardState
-from multiagent_firewall.utils import build_litellm_model_string
+from multiagent_firewall.detectors.llm import build_litellm_model_string
 
 
 def test_llm_ocr_detector_initialization():

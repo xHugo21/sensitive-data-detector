@@ -17,7 +17,6 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
         return state
 
     anonymized_map: Dict[str, str] = {}
-    field_counts: Dict[str, int] = {}
 
     for item in detected:
         if not isinstance(item, dict):
@@ -31,8 +30,7 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
         if value in anonymized_map:
             continue
 
-        field_counts[field] = field_counts.get(field, 0) + 1
-        anonymized_token = f"<<{field}_{field_counts[field]}>>"
+        anonymized_token = f"<<REDACTED:{field}>>"
         anonymized_map[value] = anonymized_token
 
     # Apply replacements longest-first to avoid partial overlaps

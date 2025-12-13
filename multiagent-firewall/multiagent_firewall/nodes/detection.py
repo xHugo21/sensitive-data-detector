@@ -18,8 +18,11 @@ def run_llm_detector(state: GuardState) -> GuardState:
         .get("mapping", {})
         or {}
     )
-    reverse_map = {v: k for k, v in anonymized_map.items()}
-    anonymized_tokens = set(anonymized_map.values())
+    reverse_map = {}
+    for original, token in anonymized_map.items():
+        reverse_map.setdefault(token, set()).add(original)
+
+    anonymized_tokens = set(reverse_map.keys())
     anonymized_stripped = {token.strip("<>") for token in anonymized_tokens}
 
     if not text:
@@ -36,10 +39,11 @@ def run_llm_detector(state: GuardState) -> GuardState:
                 continue
             value = item.get("value")
             if isinstance(value, str):
-                if value in reverse_map:
-                    item = {**item, "value": reverse_map[value]}
+                if value in reverse_map and len(reverse_map[value]) == 1:
+                    item = {**item, "value": next(iter(reverse_map[value]))}
                 elif (
                     value in anonymized_tokens
+                    or _is_redacted_token(value)
                     or _is_anonymized_token(value)
                     or value in anonymized_stripped
                 ):
@@ -70,6 +74,11 @@ def _normalize_llm_source(raw_source: object | None) -> str:
 
 def _is_anonymized_token(value: str) -> bool:
     return value.startswith("<<") and value.endswith(">>")
+
+
+def _is_redacted_token(value: str) -> bool:
+    core = value.strip("<>")
+    return core.startswith("REDACTED:")
 
 
 def run_dlp_detector(state: GuardState) -> GuardState:

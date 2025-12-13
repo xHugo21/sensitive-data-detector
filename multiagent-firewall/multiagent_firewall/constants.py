@@ -1,10 +1,8 @@
 # Shared constants for multiagent-firewall
-# Prompts usable by the LLM detector agent and their locations under prompts/
-LLM_PROMPT_MAP = {
-    "zero-shot": "zero-shot.txt",
-    "enriched-zero-shot": "enriched-zero-shot.txt",
-    "few-shot": "few-shot.txt",
-}
+
+# Prompt filenames stored under prompts/
+LLM_DETECTOR_PROMPT = "sensitive-data-llm-prompt.txt"
+OCR_DETECTOR_PROMPT = "ocr-llm-prompt.txt"
 
 # Regex patterns for DLP detection agent
 REGEX_PATTERNS = {

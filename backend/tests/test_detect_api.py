@@ -7,15 +7,14 @@ from app.api.routes import detect as detect_route
 def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
     """Test detect endpoint with text parameter"""
     # Mock config values in the detect route module
-    monkeypatch.setattr(detect_route, "LLM_PROMPT", "test-prompt")
     monkeypatch.setattr(detect_route, "MIN_BLOCK_RISK", "medium")
     
     class DummyOrchestrator:
         def __init__(self):
             self.calls = []
 
-        def run(self, text=None, *, file_path=None, llm_prompt=None, min_block_risk=None):
-            self.calls.append(("text", text, llm_prompt, min_block_risk))
+        def run(self, text=None, *, file_path=None, min_block_risk=None):
+            self.calls.append(("text", text, min_block_risk))
             return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "low"}
 
     dummy = DummyOrchestrator()
@@ -28,22 +27,20 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
     assert resp.json()["detected_fields"] == [{"field": "EMAIL"}]
     assert dummy.calls[0][0] == "text"
     assert dummy.calls[0][1] == "hello"
-    assert dummy.calls[0][2] == "test-prompt"  # Should match mocked config value
-    assert dummy.calls[0][3] == "medium"
+    assert dummy.calls[0][2] == "medium"
 
 
 def test_detect_endpoint_with_file(monkeypatch, tmp_path):
     """Test detect endpoint with file upload"""
     # Mock config values in the detect route module
-    monkeypatch.setattr(detect_route, "LLM_PROMPT", "test-prompt")
     monkeypatch.setattr(detect_route, "MIN_BLOCK_RISK", "high")
     
     class DummyOrchestrator:
         def __init__(self):
             self.calls = []
 
-        def run(self, text=None, *, file_path=None, llm_prompt=None, min_block_risk=None):
-            self.calls.append(("file", file_path, llm_prompt, min_block_risk))
+        def run(self, text=None, *, file_path=None, min_block_risk=None):
+            self.calls.append(("file", file_path, min_block_risk))
             return {
                 "detected_fields": [],
                 "risk_level": "none",
@@ -67,10 +64,9 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
     body = resp.json()
     assert body["extracted_snippet"] == "file text content"
     assert dummy.calls
-    call_type, call_file_path, call_llm_prompt, call_threshold = dummy.calls[0]
+    call_type, call_file_path, call_threshold = dummy.calls[0]
     assert call_type == "file"
     assert call_file_path is not None
-    assert call_llm_prompt == "test-prompt"  # Should match mocked config value
     assert call_threshold == "high"
 
 

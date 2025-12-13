@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 
 from multiagent_firewall.detectors import llm
-from multiagent_firewall.constants import LLM_PROMPT_MAP
+from multiagent_firewall.constants import LLM_DETECTOR_PROMPT
 from multiagent_firewall.detectors.utils import build_litellm_model_string
 from multiagent_firewall.detectors.utils import json_env
 
@@ -69,80 +69,35 @@ def test_maybe_prefix_model_handles_providers():
     )
 
 
-# Prompt mapping and resolution tests
-
-
-def test_prompt_map_has_expected_modes():
-    """Test that LLM_PROMPT_MAP contains the expected detection modes"""
-    assert "zero-shot" in LLM_PROMPT_MAP
-    assert "enriched-zero-shot" in LLM_PROMPT_MAP
-    assert "few-shot" in LLM_PROMPT_MAP
-    assert len(LLM_PROMPT_MAP) >= 3
-
-
-def test_prompt_map_values_are_filenames():
-    """Test that LLM_PROMPT_MAP values are valid .txt filenames"""
-    for _, filename in LLM_PROMPT_MAP.items():
-        assert isinstance(filename, str)
-        assert filename.endswith(".txt")
-        assert "/" not in filename  # Should be just filenames, not paths
-
-
-def test_prompt_files_exist():
-    """Test that all prompt files referenced in LLM_PROMPT_MAP actually exist"""
-    # Get the prompts directory
+def test_prompt_file_exists():
+    """LLM detector prompt file should exist"""
     prompts_dir = Path(__file__).parent.parent / "multiagent_firewall" / "prompts"
-
-    for llm_prompt, filename in LLM_PROMPT_MAP.items():
-        prompt_path = prompts_dir / filename
-        assert (
-            prompt_path.exists()
-        ), f"Prompt file missing for mode '{llm_prompt}': {prompt_path}"
-        assert prompt_path.is_file(), f"Prompt path is not a file: {prompt_path}"
+    prompt_path = prompts_dir / LLM_DETECTOR_PROMPT
+    assert prompt_path.exists()
+    assert prompt_path.is_file()
 
 
-def test_resolve_llm_prompt_with_valid_mode():
-    """Test that _resolve_llm_prompt returns the mode when it's valid"""
-    assert llm._resolve_llm_prompt("zero-shot") == "zero-shot"
-    assert llm._resolve_llm_prompt("few-shot") == "few-shot"
-    assert llm._resolve_llm_prompt("enriched-zero-shot") == "enriched-zero-shot"
+def test_build_prompt_splits_system_and_user():
+    """_build_prompt should return system instructions and raw user text separately"""
+    detector = llm.LiteLLMDetector(
+        llm.LiteLLMConfig(provider="dummy", model="dummy", client_params={}),
+        llm=object(),  # bypass env/real client
+    )
+    system_prompt, user_prompt, info = detector._build_prompt("sample data")
+    assert "sample data" == user_prompt
+    assert "{text}" not in system_prompt
+    assert info == f"prompts/{LLM_DETECTOR_PROMPT}"
 
 
-def test_resolve_llm_prompt_with_none():
-    """Test that _resolve_llm_prompt falls back to first LLM_PROMPT_MAP key when mode is None"""
-    expected_fallback = next(iter(LLM_PROMPT_MAP))
-    assert llm._resolve_llm_prompt(None) == expected_fallback
+def test_inject_sensitive_fields_replaces_placeholder():
+    template = "Header\n{sensitive_fields}\nFooter"
+    result = llm._inject_sensitive_fields(template)
+    assert "{sensitive_fields}" not in result
+    assert "- " in result
 
 
-def test_resolve_llm_prompt_with_invalid_mode():
-    """Test that _resolve_llm_prompt falls back to first LLM_PROMPT_MAP key for invalid mode"""
-    expected_fallback = next(iter(LLM_PROMPT_MAP))
-    assert llm._resolve_llm_prompt("invalid-mode") == expected_fallback
-    assert llm._resolve_llm_prompt("") == expected_fallback
-
-
-def test_inject_text_with_placeholder():
-    """Test that _inject_text replaces {text} placeholder correctly"""
-    template = "Analyze the following: {text}"
-    result = llm._inject_text(template, "sample data")
-    assert result == "Analyze the following: sample data"
-    assert "{text}" not in result
-
-
-def test_inject_text_without_placeholder():
-    """Test that _inject_text appends text when no placeholder exists"""
-    template = "Analyze the following input."
-    result = llm._inject_text(template, "sample data")
-    assert result.startswith("Analyze the following input.")
-    assert "sample data" in result
-    assert "Text:" in result
-
-
-def test_inject_text_preserves_formatting():
-    """Test that _inject_text preserves multiline templates"""
-    template = "Line 1\nLine 2\n{text}\nLine 4"
-    result = llm._inject_text(template, "inserted")
-    assert "Line 1" in result
-    assert "Line 2" in result
-    assert "inserted" in result
-    assert "Line 4" in result
+def test_inject_sensitive_fields_includes_all_risk_sets():
+    block = llm._build_sensitive_fields_block()
+    assert "- PASSWORD" in block
+    assert "- EMAIL" in block
+    assert "- FIRSTNAME" in block

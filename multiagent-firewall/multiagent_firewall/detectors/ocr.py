@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
+
+from langchain_core.messages import SystemMessage, HumanMessage
+
+from ..constants import OCR_DETECTOR_PROMPT
 
 from ..types import GuardState
 from .utils import (
@@ -124,6 +129,14 @@ class LLMOCRDetector:
         self.model = model
         self.api_key = api_key
         self.base_url = base_url
+        prompt_path = (
+            Path(__file__).resolve().parent.parent / "prompts" / OCR_DETECTOR_PROMPT
+        )
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"OCR prompt file not found: {prompt_path}")
+        self._system_prompt = (
+            prompt_path.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
+        )
 
         client_params: dict[str, Any] = {}
         if api_key:
@@ -160,22 +173,19 @@ class LLMOCRDetector:
 
             data_url = f"data:{mime_type};base64,{image_data}"
 
-            prompt = (
-                "Extract all visible text from this image. Return only the text content you see, "
-                "maintaining the original layout as much as possible. Do not provide explanations, "
-                "descriptions, or any additional commentary."
-            )
-            message = HumanMessage(
-                content=[
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    },
-                    {"type": "image_url", "image_url": {"url": data_url}},
-                ]
-            )
+            message = [
+                SystemMessage(content=self._system_prompt),
+                HumanMessage(
+                    content=[
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": data_url},
+                        }
+                    ]
+                ),
+            ]
 
-            response = self._llm.invoke([message])
+            response = self._llm.invoke(message)
             return coerce_litellm_content_to_text(response)
 
         except Exception as e:

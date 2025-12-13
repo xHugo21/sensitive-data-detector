@@ -79,7 +79,6 @@ orchestrator = GuardOrchestrator()
 # Detect sensitive data in text
 result = orchestrator.run(
   text="My SSN is 123-45-6789",
-  llm_prompt="enriched-zero-shot"  # zero-shot, few-shot, or enriched-zero-shot
 )
 
 print(f"Decision: {result['decision']}")
@@ -160,11 +159,6 @@ LLM_OCR_PROVIDER=openai              # LLM provider (openai, anthropic, google, 
 LLM_OCR_MODEL=gpt-4o                 # Vision-capable model name
 LLM_OCR_API_KEY=sk-xxx               # API key for the LLM provider
 LLM_OCR_BASE_URL=https://...         # Custom API endpoint (optional)
-```
-
-#### LLM Prompt Template
-```bash
-LLM_PROMPT=zero-shot     # Options: zero-shot, enriched-zero-shot, few-shot
 ```
 
 #### Blocking Policy

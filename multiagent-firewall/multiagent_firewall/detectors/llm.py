@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import os
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage
 
-from ..constants import LLM_PROMPT_MAP
+from ..constants import (
+    HIGH_RISK_FIELDS,
+    LOW_RISK_FIELDS,
+    MEDIUM_RISK_FIELDS,
+    LLM_DETECTOR_PROMPT,
+)
 from .utils import (
     build_chat_litellm,
     coerce_litellm_content_to_text,
@@ -28,19 +34,21 @@ def safe_json_from_text(s: str) -> dict:
         return {}
 
 
-def _resolve_llm_prompt(llm_prompt: str | None) -> str:
-    """Resolve LLM prompt: use explicit prompt if valid, otherwise fallback to first key."""
-    fallback = next(iter(LLM_PROMPT_MAP))
-    if llm_prompt and llm_prompt in LLM_PROMPT_MAP:
-        return llm_prompt
-    return fallback
+def _build_sensitive_fields_block() -> str:
+    """Build the sensitive fields list for prompts (no risk labels, stable order)."""
+    lines: list[str] = []
+    for group in (HIGH_RISK_FIELDS, MEDIUM_RISK_FIELDS, LOW_RISK_FIELDS):
+        for field in sorted(group, key=lambda s: s.lower()):
+            lines.append(f"- {field}")
+    return "\n".join(lines)
 
 
-def _inject_text(template: str, text: str) -> str:
-    """Inject text into template, using {text} placeholder or appending."""
-    if "{text}" in template:
-        return template.replace("{text}", text)
-    return f"{template.rstrip()}\n\nText:\n'''{text}'''"
+def _inject_sensitive_fields(template: str) -> str:
+    """Inject sensitive fields into template, using {sensitive_fields} placeholder when present."""
+    if "{sensitive_fields}" not in template:
+        return template
+    block = _build_sensitive_fields_block()
+    return template.replace("{sensitive_fields}", block)
 
 
 @dataclass(frozen=True)
@@ -60,9 +68,7 @@ class LiteLLMConfig:
 
 
 class LiteLLMDetector:
-    _SYSTEM_MESSAGE_FORCE_JSON = (
-        "You are to output a single valid JSON object only. No prose, no markdown."
-    )
+    _DEBUG_PROMPT_ENV = "DEBUG_LLM_PROMPT"
 
     def __init__(
         self,
@@ -96,24 +102,20 @@ class LiteLLMDetector:
         else:
             self._json_llm = None
 
-        self._prompt_template = ChatPromptTemplate.from_messages(
-            [
-                ("system", self._SYSTEM_MESSAGE_FORCE_JSON),
-                ("user", "{prompt_content}"),
-            ]
-        )
+        # No prompt template needed: we build explicit SystemMessage + HumanMessage
+        self._prompt_template = None
 
     @classmethod
     def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
         return cls(LiteLLMConfig.from_env(), **kwargs)
 
-    def __call__(self, text: str, llm_prompt: str | None):
+    def __call__(self, text: str):
         try:
-            prompt_content, prompt_info = self._build_prompt(text, llm_prompt)
+            system_prompt, user_prompt, prompt_info = self._build_prompt(text)
             try:
-                content = self._invoke(prompt_content, json_mode=True)
+                content = self._invoke(system_prompt, user_prompt, json_mode=True)
             except Exception:
-                content = self._invoke(prompt_content, json_mode=False)
+                content = self._invoke(system_prompt, user_prompt, json_mode=False)
 
             result = safe_json_from_text(content) or {"detected_fields": []}
             if "detected_fields" not in result or not isinstance(
@@ -130,31 +132,40 @@ class LiteLLMDetector:
     def _build_prompt(
         self,
         text: str,
-        llm_prompt: str | None,
-    ) -> tuple[str, str]:
-        """Build the final prompt by loading template and injecting text."""
-        # Resolve the llm_prompt
-        resolved_prompt = _resolve_llm_prompt(llm_prompt)
+    ) -> tuple[str, str, str]:
+        """
+        Build the final prompt by loading template and injecting fields.
 
-        # Get the prompt filename from the map
-        prompt_filename = LLM_PROMPT_MAP.get(resolved_prompt)
-        if not prompt_filename:
-            raise RuntimeError(f"LLM prompt '{resolved_prompt}' not found in map")
-
+        Returns (system_prompt, user_prompt, prompt_info)
+        """
         # Load the prompt template from file
-        prompt_path = self._prompt_dir / prompt_filename
+        prompt_path = self._prompt_dir / LLM_DETECTOR_PROMPT
         if not prompt_path.exists():
             raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
 
         template = prompt_path.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
 
-        # Inject the text into the template
-        final_prompt = _inject_text(template, text)
+        template = _inject_sensitive_fields(template)
 
-        return final_prompt, f"prompts/{prompt_filename}"
+        # system: instructions + sensitive fields
+        system_prompt = template
+        # user: raw text only
+        user_prompt = text
 
-    def _invoke(self, prompt_content: str, *, json_mode: bool) -> str:
+        return system_prompt, user_prompt, f"prompts/{LLM_DETECTOR_PROMPT}"
+
+    def _invoke(self, system_prompt: str, user_prompt: str, *, json_mode: bool) -> str:
         model = self._json_llm if json_mode and self._json_llm else self._llm
-        messages = self._prompt_template.format_messages(prompt_content=prompt_content)
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+        if os.getenv(self._DEBUG_PROMPT_ENV):
+            print("\n--- LiteLLMDetector Prompt ---\n")
+            print("SYSTEM:\n")
+            print(system_prompt)
+            print("\nUSER:\n")
+            print(user_prompt)
+            print("\n--- End LiteLLMDetector Prompt ---\n")
         response = model.invoke(messages)
         return coerce_litellm_content_to_text(response)

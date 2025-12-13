@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..detectors import LiteLLMDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
-from ..constants import REGEX_PATTERNS, KEYWORDS
+from ..constants import KEYWORDS, REGEX_PATTERNS
 from ..types import FieldList, GuardState
 from ..utils import append_error
 
@@ -29,7 +29,6 @@ def run_llm_detector(state: GuardState) -> GuardState:
         llm_detector = LiteLLMDetector.from_env()
         result = llm_detector(
             text,
-            state.get("llm_prompt"),
         )
         fields = []
         for item in result.get("detected_fields", []):

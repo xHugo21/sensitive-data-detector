@@ -4,7 +4,11 @@ import os
 from typing import Any
 
 from ..types import GuardState
-from ..utils import build_litellm_model_string
+from .utils import (
+    build_chat_litellm,
+    coerce_litellm_content_to_text,
+    load_litellm_env,
+)
 
 
 class TesseractOCRDetector:
@@ -121,18 +125,15 @@ class LLMOCRDetector:
         self.api_key = api_key
         self.base_url = base_url
 
-        from langchain_litellm import ChatLiteLLM
-
-        model_string = build_litellm_model_string(self.model, self.provider)
-
-        # Build client params
-        client_params = {}
+        client_params: dict[str, Any] = {}
         if api_key:
             client_params["api_key"] = api_key
         if base_url:
             client_params["api_base"] = base_url
 
-        self._llm = ChatLiteLLM(model=model_string, **client_params)
+        self._llm = build_chat_litellm(
+            provider=self.provider, model=self.model, client_params=client_params
+        )
 
     def __call__(self, state: GuardState) -> str:
         file_path = state.get("file_path")
@@ -145,8 +146,8 @@ class LLMOCRDetector:
 
         try:
             import base64
-            from langchain_core.messages import HumanMessage
             import mimetypes
+            from langchain_core.messages import HumanMessage
 
             mime_type, _ = mimetypes.guess_type(file_path)
 
@@ -159,24 +160,23 @@ class LLMOCRDetector:
 
             data_url = f"data:{mime_type};base64,{image_data}"
 
+            prompt = (
+                "Extract all visible text from this image. Return only the text content you see, "
+                "maintaining the original layout as much as possible. Do not provide explanations, "
+                "descriptions, or any additional commentary."
+            )
             message = HumanMessage(
                 content=[
                     {
                         "type": "text",
-                        "text": "Extract all visible text from this image. Return only the text content you see, maintaining the original layout as much as possible. Do not provide explanations, descriptions, or any additional commentary.",
+                        "text": prompt,
                     },
                     {"type": "image_url", "image_url": {"url": data_url}},
                 ]
             )
 
             response = self._llm.invoke([message])
-
-            if hasattr(response, "content"):
-                content: Any = response.content
-                if isinstance(content, str):
-                    return content.strip()
-                return ""
-            return str(response).strip()
+            return coerce_litellm_content_to_text(response)
 
         except Exception as e:
             raise RuntimeError(f"LLM OCR failed to process image: {str(e)}") from e
@@ -187,22 +187,20 @@ class LLMOCRDetector:
         Create LLM OCR detector from environment variables.
         Falls back to LLM_* variables if LLM_OCR_* not set.
         """
-        provider = os.getenv("LLM_OCR_PROVIDER") or os.getenv("LLM_PROVIDER", "openai")
-        model = os.getenv("LLM_OCR_MODEL") or os.getenv("LLM_MODEL", "gpt-4o")
-        api_key = os.getenv("LLM_OCR_API_KEY") or os.getenv("LLM_API_KEY")
-        base_url = os.getenv("LLM_OCR_BASE_URL") or os.getenv("LLM_BASE_URL")
-
+        provider, model, client_params = load_litellm_env(
+            prefix="LLM_OCR",
+            fallback_prefix="LLM",
+            require_api_key=True,
+        )
+        api_key = client_params.get("api_key")
         if not api_key:
-            raise RuntimeError(
-                f"Missing API key for LLM OCR provider '{provider}'. "
-                "Set LLM_OCR_API_KEY or LLM_API_KEY environment variable."
-            )
-
+            raise RuntimeError("Missing API key for LLM OCR provider.")
+        base_url = client_params.get("api_base")
         return cls(
-            provider=provider.lower(),
+            provider=provider,
             model=model,
-            api_key=api_key,
-            base_url=base_url,
+            api_key=str(api_key),
+            base_url=str(base_url) if base_url else None,
         )
 
 

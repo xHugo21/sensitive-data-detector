@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
-from langchain_litellm import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate
 
 from ..constants import LLM_PROMPT_MAP
-from ..utils import build_litellm_model_string
+from .utils import (
+    build_chat_litellm,
+    coerce_litellm_content_to_text,
+    load_litellm_env,
+)
 
 
 def safe_json_from_text(s: str) -> dict:
@@ -24,19 +26,6 @@ def safe_json_from_text(s: str) -> dict:
         return json.loads(match.group(0))
     except Exception:
         return {}
-
-
-def _json_env(var_name: str) -> Dict[str, Any]:
-    raw = os.getenv(var_name)
-    if not raw:
-        return {}
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"{var_name} must be valid JSON") from exc
-    if not isinstance(parsed, dict):
-        raise RuntimeError(f"{var_name} must encode a JSON object with key/value pairs")
-    return parsed
 
 
 def _resolve_llm_prompt(llm_prompt: str | None) -> str:
@@ -63,27 +52,11 @@ class LiteLLMConfig:
     # TODO: Consume LLM configuration params from package parameters instead of env variables
     @classmethod
     def from_env(cls) -> "LiteLLMConfig":
-        provider = os.getenv("LLM_PROVIDER", "openai").lower()
-        model = os.getenv("LLM_MODEL", "gpt-4o-mini")
-        api_key = os.getenv("LLM_API_KEY")
-        base_url = os.getenv("LLM_BASE_URL")
-        api_version = os.getenv("LLM_API_VERSION")
-
-        if not api_key:
-            raise RuntimeError(f"Missing API key for provider '{provider}'. ")
-
-        client_params: Dict[str, Any] = {"api_key": api_key}
-        if base_url:
-            client_params["api_base"] = base_url
-        if api_version:
-            client_params["api_version"] = api_version
-        client_params.update(_json_env("LLM_EXTRA_PARAMS"))
-
-        return cls(
-            provider=provider,
-            model=model,
-            client_params=client_params,
+        provider, model, client_params = load_litellm_env(
+            prefix="LLM",
+            require_api_key=True,
         )
+        return cls(provider=provider, model=model, client_params=client_params)
 
 
 class LiteLLMDetector:
@@ -109,9 +82,12 @@ class LiteLLMDetector:
             # Default: detectors/../prompts
             self._prompt_dir = Path(__file__).resolve().parent.parent / "prompts"
 
-        model_id = build_litellm_model_string(self._model, self._provider)
         if llm is None:
-            self._llm = ChatLiteLLM(model=model_id, **config.client_params)
+            self._llm = build_chat_litellm(
+                provider=self._provider,
+                model=self._model,
+                client_params=config.client_params,
+            )
         else:
             self._llm = llm
 
@@ -181,7 +157,4 @@ class LiteLLMDetector:
         model = self._json_llm if json_mode and self._json_llm else self._llm
         messages = self._prompt_template.format_messages(prompt_content=prompt_content)
         response = model.invoke(messages)
-        content = getattr(response, "content", None)
-        if content is None:
-            return str(response)
-        return (content or "").strip()
+        return coerce_litellm_content_to_text(response)

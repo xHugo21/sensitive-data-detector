@@ -3,32 +3,35 @@ from pathlib import Path
 
 from multiagent_firewall.detectors import llm
 from multiagent_firewall.constants import LLM_PROMPT_MAP
-from multiagent_firewall.utils import build_litellm_model_string
+from multiagent_firewall.detectors.utils import build_litellm_model_string
+from multiagent_firewall.detectors.utils import json_env
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):
     monkeypatch.delenv("TEST_JSON_ENV", raising=False)
-    assert llm._json_env("TEST_JSON_ENV") == {}
+    assert json_env("TEST_JSON_ENV") == {}
 
 
 def test_json_env_parses_valid_json(monkeypatch):
     monkeypatch.setenv("TEST_JSON_ENV", '{"timeout": 30, "retries": 1}')
-    assert llm._json_env("TEST_JSON_ENV") == {"timeout": 30, "retries": 1}
+    assert json_env("TEST_JSON_ENV") == {"timeout": 30, "retries": 1}
 
 
 def test_json_env_errors_on_invalid_payload(monkeypatch):
     monkeypatch.setenv("TEST_JSON_ENV", "{not-valid json")
     with pytest.raises(RuntimeError):
-        llm._json_env("TEST_JSON_ENV")
+        json_env("TEST_JSON_ENV")
 
 
 def test_json_env_requires_object_payload(monkeypatch):
     monkeypatch.setenv("TEST_JSON_ENV", '["a", "b"]')
     with pytest.raises(RuntimeError):
-        llm._json_env("TEST_JSON_ENV")
+        json_env("TEST_JSON_ENV")
 
 
 def test_config_from_env_requires_api_key(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
         llm.LiteLLMConfig.from_env()

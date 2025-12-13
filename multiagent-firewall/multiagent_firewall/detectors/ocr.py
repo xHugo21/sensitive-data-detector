@@ -4,7 +4,11 @@ import os
 from typing import Any
 
 from ..types import GuardState
-from .llm import _build_chat_litellm, _coerce_litellm_content_to_text, _load_litellm_env
+from .utils import (
+    build_chat_litellm,
+    coerce_litellm_content_to_text,
+    load_litellm_env,
+)
 
 
 class TesseractOCRDetector:
@@ -127,7 +131,7 @@ class LLMOCRDetector:
         if base_url:
             client_params["api_base"] = base_url
 
-        self._llm = _build_chat_litellm(
+        self._llm = build_chat_litellm(
             provider=self.provider, model=self.model, client_params=client_params
         )
 
@@ -172,7 +176,7 @@ class LLMOCRDetector:
             )
 
             response = self._llm.invoke([message])
-            return _coerce_litellm_content_to_text(response)
+            return coerce_litellm_content_to_text(response)
 
         except Exception as e:
             raise RuntimeError(f"LLM OCR failed to process image: {str(e)}") from e
@@ -183,7 +187,7 @@ class LLMOCRDetector:
         Create LLM OCR detector from environment variables.
         Falls back to LLM_* variables if LLM_OCR_* not set.
         """
-        provider, model, client_params = _load_litellm_env(
+        provider, model, client_params = load_litellm_env(
             prefix="LLM_OCR",
             fallback_prefix="LLM",
             default_provider="openai",

@@ -1,0 +1,1 @@
+Extract all visible text from this image. Return only the text content you see, maintaining the original layout as much as possible. Do not provide explanations, descriptions, or any additional commentary.

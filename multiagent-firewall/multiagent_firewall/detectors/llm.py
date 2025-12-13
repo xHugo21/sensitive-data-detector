@@ -12,8 +12,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from ..constants import (
     HIGH_RISK_FIELDS,
     LOW_RISK_FIELDS,
-    LLM_PROMPT_MAP,
     MEDIUM_RISK_FIELDS,
+    LLM_DETECTOR_PROMPT,
 )
 from .utils import (
     build_chat_litellm,
@@ -32,14 +32,6 @@ def safe_json_from_text(s: str) -> dict:
         return json.loads(match.group(0))
     except Exception:
         return {}
-
-
-def _resolve_llm_prompt(llm_prompt: str | None) -> str:
-    """Resolve LLM prompt: use explicit prompt if valid, otherwise fallback to first key."""
-    fallback = next(iter(LLM_PROMPT_MAP))
-    if llm_prompt and llm_prompt in LLM_PROMPT_MAP:
-        return llm_prompt
-    return fallback
 
 
 def _build_sensitive_fields_block() -> str:
@@ -117,9 +109,9 @@ class LiteLLMDetector:
     def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
         return cls(LiteLLMConfig.from_env(), **kwargs)
 
-    def __call__(self, text: str, llm_prompt: str | None):
+    def __call__(self, text: str):
         try:
-            system_prompt, user_prompt, prompt_info = self._build_prompt(text, llm_prompt)
+            system_prompt, user_prompt, prompt_info = self._build_prompt(text)
             try:
                 content = self._invoke(system_prompt, user_prompt, json_mode=True)
             except Exception:
@@ -140,23 +132,14 @@ class LiteLLMDetector:
     def _build_prompt(
         self,
         text: str,
-        llm_prompt: str | None,
     ) -> tuple[str, str, str]:
         """
         Build the final prompt by loading template and injecting fields.
 
         Returns (system_prompt, user_prompt, prompt_info)
         """
-        # Resolve the llm_prompt
-        resolved_prompt = _resolve_llm_prompt(llm_prompt)
-
-        # Get the prompt filename from the map
-        prompt_filename = LLM_PROMPT_MAP.get(resolved_prompt)
-        if not prompt_filename:
-            raise RuntimeError(f"LLM prompt '{resolved_prompt}' not found in map")
-
         # Load the prompt template from file
-        prompt_path = self._prompt_dir / prompt_filename
+        prompt_path = self._prompt_dir / LLM_DETECTOR_PROMPT
         if not prompt_path.exists():
             raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
 
@@ -169,7 +152,7 @@ class LiteLLMDetector:
         # user: raw text only
         user_prompt = text
 
-        return system_prompt, user_prompt, f"prompts/{prompt_filename}"
+        return system_prompt, user_prompt, f"prompts/{LLM_DETECTOR_PROMPT}"
 
     def _invoke(self, system_prompt: str, user_prompt: str, *, json_mode: bool) -> str:
         model = self._json_llm if json_mode and self._json_llm else self._llm

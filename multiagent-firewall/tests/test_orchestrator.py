@@ -31,22 +31,6 @@ def test_orchestrator_run_basic(mock_llm_from_env):
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_orchestrator_run_with_prompt_and_mode(mock_llm_from_env):
-    """Test orchestrator run with mode parameter"""
-    mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
-    mock_llm_from_env.return_value = mock_detector
-    
-    orchestrator = GuardOrchestrator()
-    result = orchestrator.run(
-        text="Test text",
-        llm_prompt="strict",
-    )
-    
-    assert result.get("llm_prompt") == "strict"
-
-
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
 def test_orchestrator_run_empty_text(mock_llm_from_env):
     """Test orchestrator with empty text"""
     mock_detector = MagicMock()

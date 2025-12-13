@@ -34,4 +34,3 @@ def _parse_risk(value: str | None, default: str) -> str:
 
 
 MIN_BLOCK_RISK = _parse_risk(os.getenv("MIN_BLOCK_RISK"), "medium")
-LLM_PROMPT = os.getenv("LLM_PROMPT")

@@ -28,3 +28,5 @@ Return only a valid JSON object using the following format, and nothing else:
     }
   ]
 }
+
+The text to analyze will be provided separately in the user message.

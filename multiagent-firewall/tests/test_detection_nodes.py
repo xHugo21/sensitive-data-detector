@@ -23,7 +23,6 @@ def test_run_llm_detector_success(mock_llm_from_env):
     
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com",
-        "llm_prompt": None,
         "warnings": [],
         "errors": [],
     }
@@ -87,7 +86,6 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_from_env):
 
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com, ZIP 12345",
-        "llm_prompt": None,
         "warnings": [],
         "errors": [],
     }

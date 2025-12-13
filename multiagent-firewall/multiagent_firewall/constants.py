@@ -1,8 +1,8 @@
 # Shared constants for multiagent-firewall
 
 # Prompt filenames stored under prompts/
-LLM_DETECTOR_PROMPT = "llm-detector.txt"
-OCR_DETECTOR_PROMPT = "ocr-detector.txt"
+LLM_DETECTOR_PROMPT = "sensitive-data-llm-prompt.txt"
+OCR_DETECTOR_PROMPT = "ocr-llm-prompt.txt"
 
 # Regex patterns for DLP detection agent
 REGEX_PATTERNS = {

@@ -39,16 +39,12 @@ def test_llm_ocr_detector_custom_parameters():
 
 
 def test_llm_ocr_detector_from_env_defaults():
-    """Test from_env with default values"""
+    """Test from_env errors without explicit provider/model"""
     with patch.dict(
         os.environ, {"LLM_API_KEY": "sk-test-key"}, clear=False
     ):
-        detector = LLMOCRDetector.from_env()
-
-        assert detector.provider == "openai"
-        assert detector.model == "gpt-4o"
-        assert detector.api_key == "sk-test-key"
-        assert detector.base_url is None
+        with pytest.raises(RuntimeError, match="Missing (LLM_OCR|LLM)_(PROVIDER|MODEL)"):
+            LLMOCRDetector.from_env()
 
 
 def test_llm_ocr_detector_from_env_with_llm_ocr_vars():
@@ -108,7 +104,11 @@ def test_llm_ocr_detector_from_env_ocr_overrides_llm():
 
 def test_llm_ocr_detector_from_env_missing_api_key():
     """Test from_env raises error when API key is missing"""
-    with patch.dict(os.environ, {}, clear=True):
+    with patch.dict(
+        os.environ,
+        {"LLM_PROVIDER": "openai", "LLM_MODEL": "gpt-4o", "LLM_OCR_PROVIDER": "openai", "LLM_OCR_MODEL": "gpt-4o"},
+        clear=True,
+    ):
         with pytest.raises(RuntimeError, match="Missing API key"):
             LLMOCRDetector.from_env()
 

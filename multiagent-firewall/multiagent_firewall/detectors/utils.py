@@ -69,19 +69,22 @@ def load_litellm_env(
     *,
     prefix: str,
     fallback_prefix: str | None = None,
-    default_provider: str,
-    default_model: str,
     require_api_key: bool = True,
 ) -> tuple[str, str, Dict[str, Any]]:
     """Load LiteLLM env configuration for a prefix with optional fallback prefix."""
     provider = (
         env_with_fallback(f"{prefix}_PROVIDER", f"{fallback_prefix}_PROVIDER")
-        or default_provider
+        or ""
     ).strip()
     model = (
         env_with_fallback(f"{prefix}_MODEL", f"{fallback_prefix}_MODEL")
-        or default_model
+        or ""
     ).strip()
+
+    if not provider:
+        raise RuntimeError(f"Missing {prefix}_PROVIDER.")
+    if not model:
+        raise RuntimeError(f"Missing {prefix}_MODEL.")
 
     api_key = env_with_fallback(f"{prefix}_API_KEY", f"{fallback_prefix}_API_KEY")
     base_url = env_with_fallback(f"{prefix}_BASE_URL", f"{fallback_prefix}_BASE_URL")

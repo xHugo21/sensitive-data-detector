@@ -54,8 +54,6 @@ class LiteLLMConfig:
     def from_env(cls) -> "LiteLLMConfig":
         provider, model, client_params = load_litellm_env(
             prefix="LLM",
-            default_provider="openai",
-            default_model="gpt-4o-mini",
             require_api_key=True,
         )
         return cls(provider=provider, model=model, client_params=client_params)

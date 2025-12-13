@@ -190,8 +190,6 @@ class LLMOCRDetector:
         provider, model, client_params = load_litellm_env(
             prefix="LLM_OCR",
             fallback_prefix="LLM",
-            default_provider="openai",
-            default_model="gpt-4o",
             require_api_key=True,
         )
         api_key = client_params.get("api_key")

@@ -30,6 +30,8 @@ def test_json_env_requires_object_payload(monkeypatch):
 
 
 def test_config_from_env_requires_api_key(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
         llm.LiteLLMConfig.from_env()

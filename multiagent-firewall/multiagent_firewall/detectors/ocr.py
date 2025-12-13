@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from langchain_core.messages import SystemMessage, HumanMessage
+
 from ..types import GuardState
 from .utils import (
     build_chat_litellm,
@@ -160,22 +162,24 @@ class LLMOCRDetector:
 
             data_url = f"data:{mime_type};base64,{image_data}"
 
-            prompt = (
+            system_prompt = (
                 "Extract all visible text from this image. Return only the text content you see, "
                 "maintaining the original layout as much as possible. Do not provide explanations, "
                 "descriptions, or any additional commentary."
             )
-            message = HumanMessage(
-                content=[
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    },
-                    {"type": "image_url", "image_url": {"url": data_url}},
-                ]
-            )
+            message = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(
+                    content=[
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": data_url},
+                        }
+                    ]
+                ),
+            ]
 
-            response = self._llm.invoke([message])
+            response = self._llm.invoke(message)
             return coerce_litellm_content_to_text(response)
 
         except Exception as e:

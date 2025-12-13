@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import os
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage
 
 from ..constants import (
     HIGH_RISK_FIELDS,
@@ -39,13 +40,6 @@ def _resolve_llm_prompt(llm_prompt: str | None) -> str:
     if llm_prompt and llm_prompt in LLM_PROMPT_MAP:
         return llm_prompt
     return fallback
-
-
-def _inject_text(template: str, text: str) -> str:
-    """Inject text into template, using {text} placeholder or appending."""
-    if "{text}" in template:
-        return template.replace("{text}", text)
-    return f"{template.rstrip()}\n\nText:\n'''{text}'''"
 
 
 def _build_sensitive_fields_block() -> str:
@@ -82,9 +76,7 @@ class LiteLLMConfig:
 
 
 class LiteLLMDetector:
-    _SYSTEM_MESSAGE_FORCE_JSON = (
-        "You are to output a single valid JSON object only. No prose, no markdown."
-    )
+    _DEBUG_PROMPT_ENV = "DEBUG_LLM_PROMPT"
 
     def __init__(
         self,
@@ -118,12 +110,8 @@ class LiteLLMDetector:
         else:
             self._json_llm = None
 
-        self._prompt_template = ChatPromptTemplate.from_messages(
-            [
-                ("system", self._SYSTEM_MESSAGE_FORCE_JSON),
-                ("user", "{prompt_content}"),
-            ]
-        )
+        # No prompt template needed: we build explicit SystemMessage + HumanMessage
+        self._prompt_template = None
 
     @classmethod
     def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
@@ -131,11 +119,11 @@ class LiteLLMDetector:
 
     def __call__(self, text: str, llm_prompt: str | None):
         try:
-            prompt_content, prompt_info = self._build_prompt(text, llm_prompt)
+            system_prompt, user_prompt, prompt_info = self._build_prompt(text, llm_prompt)
             try:
-                content = self._invoke(prompt_content, json_mode=True)
+                content = self._invoke(system_prompt, user_prompt, json_mode=True)
             except Exception:
-                content = self._invoke(prompt_content, json_mode=False)
+                content = self._invoke(system_prompt, user_prompt, json_mode=False)
 
             result = safe_json_from_text(content) or {"detected_fields": []}
             if "detected_fields" not in result or not isinstance(
@@ -153,8 +141,12 @@ class LiteLLMDetector:
         self,
         text: str,
         llm_prompt: str | None,
-    ) -> tuple[str, str]:
-        """Build the final prompt by loading template and injecting text."""
+    ) -> tuple[str, str, str]:
+        """
+        Build the final prompt by loading template and injecting fields.
+
+        Returns (system_prompt, user_prompt, prompt_info)
+        """
         # Resolve the llm_prompt
         resolved_prompt = _resolve_llm_prompt(llm_prompt)
 
@@ -172,13 +164,25 @@ class LiteLLMDetector:
 
         template = _inject_sensitive_fields(template)
 
-        # Inject the text into the template
-        final_prompt = _inject_text(template, text)
+        # system: instructions + sensitive fields
+        system_prompt = template
+        # user: raw text only
+        user_prompt = text
 
-        return final_prompt, f"prompts/{prompt_filename}"
+        return system_prompt, user_prompt, f"prompts/{prompt_filename}"
 
-    def _invoke(self, prompt_content: str, *, json_mode: bool) -> str:
+    def _invoke(self, system_prompt: str, user_prompt: str, *, json_mode: bool) -> str:
         model = self._json_llm if json_mode and self._json_llm else self._llm
-        messages = self._prompt_template.format_messages(prompt_content=prompt_content)
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+        if os.getenv(self._DEBUG_PROMPT_ENV):
+            print("\n--- LiteLLMDetector Prompt ---\n")
+            print("SYSTEM:\n")
+            print(system_prompt)
+            print("\nUSER:\n")
+            print(user_prompt)
+            print("\n--- End LiteLLMDetector Prompt ---\n")
         response = model.invoke(messages)
         return coerce_litellm_content_to_text(response)

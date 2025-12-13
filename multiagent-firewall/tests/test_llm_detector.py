@@ -122,31 +122,16 @@ def test_resolve_llm_prompt_with_invalid_mode():
     assert llm._resolve_llm_prompt("") == expected_fallback
 
 
-def test_inject_text_with_placeholder():
-    """Test that _inject_text replaces {text} placeholder correctly"""
-    template = "Analyze the following: {text}"
-    result = llm._inject_text(template, "sample data")
-    assert result == "Analyze the following: sample data"
-    assert "{text}" not in result
-
-
-def test_inject_text_without_placeholder():
-    """Test that _inject_text appends text when no placeholder exists"""
-    template = "Analyze the following input."
-    result = llm._inject_text(template, "sample data")
-    assert result.startswith("Analyze the following input.")
-    assert "sample data" in result
-    assert "Text:" in result
-
-
-def test_inject_text_preserves_formatting():
-    """Test that _inject_text preserves multiline templates"""
-    template = "Line 1\nLine 2\n{text}\nLine 4"
-    result = llm._inject_text(template, "inserted")
-    assert "Line 1" in result
-    assert "Line 2" in result
-    assert "inserted" in result
-    assert "Line 4" in result
+def test_build_prompt_splits_system_and_user():
+    """_build_prompt should return system instructions and raw user text separately"""
+    detector = llm.LiteLLMDetector(
+        llm.LiteLLMConfig(provider="dummy", model="dummy", client_params={}),
+        llm=object(),  # bypass env/real client
+    )
+    system_prompt, user_prompt, info = detector._build_prompt("sample data", "zero-shot")
+    assert "sample data" == user_prompt
+    assert "{text}" not in system_prompt
+    assert info.startswith("prompts/")
 
 
 def test_inject_sensitive_fields_replaces_placeholder():

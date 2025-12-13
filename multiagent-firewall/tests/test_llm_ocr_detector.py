@@ -294,18 +294,16 @@ def test_llm_ocr_detector_encodes_image_as_base64():
 
             # Verify the invoke was called with proper message structure
             assert mock_llm.invoke.called
-            call_args = mock_llm.invoke.call_args[0][0]
-            assert len(call_args) == 1
-            message = call_args[0]
+            messages = mock_llm.invoke.call_args[0][0]
+            assert len(messages) == 2
+            system_msg, human_msg = messages
+            assert "Extract all visible text" in system_msg.content
 
-            # Check message content structure
-            assert hasattr(message, "content")
-            content = message.content
-            assert len(content) == 2
-            assert content[0]["type"] == "text"
-            assert "Extract all visible text" in content[0]["text"]
-            assert content[1]["type"] == "image_url"
-            assert "data:image/png;base64," in content[1]["image_url"]["url"]
+            assert hasattr(human_msg, "content")
+            content = human_msg.content
+            assert len(content) == 1
+            assert content[0]["type"] == "image_url"
+            assert "data:image/png;base64," in content[0]["image_url"]["url"]
 
             assert result == "Text from image"
     finally:
@@ -338,9 +336,8 @@ def test_llm_ocr_detector_handles_different_image_types():
                 result = detector(state)
 
                 # Check that proper MIME type was used
-                call_args = mock_llm.invoke.call_args[0][0]
-                message = call_args[0]
-                image_url = message.content[1]["image_url"]["url"]
+                messages = mock_llm.invoke.call_args[0][0]
+                image_url = messages[1].content[0]["image_url"]["url"]
                 assert f"data:{mime_type};base64," in image_url
 
                 assert result == "Text"
@@ -373,9 +370,8 @@ def test_llm_ocr_detector_handles_unknown_image_type():
             result = detector(state)
 
             # Check that fallback MIME type was used
-            call_args = mock_llm.invoke.call_args[0][0]
-            message = call_args[0]
-            image_url = message.content[1]["image_url"]["url"]
+            messages = mock_llm.invoke.call_args[0][0]
+            image_url = messages[1].content[0]["image_url"]["url"]
             assert "data:image/jpeg;base64," in image_url
 
             assert result == "Text"

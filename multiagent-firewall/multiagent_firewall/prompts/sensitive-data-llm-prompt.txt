@@ -16,6 +16,7 @@ Rules:
   - "Explicit": The sensitive value is directly stated or quoted in the input text.
   - "Inferred": The sensitive value is not directly stated, but can be deduced from context or indirect references in the input text.
 - Do not invent values. Inferred values must be supported by contextual evidence in the text.
+- Ignore anonymized placeholders that look like "<<REDACTED:FIELD>>" (or similar); they are sanitized and must not be reported as sensitive data.
 
 Return only a valid JSON object using the following format, and nothing else:
 

@@ -103,19 +103,19 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_from
     mock_detector = MagicMock()
     mock_detector.return_value = {
         "detected_fields": [
-            {"field": "TIME", "value": "<<TIME_1>>", "source": "Explicit"},
+            {"field": "TIME", "value": "<<REDACTED:TIME>>", "source": "Explicit"},
             {"field": "USERNAME", "value": "john_doe_2024", "source": "Explicit"},
-            {"field": "EMAIL", "value": "<<UNKNOWN_1>>", "source": "Explicit"},
-            {"field": "TIME", "value": "TIME_1", "source": "Explicit"},
+            {"field": "EMAIL", "value": "<<REDACTED:UNKNOWN>>", "source": "Explicit"},
+            {"field": "TIME", "value": "REDACTED:TIME", "source": "Explicit"},
         ]
     }
     mock_llm_from_env.return_value = mock_detector
 
     state: GuardState = {
         "normalized_text": "My username is john_doe_2024 and it is 13:15",
-        "anonymized_text": "My username is john_doe_2024 and it is <<TIME_1>>",
+        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:TIME>>",
         "metadata": {
-            "llm_anonymized_values": {"mapping": {"13:15": "<<TIME_1>>"}}
+            "llm_anonymized_values": {"mapping": {"13:15": "<<REDACTED:TIME>>"}}
         },
         "warnings": [],
         "errors": [],

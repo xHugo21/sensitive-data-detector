@@ -164,6 +164,29 @@ def test_orchestrator_run_with_sensitive_data(mock_llm_detector, guard_config):
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config):
+    """Final anonymization should include LLM-only detections for callers."""
+    mock_detector = MagicMock()
+    mock_detector.return_value = {
+        "detected_fields": [{"field": "PASSWORD", "value": "secret123"}]
+    }
+    mock_llm_detector.return_value = mock_detector
+
+    orchestrator = GuardOrchestrator(guard_config)
+    result = orchestrator.run(text="Please use secret123 to login")
+
+    masked = result.get("anonymized_text") or ""
+    mapping = (
+        result.get("metadata", {})
+        .get("llm_anonymized_values", {})
+        .get("mapping", {})
+    )
+    assert "<<REDACTED:PASSWORD>>" in masked
+    assert "secret123" not in masked
+    assert mapping.get("secret123") == "<<REDACTED:PASSWORD>>"
+
+
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
 def test_orchestrator_run_with_file_path(mock_llm_detector, tmp_path, guard_config):
     """Test orchestrator with file_path parameter"""
     mock_detector = MagicMock()

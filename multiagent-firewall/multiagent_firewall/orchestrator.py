@@ -72,7 +72,12 @@ class GuardOrchestrator:
         graph.add_node("merge_dlp", nodes.merge_detections)
         graph.add_node(
             "anonymize_llm",
-            partial(nodes.anonymize_llm_input, fw_config=self._config),
+            partial(
+                nodes.anonymize_text,
+                fw_config=self._config,
+                findings_key="dlp_fields",
+                text_keys=("normalized_text",),
+            ),
         )
         graph.add_node("risk_dlp", nodes.evaluate_risk)
         graph.add_node("policy_dlp", nodes.apply_policy)
@@ -84,6 +89,15 @@ class GuardOrchestrator:
         graph.add_node("risk_final", nodes.evaluate_risk)
         graph.add_node("policy_final", nodes.apply_policy)
         graph.add_node("remediation", nodes.generate_remediation)
+        graph.add_node(
+            "final_anonymize",
+            partial(
+                nodes.anonymize_text,
+                fw_config=self._config,
+                findings_key="llm_fields",
+                text_keys=("anonymized_text", "normalized_text"),
+            ),
+        )
 
         graph.set_conditional_entry_point(
             should_read_document,
@@ -112,7 +126,8 @@ class GuardOrchestrator:
         )
         graph.add_edge("risk_final", "policy_final")
         graph.add_edge("policy_final", "remediation")
-        graph.add_edge("remediation", END)
+        graph.add_edge("remediation", "final_anonymize")
+        graph.add_edge("final_anonymize", END)
 
         return graph.compile()
 

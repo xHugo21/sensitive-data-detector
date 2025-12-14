@@ -14,13 +14,11 @@ from multiagent_firewall.detectors.utils import build_litellm_model_string
 def test_llm_ocr_detector_initialization():
     """Test basic initialization with default parameters"""
     detector = LLMOCRDetector(
-        provider="openai", model="gpt-4o", api_key="test-key"
+        provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
     )
 
     assert detector.provider == "openai"
     assert detector.model == "gpt-4o"
-    assert detector.api_key == "test-key"
-    assert detector.base_url is None
 
 
 def test_llm_ocr_detector_custom_parameters():
@@ -28,89 +26,14 @@ def test_llm_ocr_detector_custom_parameters():
     detector = LLMOCRDetector(
         provider="anthropic",
         model="claude-3-5-sonnet-20241022",
-        api_key="sk-ant-test",
-        base_url="https://api.anthropic.com",
+        client_params={
+            "api_key": "sk-ant-test",
+            "api_base": "https://api.anthropic.com",
+        },
     )
 
     assert detector.provider == "anthropic"
     assert detector.model == "claude-3-5-sonnet-20241022"
-    assert detector.api_key == "sk-ant-test"
-    assert detector.base_url == "https://api.anthropic.com"
-
-
-def test_llm_ocr_detector_from_env_defaults():
-    """Test from_env errors without explicit provider/model"""
-    with patch.dict(
-        os.environ, {"LLM_API_KEY": "sk-test-key"}, clear=False
-    ):
-        with pytest.raises(RuntimeError, match="Missing (LLM_OCR|LLM)_(PROVIDER|MODEL)"):
-            LLMOCRDetector.from_env()
-
-
-def test_llm_ocr_detector_from_env_with_llm_ocr_vars():
-    """Test from_env with LLM_OCR_* environment variables"""
-    env_vars = {
-        "LLM_OCR_PROVIDER": "anthropic",
-        "LLM_OCR_MODEL": "claude-3-opus-20240229",
-        "LLM_OCR_API_KEY": "sk-ant-ocr",
-        "LLM_OCR_BASE_URL": "https://api.anthropic.com",
-    }
-
-    with patch.dict(os.environ, env_vars, clear=False):
-        detector = LLMOCRDetector.from_env()
-
-        assert detector.provider == "anthropic"
-        assert detector.model == "claude-3-opus-20240229"
-        assert detector.api_key == "sk-ant-ocr"
-        assert detector.base_url == "https://api.anthropic.com"
-
-
-def test_llm_ocr_detector_from_env_fallback_to_llm_vars():
-    """Test from_env falls back to LLM_* variables when LLM_OCR_* not set"""
-    env_vars = {
-        "LLM_PROVIDER": "anthropic",
-        "LLM_MODEL": "claude-3-sonnet-20240229",
-        "LLM_API_KEY": "sk-ant-main",
-        "LLM_BASE_URL": "https://api.anthropic.com",
-    }
-
-    with patch.dict(os.environ, env_vars, clear=False):
-        detector = LLMOCRDetector.from_env()
-
-        assert detector.provider == "anthropic"
-        assert detector.model == "claude-3-sonnet-20240229"
-        assert detector.api_key == "sk-ant-main"
-        assert detector.base_url == "https://api.anthropic.com"
-
-
-def test_llm_ocr_detector_from_env_ocr_overrides_llm():
-    """Test LLM_OCR_* variables override LLM_* variables"""
-    env_vars = {
-        "LLM_PROVIDER": "openai",
-        "LLM_MODEL": "gpt-4o",
-        "LLM_API_KEY": "sk-openai-key",
-        "LLM_OCR_PROVIDER": "anthropic",
-        "LLM_OCR_MODEL": "claude-3-5-sonnet-20241022",
-        "LLM_OCR_API_KEY": "sk-ant-key",
-    }
-
-    with patch.dict(os.environ, env_vars, clear=False):
-        detector = LLMOCRDetector.from_env()
-
-        assert detector.provider == "anthropic"
-        assert detector.model == "claude-3-5-sonnet-20241022"
-        assert detector.api_key == "sk-ant-key"
-
-
-def test_llm_ocr_detector_from_env_missing_api_key():
-    """Test from_env raises error when API key is missing"""
-    with patch.dict(
-        os.environ,
-        {"LLM_PROVIDER": "openai", "LLM_MODEL": "gpt-4o", "LLM_OCR_PROVIDER": "openai", "LLM_OCR_MODEL": "gpt-4o"},
-        clear=True,
-    ):
-        with pytest.raises(RuntimeError, match="Missing API key"):
-            LLMOCRDetector.from_env()
 
 
 def test_llm_ocr_detector_build_model_string_openai():
@@ -134,7 +57,7 @@ def test_llm_ocr_detector_returns_empty_for_missing_file_path():
 
     with patch("langchain_litellm.ChatLiteLLM", return_value=mock_llm):
         detector = LLMOCRDetector(
-            provider="openai", model="gpt-4o", api_key="test-key"
+            provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
         )
         state: GuardState = {}
 
@@ -148,7 +71,7 @@ def test_llm_ocr_detector_returns_empty_for_nonexistent_file():
 
     with patch("langchain_litellm.ChatLiteLLM", return_value=mock_llm):
         detector = LLMOCRDetector(
-            provider="openai", model="gpt-4o", api_key="test-key"
+            provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
         )
         state: GuardState = {"file_path": "/nonexistent/path/image.png"}
 
@@ -175,7 +98,7 @@ def test_llm_ocr_detector_extracts_text():
             "langchain_litellm.ChatLiteLLM", return_value=mock_llm
         ):
             detector = LLMOCRDetector(
-                provider="openai", model="gpt-4o", api_key="test-key"
+                provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
             )
             state: GuardState = {"file_path": tmp_path}
 
@@ -204,7 +127,7 @@ def test_llm_ocr_detector_handles_response_without_content_attr():
             "langchain_litellm.ChatLiteLLM", return_value=mock_llm
         ):
             detector = LLMOCRDetector(
-                provider="openai", model="gpt-4o", api_key="test-key"
+                provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
             )
             state: GuardState = {"file_path": tmp_path}
 
@@ -233,7 +156,7 @@ def test_llm_ocr_detector_handles_non_string_content():
             "langchain_litellm.ChatLiteLLM", return_value=mock_llm
         ):
             detector = LLMOCRDetector(
-                provider="openai", model="gpt-4o", api_key="test-key"
+                provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
             )
             state: GuardState = {"file_path": tmp_path}
 
@@ -259,7 +182,7 @@ def test_llm_ocr_detector_raises_on_processing_error():
             "langchain_litellm.ChatLiteLLM", return_value=mock_llm
         ):
             detector = LLMOCRDetector(
-                provider="openai", model="gpt-4o", api_key="test-key"
+                provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
             )
             state: GuardState = {"file_path": tmp_path}
 
@@ -286,7 +209,7 @@ def test_llm_ocr_detector_encodes_image_as_base64():
             "langchain_litellm.ChatLiteLLM", return_value=mock_llm
         ):
             detector = LLMOCRDetector(
-                provider="openai", model="gpt-4o", api_key="test-key"
+                provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
             )
             state: GuardState = {"file_path": tmp_path}
 
@@ -329,7 +252,7 @@ def test_llm_ocr_detector_handles_different_image_types():
                 "langchain_litellm.ChatLiteLLM", return_value=mock_llm
             ):
                 detector = LLMOCRDetector(
-                    provider="openai", model="gpt-4o", api_key="test-key"
+                    provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
                 )
                 state: GuardState = {"file_path": tmp_path}
 
@@ -363,7 +286,7 @@ def test_llm_ocr_detector_handles_unknown_image_type():
             "langchain_litellm.ChatLiteLLM", return_value=mock_llm
         ):
             detector = LLMOCRDetector(
-                provider="openai", model="gpt-4o", api_key="test-key"
+                provider="openai", model="gpt-4o", client_params={"api_key": "test-key"}
             )
             state: GuardState = {"file_path": tmp_path}
 

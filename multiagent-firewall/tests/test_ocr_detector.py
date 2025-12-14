@@ -36,56 +36,6 @@ def test_tesseract_detector_custom_parameters():
         assert detector.tesseract_cmd == '/usr/local/bin/tesseract'
 
 
-def test_tesseract_detector_from_env_defaults():
-    """Test from_env with default values"""
-    with patch.dict(os.environ, {}, clear=False):
-        detector = TesseractOCRDetector.from_env()
-        
-        assert detector.lang == 'eng'
-        assert detector.config == ''
-        assert detector.confidence_threshold == 0
-        assert detector.tesseract_cmd is None
-
-
-def test_tesseract_detector_from_env_custom():
-    """Test from_env with custom environment variables"""
-    env_vars = {
-        'OCR_LANG': 'spa+eng',
-        'OCR_CONFIG': '--psm 6 --oem 3',
-        'OCR_CONFIDENCE_THRESHOLD': '75',
-        'TESSERACT_CMD': '/custom/path/tesseract',
-    }
-    
-    with patch.dict(os.environ, env_vars, clear=False):
-        with patch.dict('sys.modules', {'pytesseract': MagicMock()}):
-            detector = TesseractOCRDetector.from_env()
-            
-            assert detector.lang == 'spa+eng'
-            assert detector.config == '--psm 6 --oem 3'
-            assert detector.confidence_threshold == 75
-            assert detector.tesseract_cmd == '/custom/path/tesseract'
-
-
-def test_tesseract_detector_from_env_invalid_threshold():
-    """Test from_env handles invalid threshold gracefully"""
-    with patch.dict(os.environ, {'OCR_CONFIDENCE_THRESHOLD': 'invalid'}, clear=False):
-        detector = TesseractOCRDetector.from_env()
-        assert detector.confidence_threshold == 0  # Falls back to default
-
-
-def test_tesseract_detector_from_env_threshold_clamping():
-    """Test threshold is clamped between 0 and 100"""
-    # Test upper bound
-    with patch.dict(os.environ, {'OCR_CONFIDENCE_THRESHOLD': '200'}, clear=False):
-        detector = TesseractOCRDetector.from_env()
-        assert detector.confidence_threshold == 100
-    
-    # Test lower bound
-    with patch.dict(os.environ, {'OCR_CONFIDENCE_THRESHOLD': '-50'}, clear=False):
-        detector = TesseractOCRDetector.from_env()
-        assert detector.confidence_threshold == 0
-
-
 def test_tesseract_detector_returns_empty_for_missing_file_path():
     """Test detector returns empty string when file_path is not in state"""
     detector = TesseractOCRDetector()

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import os
 import json
 import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
@@ -18,7 +16,6 @@ from ..constants import (
 from .utils import (
     build_chat_litellm,
     coerce_litellm_content_to_text,
-    load_litellm_env,
 )
 
 
@@ -51,33 +48,18 @@ def _inject_sensitive_fields(template: str) -> str:
     return template.replace("{sensitive_fields}", block)
 
 
-@dataclass(frozen=True)
-class LiteLLMConfig:
-    provider: str
-    model: str
-    client_params: Dict[str, Any]
-
-    # TODO: Consume LLM configuration params from package parameters instead of env variables
-    @classmethod
-    def from_env(cls) -> "LiteLLMConfig":
-        provider, model, client_params = load_litellm_env(
-            prefix="LLM",
-            require_api_key=True,
-        )
-        return cls(provider=provider, model=model, client_params=client_params)
-
-
 class LiteLLMDetector:
     def __init__(
         self,
-        config: LiteLLMConfig,
         *,
+        provider: str,
+        model: str,
+        client_params: Dict[str, Any],
         prompt_dir: str | Path | None = None,
         llm: Any | None = None,
     ) -> None:
-        self._config = config
-        self._provider = config.provider
-        self._model = config.model
+        self._provider = provider
+        self._model = model
 
         # Set up prompt directory - default to the prompts folder
         if prompt_dir:
@@ -90,7 +72,7 @@ class LiteLLMDetector:
             self._llm = build_chat_litellm(
                 provider=self._provider,
                 model=self._model,
-                client_params=config.client_params,
+                client_params=client_params,
             )
         else:
             self._llm = llm
@@ -102,10 +84,6 @@ class LiteLLMDetector:
 
         # No prompt template needed: we build explicit SystemMessage + HumanMessage
         self._prompt_template = None
-
-    @classmethod
-    def from_env(cls, **kwargs: Any) -> "LiteLLMDetector":
-        return cls(LiteLLMConfig.from_env(), **kwargs)
 
     def __call__(self, text: str):
         try:

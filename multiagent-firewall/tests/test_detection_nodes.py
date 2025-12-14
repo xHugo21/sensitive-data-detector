@@ -9,8 +9,8 @@ from multiagent_firewall.nodes.detection import (
 from multiagent_firewall.types import GuardState
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_run_llm_detector_success(mock_llm_from_env):
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_run_llm_detector_success(mock_llm_detector, guard_config):
     """Test LLM detector with successful detection"""
     mock_detector = MagicMock()
     mock_detector.return_value = {
@@ -19,7 +19,7 @@ def test_run_llm_detector_success(mock_llm_from_env):
             {"field": "NAME", "value": "John Doe"},
         ]
     }
-    mock_llm_from_env.return_value = mock_detector
+    mock_llm_detector.return_value = mock_detector
     
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com",
@@ -27,7 +27,7 @@ def test_run_llm_detector_success(mock_llm_from_env):
         "errors": [],
     }
     
-    result = run_llm_detector(state)
+    result = run_llm_detector(state, fw_config=guard_config)
     
     assert "llm_fields" in result
     assert len(result.get("llm_fields", [])) == 2
@@ -35,12 +35,12 @@ def test_run_llm_detector_success(mock_llm_from_env):
     assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_run_llm_detector_empty_text(mock_llm_from_env):
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_run_llm_detector_empty_text(mock_llm_detector, guard_config):
     """Test LLM detector with empty text"""
     mock_detector = MagicMock()
     mock_detector.return_value = {"detected_fields": []}
-    mock_llm_from_env.return_value = mock_detector
+    mock_llm_detector.return_value = mock_detector
     
     state: GuardState = {
         "normalized_text": "",
@@ -48,17 +48,17 @@ def test_run_llm_detector_empty_text(mock_llm_from_env):
         "errors": [],
     }
     
-    result = run_llm_detector(state)
+    result = run_llm_detector(state, fw_config=guard_config)
     
     assert result.get("llm_fields") == []
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_run_llm_detector_exception(mock_llm_from_env):
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_run_llm_detector_exception(mock_llm_detector, guard_config):
     """Test LLM detector handles exceptions gracefully"""
     mock_detector = MagicMock()
     mock_detector.side_effect = RuntimeError("LLM service unavailable")
-    mock_llm_from_env.return_value = mock_detector
+    mock_llm_detector.return_value = mock_detector
     
     state: GuardState = {
         "normalized_text": "Some text",
@@ -66,14 +66,14 @@ def test_run_llm_detector_exception(mock_llm_from_env):
         "errors": [],
     }
     
-    result = run_llm_detector(state)
+    result = run_llm_detector(state, fw_config=guard_config)
     
     assert result.get("llm_fields") == []
     assert any("LLM detector failed" in e for e in result.get("errors", []))
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_run_llm_detector_normalizes_source_labels(mock_llm_from_env):
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_config):
     """LLM findings should be tagged as LLM-derived rather than Explicit/Inferred"""
     mock_detector = MagicMock()
     mock_detector.return_value = {
@@ -82,7 +82,7 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_from_env):
             {"field": "NAME", "value": "John Doe", "source": "Inferred"},
         ]
     }
-    mock_llm_from_env.return_value = mock_detector
+    mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com, ZIP 12345",
@@ -90,15 +90,15 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_from_env):
         "errors": [],
     }
 
-    result = run_llm_detector(state)
+    result = run_llm_detector(state, fw_config=guard_config)
 
     sources = [f["source"] for f in result.get("llm_fields", [])]
     assert sources == ["llm_explicit", "llm_inferred"]
     assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector.from_env')
-def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_from_env):
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_detector, guard_config):
     """Anonymized values should be mapped back; anonymized tokens should be dropped"""
     mock_detector = MagicMock()
     mock_detector.return_value = {
@@ -109,7 +109,7 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_from
             {"field": "TIME", "value": "REDACTED:TIME", "source": "Explicit"},
         ]
     }
-    mock_llm_from_env.return_value = mock_detector
+    mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
         "normalized_text": "My username is john_doe_2024 and it is 13:15",
@@ -121,7 +121,7 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_from
         "errors": [],
     }
 
-    result = run_llm_detector(state)
+    result = run_llm_detector(state, fw_config=guard_config)
 
     values = {f["field"]: f["value"] for f in result.get("llm_fields", [])}
     assert values["TIME"] == "13:15"

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import os
-
 from multiagent_firewall.nodes.anonymizer import anonymize_llm_input
 from multiagent_firewall.types import GuardState
 
 
-def test_anonymize_llm_input_masks_detected_fields(monkeypatch):
+def test_anonymize_llm_input_masks_detected_fields(monkeypatch, guard_config):
     state: GuardState = {
         "normalized_text": "Contact John Doe at john@example.com",
         "detected_fields": [
@@ -18,7 +16,7 @@ def test_anonymize_llm_input_masks_detected_fields(monkeypatch):
         "errors": [],
     }
 
-    result = anonymize_llm_input(state)
+    result = anonymize_llm_input(state, fw_config=guard_config)
 
     masked = result.get("anonymized_text", "")
     assert "<<REDACTED:EMAIL>>" in masked
@@ -28,7 +26,7 @@ def test_anonymize_llm_input_masks_detected_fields(monkeypatch):
     assert anonymized.get("mapping", {}).get("john@example.com") == "<<REDACTED:EMAIL>>"
 
 
-def test_anonymize_llm_input_disabled(monkeypatch):
+def test_anonymize_llm_input_disabled(monkeypatch, guard_config):
     state: GuardState = {
         "normalized_text": "Email john@example.com",
         "detected_fields": [{"field": "EMAIL", "value": "john@example.com"}],
@@ -37,7 +35,7 @@ def test_anonymize_llm_input_disabled(monkeypatch):
         "errors": [],
     }
 
-    result = anonymize_llm_input(state)
+    result = anonymize_llm_input(state, fw_config=guard_config)
 
     assert result.get("anonymized_text") != "Email john@example.com"
     anonymized = result.get("metadata", {}).get("llm_anonymized_values")

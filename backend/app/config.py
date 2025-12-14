@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from multiagent_firewall.config import GuardConfig
 
 load_dotenv()
 
@@ -21,6 +22,9 @@ def _str_to_bool(value: str | None, default: bool) -> bool:
 
 
 DEBUG_MODE = _str_to_bool(os.getenv("DEBUG_MODE"), False)
+
+
+GUARD_CONFIG = GuardConfig.from_env()
 
 
 def _parse_risk(value: str | None, default: str) -> str:

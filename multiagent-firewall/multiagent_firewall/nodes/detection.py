@@ -7,7 +7,7 @@ from ..types import FieldList, GuardState
 from ..utils import append_error
 
 
-def run_llm_detector(state: GuardState) -> GuardState:
+def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
     """
     Run LLM-based detection
     """
@@ -29,10 +29,13 @@ def run_llm_detector(state: GuardState) -> GuardState:
         state["llm_fields"] = []
         return state
     try:
-        llm_detector = LiteLLMDetector.from_env()
-        result = llm_detector(
-            text,
+        llm_config = fw_config.llm
+        llm_detector = LiteLLMDetector(
+            provider=llm_config.provider,
+            model=llm_config.model,
+            client_params=llm_config.client_params,
         )
+        result = llm_detector(text)
         fields = []
         for item in result.get("detected_fields", []):
             if not isinstance(item, dict):

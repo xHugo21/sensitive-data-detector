@@ -79,7 +79,7 @@ def test_extract_text_from_file_reads_pdf(monkeypatch, tmp_path):
     assert content == "First page\nSecond page"
 
 
-def test_read_document_with_file_path(tmp_path):
+def test_read_document_with_file_path(tmp_path, guard_config):
     """Extract text from file when file_path provided"""
     file_path = tmp_path / "test.txt"
     file_path.write_text("file content", encoding="utf-8")
@@ -89,13 +89,13 @@ def test_read_document_with_file_path(tmp_path):
         "warnings": [],
         "errors": [],
     }
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     assert result["raw_text"] == "file content"
     assert len(result.get("errors", [])) == 0
 
 
-def test_read_document_with_missing_file(tmp_path):
+def test_read_document_with_missing_file(tmp_path, guard_config):
     """Handle missing file gracefully and preserve existing raw_text"""
     missing_path = tmp_path / "missing.txt"
 
@@ -104,7 +104,7 @@ def test_read_document_with_missing_file(tmp_path):
         "warnings": [],
         "errors": [],
     }
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     # raw_text should remain empty since there was no existing text
     assert result["raw_text"] == ""
@@ -112,7 +112,7 @@ def test_read_document_with_missing_file(tmp_path):
     assert "File not found" in result["errors"][0]
 
 
-def test_read_document_preserves_text_on_file_error(tmp_path):
+def test_read_document_preserves_text_on_file_error(tmp_path, guard_config):
     """Test that existing raw_text is preserved when file reading fails"""
     missing_path = tmp_path / "missing.txt"
 
@@ -122,7 +122,7 @@ def test_read_document_preserves_text_on_file_error(tmp_path):
         "warnings": [],
         "errors": [],
     }
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     # Existing raw_text should be preserved even though file read failed
     assert result["raw_text"] == "existing text"
@@ -130,7 +130,7 @@ def test_read_document_preserves_text_on_file_error(tmp_path):
     assert "File not found" in result["errors"][0]
 
 
-def test_read_document_appends_file_to_existing_text(tmp_path):
+def test_read_document_appends_file_to_existing_text(tmp_path, guard_config):
     """Test that file content is appended to existing raw_text"""
     file_path = tmp_path / "test.txt"
     file_path.write_text("file content", encoding="utf-8")
@@ -141,7 +141,7 @@ def test_read_document_appends_file_to_existing_text(tmp_path):
         "warnings": [],
         "errors": [],
     }
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     # Both existing text and file content should be present
     assert "existing text" in result["raw_text"]
@@ -168,15 +168,15 @@ def test_is_image_file_rejects_non_images():
     assert is_image_file("data.csv") == False
 
 
-@patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
-def test_read_document_with_image_file_and_ocr_detector(mock_ocr_from_env, tmp_path):
+@patch('multiagent_firewall.nodes.document._get_default_ocr_detector')
+def test_read_document_with_image_file_and_ocr_detector(mock_get_detector, tmp_path, guard_config):
     """Test reading image file with OCR detector"""
     image_path = tmp_path / "screenshot.png"
     image_path.write_bytes(b"fake image data")
 
     mock_detector = MagicMock()
     mock_detector.return_value = "Some text from image test@example.com"
-    mock_ocr_from_env.return_value = mock_detector
+    mock_get_detector.return_value = mock_detector
 
     state: GuardState = {
         "file_path": str(image_path),
@@ -185,20 +185,19 @@ def test_read_document_with_image_file_and_ocr_detector(mock_ocr_from_env, tmp_p
         "metadata": {},
     }
 
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     assert result["raw_text"] == "Some text from image test@example.com"
     assert result.get("metadata", {}).get("file_type") == "image"
 
 
-@patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
-def test_read_document_with_image_file_no_ocr_detector(mock_ocr_from_env, tmp_path):
+@patch('multiagent_firewall.nodes.document._get_default_ocr_detector')
+def test_read_document_with_image_file_no_ocr_detector(mock_get_detector, tmp_path, guard_config):
     """Test reading image file when OCR detector fails to initialize"""
     image_path = tmp_path / "screenshot.jpg"
     image_path.write_bytes(b"fake image data")
     
-    # Simulate OCR detector initialization failure
-    mock_ocr_from_env.side_effect = RuntimeError("Tesseract not found")
+    mock_get_detector.return_value = None
 
     state: GuardState = {
         "file_path": str(image_path),
@@ -207,16 +206,14 @@ def test_read_document_with_image_file_no_ocr_detector(mock_ocr_from_env, tmp_pa
         "metadata": {},
     }
 
-    # The function should handle the missing detector gracefully
-    with pytest.warns(RuntimeWarning, match="Failed to initialize OCR detector"):
-        result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     assert result["raw_text"] == ""
     assert "Image file detected but no OCR detector available" in result["warnings"][0]
     assert result.get("metadata", {}).get("file_type") == "image"
 
 
-def test_read_document_sets_file_type_metadata_for_pdf(tmp_path):
+def test_read_document_sets_file_type_metadata_for_pdf(tmp_path, guard_config):
     pdf_path = tmp_path / "document.pdf"
     pdf_path.write_bytes(b"%PDF-fake")
 
@@ -227,13 +224,13 @@ def test_read_document_sets_file_type_metadata_for_pdf(tmp_path):
         "metadata": {},
     }
 
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     # Even if extraction fails, metadata should be set
     assert result.get("metadata", {}).get("file_type") == "pdf"
 
 
-def test_read_document_sets_file_type_metadata_for_text(tmp_path):
+def test_read_document_sets_file_type_metadata_for_text(tmp_path, guard_config):
     text_path = tmp_path / "document.txt"
     text_path.write_text("Some content", encoding="utf-8")
 
@@ -244,21 +241,21 @@ def test_read_document_sets_file_type_metadata_for_text(tmp_path):
         "metadata": {},
     }
 
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     assert result["raw_text"] == "Some content"
     assert result.get("metadata", {}).get("file_type") == "text"
 
 
-@patch('multiagent_firewall.nodes.document.TesseractOCRDetector.from_env')
-def test_read_document_handles_ocr_exception(mock_ocr_from_env, tmp_path):
+@patch('multiagent_firewall.nodes.document._get_default_ocr_detector')
+def test_read_document_handles_ocr_exception(mock_get_detector, tmp_path, guard_config):
     """Test handling OCR detector exceptions"""
     image_path = tmp_path / "bad_image.png"
     image_path.write_bytes(b"corrupt image")
 
     mock_detector = MagicMock()
     mock_detector.side_effect = RuntimeError("OCR service unavailable")
-    mock_ocr_from_env.return_value = mock_detector
+    mock_get_detector.return_value = mock_detector
 
     state: GuardState = {
         "file_path": str(image_path),
@@ -267,7 +264,7 @@ def test_read_document_handles_ocr_exception(mock_ocr_from_env, tmp_path):
         "metadata": {},
     }
 
-    result = read_document(state)
+    result = read_document(state, fw_config=guard_config)
 
     assert result["raw_text"] == ""
     assert any("OCR detection failed" in e for e in result["errors"])

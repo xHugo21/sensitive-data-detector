@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import os
 import re
 from typing import Dict
 
 from ..types import GuardState
 
 
-def anonymize_llm_input(state: GuardState) -> GuardState:
+def anonymize_llm_input(state: GuardState, *, fw_config) -> GuardState:
     """Obfuscate detected sensitive values before sending text to remote LLMs."""
     text = state.get("normalized_text") or ""
     detected = state.get("detected_fields") or []
@@ -45,11 +44,11 @@ def anonymize_llm_input(state: GuardState) -> GuardState:
     metadata = state.setdefault("metadata", {})
     metadata["llm_anonymized_values"] = {
         "enabled": True,
-        "provider": _provider(),
+        "provider": _provider(fw_config),
         "mapping": anonymized_map,
     }
     return state
 
 
-def _provider() -> str:
-    return (os.getenv("LLM_PROVIDER") or "openai").strip().lower()
+def _provider(fw_config) -> str:
+    return (fw_config.llm.provider or "openai").strip().lower()

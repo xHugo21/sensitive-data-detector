@@ -187,6 +187,29 @@ def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config)
 
 
 @patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+def test_orchestrator_skips_final_anonymizer_without_llm(mock_llm_detector, guard_config):
+    """Final anonymizer should not run when no LLM findings are produced."""
+    mock_detector = MagicMock()
+    mock_detector.return_value = {"detected_fields": []}
+    mock_llm_detector.return_value = mock_detector
+
+    call_count = {"count": 0}
+    from multiagent_firewall import nodes as node_module
+    original = node_module.anonymize_text
+
+    def counting_anonymize(state, *, fw_config, findings_key, text_keys):
+        call_count["count"] += 1
+        return original(state, fw_config=fw_config, findings_key=findings_key, text_keys=text_keys)
+
+    with patch("multiagent_firewall.orchestrator.nodes.anonymize_text", side_effect=counting_anonymize):
+        orchestrator = GuardOrchestrator(guard_config)
+        result = orchestrator.run(text="Hello world")
+
+    assert call_count["count"] == 1  # only DLP anonymizer ran
+    assert result.get("anonymized_text") == "Hello world"
+
+
+@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
 def test_orchestrator_run_with_file_path(mock_llm_detector, tmp_path, guard_config):
     """Test orchestrator with file_path parameter"""
     mock_detector = MagicMock()

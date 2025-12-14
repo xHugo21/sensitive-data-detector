@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from langgraph.graph import END
+
 from .types import GuardState
 
 
@@ -60,3 +62,10 @@ def route_after_merge_final(state: GuardState) -> str:
 def _use_anonymizer(state: GuardState) -> bool:
     provider = (state.get("llm_provider") or "openai").strip().lower()
     return provider != "ollama"
+
+
+def route_after_remediation(state: GuardState) -> str:
+    """Run final anonymization only if LLM detections exist."""
+    if state.get("llm_fields"):
+        return "final_anonymize"
+    return END

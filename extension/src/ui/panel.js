@@ -30,7 +30,7 @@
       borderLeft: "4px solid #c5c5d2",
       boxSizing: "border-box",
       backdropFilter: "blur(6px)",
-      maxHeight: "70vh",
+      maxHeight: "40vh",
       overflow: "hidden",
       display: "flex",
       flexDirection: "column",
@@ -245,15 +245,8 @@
   function renderPanel(result, contextText = "", meta = {}) {
     const panel = ensurePanel();
     mountPanel(panel);
-    const {
-      title,
-      list,
-      policy,
-      metrics,
-      btnSendAnyway,
-      btnDismiss,
-      actions,
-    } = panel._els;
+    const { title, list, policy, metrics, btnSendAnyway, btnDismiss, actions } =
+      panel._els;
     list.innerHTML = "";
 
     const { risk_level = "unknown", detected_fields = [] } = result || {};
@@ -284,6 +277,7 @@
           ? `${(durationMs / 1000).toFixed(1)}s`
           : `${Math.round(durationMs)}ms`;
       metrics.textContent = `Analysis completed in ${formatted}`;
+      metrics.style.textAlign = "left";
       metrics.style.display = "block";
     } else {
       metrics.textContent = "";

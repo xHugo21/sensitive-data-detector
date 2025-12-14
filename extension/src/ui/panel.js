@@ -24,15 +24,19 @@
       padding: "20px 22px 24px",
       fontFamily:
         '"Sohne", "GT Walsheim", "Helvetica Neue", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      display: "none",
       fontSize: "16px",
       lineHeight: "1.55",
       border: "1px solid rgba(255,255,255,0.08)",
       borderLeft: "4px solid #c5c5d2",
       boxSizing: "border-box",
       backdropFilter: "blur(6px)",
+      maxHeight: "70vh",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
     });
     panel.id = "sg-llm-panel";
+    panel.style.display = "none";
 
     const titleRow = document.createElement("div");
     Object.assign(titleRow.style, {
@@ -54,6 +58,18 @@
 
     panel.appendChild(titleRow);
 
+    const content = document.createElement("div");
+    Object.assign(content.style, {
+      flex: "1",
+      overflowY: "auto",
+      overflowX: "hidden",
+      paddingRight: "4px",
+      paddingBottom: "12px",
+      display: "flex",
+      flexDirection: "column",
+    });
+    panel.appendChild(content);
+
     const policy = document.createElement("div");
     policy.id = "sg-llm-policy";
     Object.assign(policy.style, {
@@ -63,7 +79,7 @@
       color: "#C5C5D2",
       textAlign: "left",
     });
-    panel.appendChild(policy);
+    content.appendChild(policy);
 
     const metrics = document.createElement("div");
     metrics.id = "sg-llm-metrics";
@@ -73,16 +89,16 @@
       margin: "0 0 12px",
       color: "#AEB0C3",
     });
-    panel.appendChild(metrics);
+    content.appendChild(metrics);
 
     const list = document.createElement("div");
     list.id = "sg-llm-list";
     Object.assign(list.style, {
       fontSize: "15px",
-      maxHeight: "360px",
-      overflow: "auto",
+      overflow: "visible",
+      paddingBottom: "8px",
     });
-    panel.appendChild(list);
+    content.appendChild(list);
 
     const actions = document.createElement("div");
     Object.assign(actions.style, {
@@ -90,6 +106,11 @@
       gap: "10px",
       marginTop: "16px",
       flexWrap: "wrap",
+      position: "sticky",
+      bottom: "0",
+      background:
+        "linear-gradient(180deg, rgba(32,33,35,0.97) 0%, rgba(32,33,35,0.97) 75%, rgba(32,33,35,0.92) 100%)",
+      paddingTop: "10px",
     });
 
     const btnSendAnyway = document.createElement("button");
@@ -163,83 +184,31 @@
     });
   }
 
-  function applyFloatingPanelStyles(panel) {
-    Object.assign(panel.style, {
-      position: "fixed",
-      bottom: "40px",
-      right: "40px",
-      margin: "0",
-      width: "auto",
-      maxWidth: "680px",
-      left: "unset",
-      top: "unset",
-    });
-  }
-
   function mountPanel(panel) {
     const fallbackParent = document.body || document.documentElement;
+    let host = null;
+    let referenceNode = null;
 
     // Use platform-specific insertion point if available
     const platform = sg.platformRegistry?.getActive?.();
     if (platform && typeof platform.findPanelInsertionPoint === "function") {
       const insertionPoint = platform.findPanelInsertionPoint();
 
-      if (!insertionPoint || !insertionPoint.host) {
-        // Fallback to floating panel if no insertion point found
-        if (!panel.parentElement) fallbackParent.appendChild(panel);
-        applyFloatingPanelStyles(panel);
-        return;
+      if (insertionPoint && insertionPoint.host) {
+        host = insertionPoint.host;
+        referenceNode = insertionPoint.referenceNode || null;
       }
-
-      const { host, referenceNode } = insertionPoint;
-
-      // Check if we need to move the anchor
-      let anchor = document.getElementById("sg-llm-panel-anchor");
-      if (anchor && anchor.parentElement && anchor.parentElement !== host) {
-        anchor.parentElement.removeChild(anchor);
-        anchor = null;
-      } else if (anchor && !anchor.parentElement) {
-        anchor = null;
-      }
-
-      if (!anchor) {
-        anchor = document.createElement("div");
-        anchor.id = "sg-llm-panel-anchor";
-        Object.assign(anchor.style, {
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-          marginBottom: "16px",
-          marginTop: "4px",
-          padding: "0 8px",
-          boxSizing: "border-box",
-        });
-        host.insertBefore(anchor, referenceNode);
-      }
-
-      if (panel.parentElement !== anchor) {
-        anchor.appendChild(panel);
-      }
-      applyInlinePanelStyles(panel);
-      return;
     }
 
-    // Fallback to old logic if platform doesn't have findPanelInsertionPoint
-    const composer = sg.chatSelectors?.findComposer?.();
-    if (!composer || !composer.parentElement) {
-      if (!panel.parentElement) fallbackParent.appendChild(panel);
-      applyFloatingPanelStyles(panel);
-      return;
-    }
-
-    const form = composer.closest?.("form");
-    const host = form?.parentElement || composer.parentElement;
+    // Fallback to composer-based insertion
     if (!host) {
-      if (!panel.parentElement) fallbackParent.appendChild(panel);
-      applyFloatingPanelStyles(panel);
-      return;
+      const composer = sg.chatSelectors?.findComposer?.();
+      const form = composer?.closest?.("form");
+      host = form?.parentElement || composer?.parentElement || fallbackParent;
+      referenceNode = form || composer || null;
     }
 
+    // Check if we need to move the anchor
     let anchor = document.getElementById("sg-llm-panel-anchor");
     if (anchor && anchor.parentElement && anchor.parentElement !== host) {
       anchor.parentElement.removeChild(anchor);
@@ -247,6 +216,7 @@
     } else if (anchor && !anchor.parentElement) {
       anchor = null;
     }
+
     if (!anchor) {
       anchor = document.createElement("div");
       anchor.id = "sg-llm-panel-anchor";
@@ -259,7 +229,11 @@
         padding: "0 8px",
         boxSizing: "border-box",
       });
-      host.insertBefore(anchor, form || composer);
+      if (referenceNode && referenceNode.parentElement === host) {
+        host.insertBefore(anchor, referenceNode);
+      } else {
+        host.appendChild(anchor);
+      }
     }
 
     if (panel.parentElement !== anchor) {
@@ -440,7 +414,7 @@
       actions.style.gap = "12px";
     }
 
-    panel.style.display = "block";
+    panel.style.display = "flex";
   }
 
   function hidePanel() {

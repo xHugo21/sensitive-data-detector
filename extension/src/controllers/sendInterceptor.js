@@ -92,8 +92,6 @@
   }
 
   function allowSend(composer, button) {
-    sg.alertStore.setResponsePending(true);
-    sg.alertStore.setSuppressUserAlerts(true);
     setTimeout(() => sg.highlights.clearHighlights("user"), 50);
     dispatchSend(composer, button);
     lastSendIntent = null;
@@ -114,8 +112,6 @@
       return;
     }
 
-    sg.alertStore.setResponsePending(true);
-    sg.alertStore.setSuppressUserAlerts(true);
     sg.alertStore.setOverrideActive(true);
     sg.panel.hide();
     dispatchSend(lastSendIntent.composer, lastSendIntent.button);

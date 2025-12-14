@@ -3,8 +3,6 @@
 
   const state = {
     overrideOnce: false,
-    pendingResponseAlert: false,
-    suppressUserAlerts: false,
   };
 
   const analyzedNodes = new WeakSet();
@@ -16,23 +14,6 @@
     },
     setOverrideActive(value) {
       state.overrideOnce = Boolean(value);
-    },
-    isResponsePending() {
-      return state.pendingResponseAlert;
-    },
-    setResponsePending(value) {
-      state.pendingResponseAlert = Boolean(value);
-    },
-    consumeResponsePending() {
-      const pending = state.pendingResponseAlert;
-      state.pendingResponseAlert = false;
-      return pending;
-    },
-    shouldSuppressUserAlerts() {
-      return state.suppressUserAlerts;
-    },
-    setSuppressUserAlerts(value) {
-      state.suppressUserAlerts = Boolean(value);
     },
     hasAnalyzed(node) {
       return analyzedNodes.has(node);

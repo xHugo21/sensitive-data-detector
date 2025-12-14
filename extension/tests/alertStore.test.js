@@ -14,14 +14,6 @@ test("override flag toggles", () => {
   assert.equal(store.isOverrideActive(), false);
 });
 
-test("pending response flag consumes", () => {
-  store.setResponsePending(true);
-  assert.equal(store.isResponsePending(), true);
-  assert.equal(store.consumeResponsePending(), true);
-  assert.equal(store.isResponsePending(), false);
-  assert.equal(store.consumeResponsePending(), false);
-});
-
 test("node tracking works via WeakSets", () => {
   const node = {};
   assert.equal(store.hasAnalyzed(node), false);

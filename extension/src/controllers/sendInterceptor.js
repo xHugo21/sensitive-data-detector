@@ -63,6 +63,9 @@
   }
 
   async function analyzeBeforeSend({ composer, button = null, text }) {
+    const startedAt = (root.performance || {}).now
+      ? performance.now()
+      : Date.now();
     const loadingTarget = {
       composer,
       button: button || sg.chatSelectors.findSendButton(),
@@ -78,8 +81,11 @@
       );
 
       if (sg.riskUtils.shouldBlock(result)) {
+        const durationMs = ((root.performance || {}).now
+          ? performance.now()
+          : Date.now()) - startedAt;
         lastSendIntent = { composer, button };
-        sg.panel.render(result, text);
+        sg.panel.render(result, text, { durationMs });
         return;
       }
 

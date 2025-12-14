@@ -31,6 +31,10 @@
       `[SensitiveDataDetectorExtension] Detected ${fileInfo.label} file upload: ${file.name}`,
     );
 
+    const startedAt = (root.performance || {}).now
+      ? performance.now()
+      : Date.now();
+
     try {
       // Show loading state
       sg.loadingState.show({
@@ -39,6 +43,9 @@
 
       // Analyze file through backend
       const result = await sg.fileAnalyzer.analyzeFile(file);
+      const durationMs = ((root.performance || {}).now
+        ? performance.now()
+        : Date.now()) - startedAt;
 
       // Hide loading state
       sg.loadingState.hide();
@@ -46,7 +53,7 @@
       // Only display panel if blocked
       if (sg.riskUtils.shouldBlock(result)) {
         const displayName = `${fileInfo.label}: ${file.name}`;
-        sg.panel.render(result, displayName);
+        sg.panel.render(result, displayName, { durationMs });
       }
 
       // Log extracted text snippet if available
@@ -65,6 +72,9 @@
         );
       }
     } catch (err) {
+      const durationMs = ((root.performance || {}).now
+        ? performance.now()
+        : Date.now()) - startedAt;
       sg.loadingState.hide();
       console.error(
         `[SensitiveDataDetectorExtension] Error analyzing ${file.name}:`,
@@ -79,6 +89,7 @@
           error: `Failed to analyze file: ${err.message}`,
         },
         `${fileInfo.label}: ${file.name}`,
+        { durationMs },
       );
     }
   }

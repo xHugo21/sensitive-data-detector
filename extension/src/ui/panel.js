@@ -65,6 +65,16 @@
     });
     panel.appendChild(policy);
 
+    const metrics = document.createElement("div");
+    metrics.id = "sg-llm-metrics";
+    Object.assign(metrics.style, {
+      opacity: "0.9",
+      fontSize: "13px",
+      margin: "0 0 12px",
+      color: "#AEB0C3",
+    });
+    panel.appendChild(metrics);
+
     const list = document.createElement("div");
     list.id = "sg-llm-list";
     Object.assign(list.style, {
@@ -132,6 +142,7 @@
       title,
       list,
       policy,
+      metrics,
       actions,
       btnSendAnyway,
       btnDismiss,
@@ -257,13 +268,14 @@
     applyInlinePanelStyles(panel);
   }
 
-  function renderPanel(result, contextText = "") {
+  function renderPanel(result, contextText = "", meta = {}) {
     const panel = ensurePanel();
     mountPanel(panel);
     const {
       title,
       list,
       policy,
+      metrics,
       btnSendAnyway,
       btnDismiss,
       actions,
@@ -289,6 +301,20 @@
     policy.innerHTML = remediation
       ? `<div style="margin-bottom:6px;">${remediation}</div>`
       : "";
+
+    // Show timing if provided
+    const durationMs = meta?.durationMs;
+    if (typeof durationMs === "number" && isFinite(durationMs)) {
+      const formatted =
+        durationMs >= 1000
+          ? `${(durationMs / 1000).toFixed(1)}s`
+          : `${Math.round(durationMs)}ms`;
+      metrics.textContent = `Analysis completed in ${formatted}`;
+      metrics.style.display = "block";
+    } else {
+      metrics.textContent = "";
+      metrics.style.display = "none";
+    }
 
     const accentRisk =
       risk_level === "high"

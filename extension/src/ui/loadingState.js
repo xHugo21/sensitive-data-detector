@@ -4,11 +4,15 @@
   const STYLE_ID = "sg-global-loading-style";
   const TOAST_ID = "sg-global-loading-chip";
   const DEFAULT_MESSAGE = "Analyzing message...";
+  const DEFAULT_BG = "rgba(17, 24, 39, 0.92)";
+  const SUCCESS_BG = "#16a34a";
   let activeCount = 0;
   const trackedButtons = new Set();
   const buttonState = new WeakMap();
   let toast = null;
   let textEl = null;
+  let spinnerEl = null;
+  let hideTimer = null;
 
   function ensureStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -64,6 +68,7 @@
     const spinner = document.createElement("span");
     spinner.className = "sg-loading-spinner";
     spinner.setAttribute("aria-hidden", "true");
+    spinner.style.display = "inline-block";
 
     textEl = document.createElement("span");
     textEl.className = "sg-loading-text";
@@ -73,6 +78,7 @@
     el.appendChild(textEl);
     document.body.appendChild(el);
     toast = el;
+    spinnerEl = spinner;
     return toast;
   }
 
@@ -122,12 +128,22 @@
   function show(target = {}) {
     ensureStyles();
     ensureToast();
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
     const btn = normalizeButton(target.button || target);
     const message =
       typeof target === "string"
         ? target
         : target?.message || DEFAULT_MESSAGE;
 
+    if (toast) {
+      toast.style.background = DEFAULT_BG;
+    }
+    if (spinnerEl) {
+      spinnerEl.style.display = "inline-block";
+    }
     if (textEl) textEl.textContent = message;
     if (toast) toast.dataset.sgVisible = "true";
 
@@ -138,7 +154,7 @@
     activeCount += 1;
   }
 
-  function hide() {
+  function hide(opts = {}) {
     if (activeCount === 0) return;
 
     activeCount = Math.max(0, activeCount - 1);
@@ -148,7 +164,38 @@
     trackedButtons.clear();
 
     if (toast) {
-      toast.dataset.sgVisible = "false";
+      const { message, durationMs, panelShown } = opts || {};
+      const showCompletion = !panelShown;
+
+      let finalMessage = message;
+      if (
+        showCompletion &&
+        !finalMessage &&
+        typeof durationMs === "number" &&
+        isFinite(durationMs)
+      ) {
+        finalMessage =
+          durationMs >= 1000
+            ? `Analysis completed in ${(durationMs / 1000).toFixed(1)}s`
+            : `Analysis completed in ${Math.round(durationMs)}ms`;
+      }
+
+      if (showCompletion && finalMessage && textEl) {
+        textEl.textContent = finalMessage;
+        if (spinnerEl) spinnerEl.style.display = "none";
+        toast.style.background = SUCCESS_BG;
+        toast.dataset.sgVisible = "true";
+        const persistMs = opts.persistMs ?? 2200;
+        hideTimer = setTimeout(() => {
+          toast.dataset.sgVisible = "false";
+          toast.style.background = DEFAULT_BG;
+          if (spinnerEl) spinnerEl.style.display = "inline-block";
+        }, persistMs);
+      } else {
+        toast.dataset.sgVisible = "false";
+        toast.style.background = DEFAULT_BG;
+        if (spinnerEl) spinnerEl.style.display = "inline-block";
+      }
     }
   }
 

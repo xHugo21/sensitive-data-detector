@@ -2,6 +2,10 @@
   const sg = (root.SG = root.SG || {});
   let attached = false;
 
+  function now() {
+    return (root.performance || {}).now ? performance.now() : Date.now();
+  }
+
   function attach() {
     if (attached) return;
     attached = true;
@@ -15,6 +19,7 @@
     const input = event.target;
     if (!input || input.type !== "file" || !input.files?.length) return;
 
+    let panelShown = false;
     const file = input.files[0];
     if (!file) return;
 
@@ -31,9 +36,7 @@
       `[SensitiveDataDetectorExtension] Detected ${fileInfo.label} file upload: ${file.name}`,
     );
 
-    const startedAt = (root.performance || {}).now
-      ? performance.now()
-      : Date.now();
+    const startedAt = now();
 
     try {
       // Show loading state
@@ -43,18 +46,17 @@
 
       // Analyze file through backend
       const result = await sg.fileAnalyzer.analyzeFile(file);
-      const durationMs = ((root.performance || {}).now
-        ? performance.now()
-        : Date.now()) - startedAt;
-
-      // Hide loading state
-      sg.loadingState.hide();
+      const durationMs = now() - startedAt;
 
       // Only display panel if blocked
       if (sg.riskUtils.shouldBlock(result)) {
         const displayName = `${fileInfo.label}: ${file.name}`;
         sg.panel.render(result, displayName, { durationMs });
+        panelShown = true;
       }
+
+      // Hide loading state after panel decision so the toast behaves correctly
+      sg.loadingState.hide({ durationMs, panelShown });
 
       // Log extracted text snippet if available
       if (result?.extracted_snippet) {
@@ -72,10 +74,8 @@
         );
       }
     } catch (err) {
-      const durationMs = ((root.performance || {}).now
-        ? performance.now()
-        : Date.now()) - startedAt;
-      sg.loadingState.hide();
+      const durationMs = now() - startedAt;
+      sg.loadingState.hide({ durationMs, panelShown: true });
       console.error(
         `[SensitiveDataDetectorExtension] Error analyzing ${file.name}:`,
         err,

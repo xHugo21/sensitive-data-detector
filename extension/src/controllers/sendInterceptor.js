@@ -5,6 +5,10 @@
   let lastSendIntent = null;
   let overrideTimer = null;
 
+  function now() {
+    return (root.performance || {}).now ? performance.now() : Date.now();
+  }
+
   function attach() {
     if (attached) return;
     const composer = sg.chatSelectors.findComposer();
@@ -63,9 +67,8 @@
   }
 
   async function analyzeBeforeSend({ composer, button = null, text }) {
-    const startedAt = (root.performance || {}).now
-      ? performance.now()
-      : Date.now();
+    const startedAt = now();
+    let panelShown = false;
     const loadingTarget = {
       composer,
       button: button || sg.chatSelectors.findSendButton(),
@@ -81,11 +84,10 @@
       );
 
       if (sg.riskUtils.shouldBlock(result)) {
-        const durationMs = ((root.performance || {}).now
-          ? performance.now()
-          : Date.now()) - startedAt;
+        const durationMs = now() - startedAt;
         lastSendIntent = { composer, button };
         sg.panel.render(result, text, { durationMs });
+        panelShown = true;
         return;
       }
 
@@ -97,7 +99,8 @@
       );
       allowSend(composer, button);
     } finally {
-      sg.loadingState.hide();
+      const durationMs = now() - startedAt;
+      sg.loadingState.hide({ durationMs, panelShown });
     }
   }
 

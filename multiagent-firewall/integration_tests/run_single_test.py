@@ -21,6 +21,7 @@ def load_env_from_integration_tests():
 # Load .env before any other imports
 load_env_from_integration_tests()
 
+from multiagent_firewall.config import GuardConfig
 from multiagent_firewall.orchestrator import GuardOrchestrator
 
 
@@ -29,7 +30,8 @@ def main():
         print('Usage: python run_orchestrator.py "Your text here"')
         sys.exit(1)
     text = sys.argv[1]
-    orchestrator = GuardOrchestrator()
+    config = GuardConfig.from_env()
+    orchestrator = GuardOrchestrator(config)
     result = orchestrator.run(text=text)
     for key, value in result.items():
         print(f"{key}: {value}")

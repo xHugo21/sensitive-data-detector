@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
 from typing import cast
+from functools import partial
 
 from langgraph.graph import END, StateGraph
 
 from . import nodes
+from .config import GuardConfig
 from .routers import (
     route_after_dlp,
     route_after_merge_final,
@@ -20,7 +21,8 @@ from .utils import debug_invoke
 class GuardOrchestrator:
     """Orchestrates the sensitive data detection pipeline."""
 
-    def __init__(self) -> None:
+    def __init__(self, config: GuardConfig) -> None:
+        self._config = config
         self._graph = self._build_graph()
 
     def run(
@@ -44,27 +46,40 @@ class GuardOrchestrator:
         initial_state: GuardState = {
             "raw_text": text or "",
             "file_path": file_path,
-            "min_block_risk": (min_block_risk or "medium").lower(),
+            "min_block_risk": _normalize_risk(min_block_risk),
+            "llm_provider": self._config.llm.provider,
             "metadata": {},
             "warnings": [],
             "errors": [],
         }
-        if bool(os.getenv("DEBUG_MODE")):
+        if self._config.debug:
             return debug_invoke(self._graph, initial_state)
         return cast(GuardState, self._graph.invoke(initial_state))
 
     def _build_graph(self):
         graph = StateGraph(GuardState)
 
-        graph.add_node("read_document", nodes.read_document)
-        graph.add_node("llm_ocr", nodes.llm_ocr_document)
+        graph.add_node(
+            "read_document",
+            partial(nodes.read_document, fw_config=self._config),
+        )
+        graph.add_node(
+            "llm_ocr",
+            partial(nodes.llm_ocr_document, fw_config=self._config),
+        )
         graph.add_node("normalize", nodes.normalize)
         graph.add_node("dlp_detector", nodes.run_dlp_detector)
         graph.add_node("merge_dlp", nodes.merge_detections)
-        graph.add_node("anonymize_llm", nodes.anonymize_llm_input)
+        graph.add_node(
+            "anonymize_llm",
+            partial(nodes.anonymize_llm_input, fw_config=self._config),
+        )
         graph.add_node("risk_dlp", nodes.evaluate_risk)
         graph.add_node("policy_dlp", nodes.apply_policy)
-        graph.add_node("llm_detector", nodes.run_llm_detector)
+        graph.add_node(
+            "llm_detector",
+            partial(nodes.run_llm_detector, fw_config=self._config),
+        )
         graph.add_node("merge_final", nodes.merge_detections)
         graph.add_node("risk_final", nodes.evaluate_risk)
         graph.add_node("policy_final", nodes.apply_policy)
@@ -100,3 +115,13 @@ class GuardOrchestrator:
         graph.add_edge("remediation", END)
 
         return graph.compile()
+
+
+def _normalize_risk(value: str | None) -> str:
+    allowed = {"none", "low", "medium", "high"}
+    if value is None:
+        return "medium"
+    normalized = value.strip().lower()
+    if normalized not in allowed:
+        return "medium"
+    return normalized

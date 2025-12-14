@@ -82,14 +82,19 @@ def extract_text_from_file(file_path: str) -> str | None:
         return None
 
 
-def _get_default_ocr_detector():
+def _get_default_ocr_detector(fw_config):
     """
-    Get default OCR detector from environment.
+    Get default OCR detector from configuration.
 
     Returns None if Tesseract is not available or fails to initialize.
     """
     try:
-        return TesseractOCRDetector.from_env()
+        return TesseractOCRDetector(
+            lang=fw_config.ocr.lang,
+            config=fw_config.ocr.config,
+            confidence_threshold=fw_config.ocr.confidence_threshold,
+            tesseract_cmd=fw_config.ocr.tesseract_cmd,
+        )
     except Exception as e:
         # Log warning but don't crash
         warnings.warn(
@@ -100,7 +105,7 @@ def _get_default_ocr_detector():
         return None
 
 
-def read_document(state: GuardState) -> GuardState:
+def read_document(state: GuardState, *, fw_config) -> GuardState:
     """
     Document ingestion node: Extracts text from file if file_path provided.
 
@@ -130,7 +135,7 @@ def read_document(state: GuardState) -> GuardState:
                 state["metadata"] = {}
             state["metadata"]["file_type"] = "image"
 
-            ocr_detector = _get_default_ocr_detector()
+            ocr_detector = _get_default_ocr_detector(fw_config)
             if ocr_detector:
                 try:
                     # Call OCR detector with current state - returns plain text
@@ -188,7 +193,7 @@ def read_document(state: GuardState) -> GuardState:
     return state
 
 
-def llm_ocr_document(state: GuardState) -> GuardState:
+def llm_ocr_document(state: GuardState, *, fw_config) -> GuardState:
     """
     LLM OCR fallback node: Uses vision-capable LLM to extract text from images
     when Tesseract OCR fails or returns empty results.
@@ -206,7 +211,12 @@ def llm_ocr_document(state: GuardState) -> GuardState:
         return state
 
     try:
-        llm_ocr = LLMOCRDetector.from_env()
+        llm_ocr_settings = fw_config.llm_ocr_config()
+        llm_ocr = LLMOCRDetector(
+            provider=llm_ocr_settings.provider,
+            model=llm_ocr_settings.model,
+            client_params=llm_ocr_settings.client_params,
+        )
 
         text = llm_ocr(state) or ""
 

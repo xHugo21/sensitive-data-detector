@@ -12,7 +12,6 @@ from ..types import GuardState
 from .utils import (
     build_chat_litellm,
     coerce_litellm_content_to_text,
-    load_litellm_env,
 )
 
 
@@ -81,54 +80,18 @@ class TesseractOCRDetector:
                 f"Tesseract OCR failed to process image: {str(e)}"
             ) from e
 
-    # TODO: Same as LiteLLM, pass this arguments as parameters to the package instead of loading from env
-    @classmethod
-    def from_env(cls) -> "TesseractOCRDetector":
-        """
-        Create Tesseract OCR detector from environment variables.
-
-        Environment variables:
-            OCR_LANG: Tesseract language code (default: eng)
-            OCR_CONFIG: Additional Tesseract config string (default: '')
-            OCR_CONFIDENCE_THRESHOLD: Min confidence 0-100 (default: 0)
-            TESSERACT_CMD: Path to tesseract binary (optional)
-        """
-        lang = os.getenv("OCR_LANG", "eng")
-        config = os.getenv("OCR_CONFIG", "")
-
-        threshold_str = os.getenv("OCR_CONFIDENCE_THRESHOLD", "0")
-        try:
-            threshold = int(threshold_str)
-            # Clamp between 0 and 100
-            threshold = max(0, min(100, threshold))
-        except ValueError:
-            threshold = 0
-
-        tesseract_cmd = os.getenv("TESSERACT_CMD")
-
-        return cls(
-            lang=lang,
-            config=config,
-            confidence_threshold=threshold,
-            tesseract_cmd=tesseract_cmd,
-        )
-
-
 class LLMOCRDetector:
     """LLM-based OCR detector"""
 
     def __init__(
         self,
         *,
-        provider: str = "openai",
-        model: str = "gpt-4o",
-        api_key: str | None = None,
-        base_url: str | None = None,
+        provider: str,
+        model: str,
+        client_params: dict[str, Any],
     ):
         self.provider = provider
         self.model = model
-        self.api_key = api_key
-        self.base_url = base_url
         prompt_path = (
             Path(__file__).resolve().parent.parent / "prompts" / OCR_DETECTOR_PROMPT
         )
@@ -137,12 +100,6 @@ class LLMOCRDetector:
         self._system_prompt = (
             prompt_path.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
         )
-
-        client_params: dict[str, Any] = {}
-        if api_key:
-            client_params["api_key"] = api_key
-        if base_url:
-            client_params["api_base"] = base_url
 
         self._llm = build_chat_litellm(
             provider=self.provider, model=self.model, client_params=client_params
@@ -190,28 +147,4 @@ class LLMOCRDetector:
 
         except Exception as e:
             raise RuntimeError(f"LLM OCR failed to process image: {str(e)}") from e
-
-    @classmethod
-    def from_env(cls) -> "LLMOCRDetector":
-        """
-        Create LLM OCR detector from environment variables.
-        Falls back to LLM_* variables if LLM_OCR_* not set.
-        """
-        provider, model, client_params = load_litellm_env(
-            prefix="LLM_OCR",
-            fallback_prefix="LLM",
-            require_api_key=True,
-        )
-        api_key = client_params.get("api_key")
-        if not api_key:
-            raise RuntimeError("Missing API key for LLM OCR provider.")
-        base_url = client_params.get("api_base")
-        return cls(
-            provider=provider,
-            model=model,
-            api_key=str(api_key),
-            base_url=str(base_url) if base_url else None,
-        )
-
-
 __all__ = ["TesseractOCRDetector", "LLMOCRDetector"]

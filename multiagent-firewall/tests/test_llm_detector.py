@@ -1,10 +1,12 @@
 import pytest
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from multiagent_firewall.detectors import llm
 from multiagent_firewall.constants import LLM_DETECTOR_PROMPT
 from multiagent_firewall.detectors.utils import build_litellm_model_string
 from multiagent_firewall.detectors.utils import json_env
+from multiagent_firewall.config import GuardConfig
 
 
 def test_json_env_returns_empty_when_variable_missing(monkeypatch):
@@ -34,7 +36,7 @@ def test_config_from_env_requires_api_key(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
-        llm.LiteLLMConfig.from_env()
+        GuardConfig.from_env()
 
 
 def test_config_from_env_includes_optional_fields(monkeypatch):
@@ -45,15 +47,50 @@ def test_config_from_env_includes_optional_fields(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("LLM_MODEL", "sonnet")
 
-    config = llm.LiteLLMConfig.from_env()
+    config = GuardConfig.from_env()
 
-    assert config.provider == "anthropic"
-    assert config.model == "sonnet"
-    assert config.client_params["api_key"] == "secret-key"
-    assert config.client_params["api_base"] == "https://example.com"
-    assert config.client_params["api_version"] == "v1"
-    assert config.client_params["timeout"] == 10
-    assert config.client_params["top_p"] == 0.5
+    assert config.llm.provider == "anthropic"
+    assert config.llm.model == "sonnet"
+    assert config.llm.client_params["api_key"] == "secret-key"
+    assert config.llm.client_params["api_base"] == "https://example.com"
+    assert config.llm.client_params["api_version"] == "v1"
+    assert config.llm.client_params["timeout"] == 10
+    assert config.llm.client_params["top_p"] == 0.5
+    assert config.llm_ocr.provider == "anthropic"
+    assert config.llm_ocr.model == "sonnet"
+
+
+def test_config_from_env_uses_llm_ocr_overrides(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("LLM_MODEL", "gpt-4o")
+    monkeypatch.setenv("LLM_API_KEY", "sk-main")
+    monkeypatch.setenv("LLM_OCR_PROVIDER", "anthropic")
+    monkeypatch.setenv("LLM_OCR_MODEL", "claude-3")
+    monkeypatch.setenv("LLM_OCR_API_KEY", "sk-ocr")
+
+    config = GuardConfig.from_env()
+
+    assert config.llm_ocr.provider == "anthropic"
+    assert config.llm_ocr.model == "claude-3"
+    assert config.llm_ocr.client_params["api_key"] == "sk-ocr"
+
+
+def test_config_from_env_parses_ocr_settings(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("LLM_MODEL", "gpt-4o")
+    monkeypatch.setenv("LLM_API_KEY", "sk-main")
+    monkeypatch.setenv("OCR_LANG", "spa")
+    monkeypatch.setenv("OCR_CONFIG", "--psm 6")
+    monkeypatch.setenv("OCR_CONFIDENCE_THRESHOLD", "120")
+    monkeypatch.setenv("TESSERACT_CMD", "/usr/bin/tesseract")
+
+    config = GuardConfig.from_env()
+
+    assert config.ocr.lang == "spa"
+    assert config.ocr.config == "--psm 6"
+    # Threshold should be clamped to 100
+    assert config.ocr.confidence_threshold == 100
+    assert config.ocr.tesseract_cmd == "/usr/bin/tesseract"
 
 
 def test_maybe_prefix_model_handles_providers():
@@ -80,8 +117,10 @@ def test_prompt_file_exists():
 def test_build_prompt_splits_system_and_user():
     """_build_prompt should return system instructions and raw user text separately"""
     detector = llm.LiteLLMDetector(
-        llm.LiteLLMConfig(provider="dummy", model="dummy", client_params={}),
-        llm=object(),  # bypass env/real client
+        provider="dummy",
+        model="dummy",
+        client_params={},
+        llm=MagicMock(),  # bypass real client
     )
     system_prompt, user_prompt, info = detector._build_prompt("sample data")
     assert "sample data" == user_prompt

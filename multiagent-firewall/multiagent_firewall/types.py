@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from typing_extensions import NotRequired, TypedDict
+
+if TYPE_CHECKING:
+    from .config import GuardConfig
+else:
+    GuardConfig = Any
 
 FieldList = List[Dict[str, Any]]
 
@@ -12,6 +17,7 @@ class GuardState(TypedDict, total=False):
     file_path: NotRequired[str | None]
     raw_text: str
     min_block_risk: NotRequired[str | None]
+    llm_provider: NotRequired[str]
 
     # PROCESSING
     anonymized_text: NotRequired[str]

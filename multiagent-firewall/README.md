@@ -23,7 +23,7 @@ flowchart TD
     DLP --> MergeDLP[Merge Detections]
     MergeDLP --> HasDLP{Any DLP hits?}
     HasDLP -->|Yes| RiskDLP[Risk Evaluation]
-    HasDLP -->|No| ShouldAnonymize{Cloud LLM provider & ANONYMIZE_FOR_REMOTE_LLM true?}
+    HasDLP -->|No| ShouldAnonymize{Cloud LLM provider?}
     
     RiskDLP --> PolicyDLP[Policy Check]
     
@@ -32,8 +32,8 @@ flowchart TD
     DecisionBlock -->|Yes| Remediation[Remediation]
     DecisionBlock -->|No| ShouldAnonymize
     
-    ShouldAnonymize -->|Yes| Anonymize[Anonymize Detected Values]
-    ShouldAnonymize -->|No| LLM[LLM Detector]
+    ShouldAnonymize -->|Yes (non-ollama)| Anonymize[Anonymize Detected Values]
+    ShouldAnonymize -->|No (ollama)| LLM[LLM Detector]
     Anonymize --> LLM[LLM Detector]
     
     LLM --> MergeFinal[Merge Detections]
@@ -72,13 +72,15 @@ Our `backend/` package exposes an HTTP API that can be used to automatically cal
 
 #### Text Detection
 ```python
-from multiagent_firewall.orchestrator import GuardOrchestrator
+from multiagent_firewall import GuardConfig, GuardOrchestrator
 
-orchestrator = GuardOrchestrator()
+config = GuardConfig.from_env()
+orchestrator = GuardOrchestrator(config)
 
 # Detect sensitive data in text
 result = orchestrator.run(
   text="My SSN is 123-45-6789",
+  min_block_risk="low"
 )
 
 print(f"Decision: {result['decision']}")
@@ -88,9 +90,10 @@ print(f"Detected Fields: {result['detected_fields']}")
 
 #### PDF Detection
 ```python
-from multiagent_firewall.orchestrator import GuardOrchestrator
+from multiagent_firewall import GuardConfig, GuardOrchestrator
 
-orchestrator = GuardOrchestrator()
+config = GuardConfig.from_env()
+orchestrator = GuardOrchestrator(config)
 
 # Extracts text from PDF and detects sensitive data
 result = orchestrator.run(file_path="/path/to/document.pdf")
@@ -98,9 +101,10 @@ result = orchestrator.run(file_path="/path/to/document.pdf")
 
 #### Image Detection (OCR must be configured)
 ```python
-from multiagent_firewall.orchestrator import GuardOrchestrator
+from multiagent_firewall import GuardConfig, GuardOrchestrator
 
-orchestrator = GuardOrchestrator()
+config = GuardConfig.from_env()
+orchestrator = GuardOrchestrator(config)
 
 result = orchestrator.run(file_path="/path/to/screenshot.png")
 
@@ -132,6 +136,15 @@ The orchestrator returns a `GuardState` dictionary with:
 ```
 
 ## Configuration
+
+Create a `GuardConfig` and pass it to `GuardOrchestrator`. For convenience, you can build it from environment variables once at startup:
+
+```python
+from multiagent_firewall import GuardConfig, GuardOrchestrator
+
+config = GuardConfig.from_env()
+orchestrator = GuardOrchestrator(config)
+```
 
 ### Environment Variables
 
@@ -165,6 +178,7 @@ LLM_OCR_BASE_URL=https://...         # Custom API endpoint (optional)
 ```bash
 MIN_BLOCK_RISK=medium        # Options: low, medium, high
 ```
+`MIN_BLOCK_RISK` is applied per invocation (pass `min_block_risk` to `GuardOrchestrator.run`); it defaults to `medium` if omitted.
 
 ### Supported File Types
 

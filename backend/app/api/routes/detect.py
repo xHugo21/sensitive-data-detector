@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 from app.utils import debug_log
 from multiagent_firewall import GuardOrchestrator
-from app.config import MIN_BLOCK_RISK
+from app.config import GUARD_CONFIG, MIN_BLOCK_RISK
 
 router = APIRouter()
 
@@ -44,7 +44,7 @@ async def detect(
             debug_log(f"[SensitiveDataDetectorBackend] Saved file to {tmp_path}")
 
             # Use orchestrator with file_path
-            result = GuardOrchestrator().run(
+            result = GuardOrchestrator(GUARD_CONFIG).run(
                 file_path=tmp_path,
                 min_block_risk=MIN_BLOCK_RISK,
             )
@@ -63,7 +63,7 @@ async def detect(
 
         # Handle text input
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
-        result = GuardOrchestrator().run(
+        result = GuardOrchestrator(GUARD_CONFIG).run(
             text=text,
             min_block_risk=MIN_BLOCK_RISK,
         )

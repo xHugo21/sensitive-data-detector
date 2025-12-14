@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 import pytest
 import yaml
 
+from multiagent_firewall.config import GuardConfig
 from multiagent_firewall.orchestrator import GuardOrchestrator
 
 
@@ -57,10 +58,8 @@ def orchestrator():
     if not LLM_API_KEY:
         pytest.skip("LLM_API_KEY not set. Skipping integration tests.")
 
-    os.environ["LITELLM_MODEL"] = LLM_MODEL
-    os.environ["LITELLM_API_KEY"] = LLM_API_KEY
-
-    return GuardOrchestrator()
+    config = GuardConfig.from_env()
+    return GuardOrchestrator(config)
 
 
 @pytest.mark.integration

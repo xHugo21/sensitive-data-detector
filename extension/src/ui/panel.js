@@ -257,7 +257,7 @@
     applyInlinePanelStyles(panel);
   }
 
-  function renderPanel(result, origin = "User", contextText = "") {
+  function renderPanel(result, contextText = "") {
     const panel = ensurePanel();
     mountPanel(panel);
     const {
@@ -298,8 +298,7 @@
           : risk_level === "low"
             ? "#10a37f"
             : "#c5c5d2";
-    const accentOrigin = origin === "Response" ? "#82b5ff" : accentRisk;
-    panel.style.borderLeft = `4px solid ${accentOrigin}`;
+    panel.style.borderLeft = `4px solid ${accentRisk}`;
 
     if (detected_fields.length) {
       const groups = new Map();
@@ -405,22 +404,14 @@
     }
 
     if (actions && btnDismiss && btnSendAnyway) {
-      if (origin === "User") {
-        if (!actions.contains(btnSendAnyway))
-          actions.insertBefore(btnSendAnyway, btnDismiss);
-        btnSendAnyway.style.display = "inline-block";
-        btnDismiss.style.display = "inline-block";
-        btnSendAnyway.style.flex = "1";
-        btnDismiss.style.flex = "0";
-        actions.style.justifyContent = "flex-start";
-        actions.style.gap = "12px";
-      } else {
-        if (actions.contains(btnSendAnyway)) actions.removeChild(btnSendAnyway);
-        btnDismiss.style.display = "inline-block";
-        btnDismiss.style.flex = "1";
-        actions.style.justifyContent = "stretch";
-        actions.style.gap = "0";
-      }
+      if (!actions.contains(btnSendAnyway))
+        actions.insertBefore(btnSendAnyway, btnDismiss);
+      btnSendAnyway.style.display = "inline-block";
+      btnDismiss.style.display = "inline-block";
+      btnSendAnyway.style.flex = "1";
+      btnDismiss.style.flex = "0";
+      actions.style.justifyContent = "flex-start";
+      actions.style.gap = "12px";
     }
 
     panel.style.display = "block";

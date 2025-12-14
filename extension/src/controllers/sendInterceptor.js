@@ -75,7 +75,7 @@
 
       if (sg.riskUtils.shouldBlock(result)) {
         lastSendIntent = { composer, button };
-        sg.panel.render(result, "User", text);
+        sg.panel.render(result, text);
         return;
       }
 

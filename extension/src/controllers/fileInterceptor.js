@@ -44,7 +44,7 @@
       // Only display panel if blocked
       if (sg.riskUtils.shouldBlock(result)) {
         const displayName = `${fileInfo.label}: ${file.name}`;
-        sg.panel.render(result, "User", displayName);
+        sg.panel.render(result, displayName);
       }
 
       // Log extracted text snippet if available
@@ -76,7 +76,6 @@
           detected_fields: [],
           error: `Failed to analyze file: ${err.message}`,
         },
-        "User",
         `${fileInfo.label}: ${file.name}`,
       );
     }

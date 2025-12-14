@@ -82,6 +82,22 @@
     }
 
     /**
+    * Set text content into composer if supported
+    */
+    setComposerText(element, text) {
+      if (!element) return;
+      if (element.tagName === "TEXTAREA") {
+        element.value = text;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
+      }
+      if (element.isContentEditable) {
+        element.innerText = text;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+
+    /**
      * Extract text from a message node
      * @param {Node} node - The message node
      * @returns {string} The extracted text

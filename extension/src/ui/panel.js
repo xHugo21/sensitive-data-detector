@@ -2,6 +2,7 @@
   const sg = (root.SG = root.SG || {});
 
   const sendListeners = new Set();
+  const sendSanitizedListeners = new Set();
   const dismissListeners = new Set();
 
   function ensurePanel() {
@@ -113,6 +114,24 @@
       paddingTop: "10px",
     });
 
+    const btnSendSanitized = document.createElement("button");
+    btnSendSanitized.id = "sg-llm-send-sanitized";
+    btnSendSanitized.textContent = "Send sanitized";
+    btnSendSanitized.dataset.sgPanelButton = "true";
+    Object.assign(btnSendSanitized.style, {
+      flex: 1,
+      border: "none",
+      borderRadius: "12px",
+      padding: "10px 16px",
+      background: "linear-gradient(120deg,#0ba360,#3cba92)",
+      color: "#0b1119",
+      cursor: "pointer",
+      fontSize: "15px",
+      fontWeight: "700",
+      boxShadow: "0 6px 18px rgba(60,186,146,0.35)",
+      display: "none",
+    });
+
     const btnSendAnyway = document.createElement("button");
     btnSendAnyway.id = "sg-llm-override";
     btnSendAnyway.textContent = "Send anyway";
@@ -145,6 +164,7 @@
       border: "1px solid rgba(255,255,255,0.12)",
     });
 
+    actions.appendChild(btnSendSanitized);
     actions.appendChild(btnSendAnyway);
     actions.appendChild(btnDismiss);
     panel.appendChild(actions);
@@ -156,6 +176,9 @@
     btnSendAnyway.addEventListener("click", () => {
       sendListeners.forEach((fn) => fn());
     });
+    btnSendSanitized.addEventListener("click", () => {
+      sendSanitizedListeners.forEach((fn) => fn());
+    });
 
     mountPanel(panel);
 
@@ -165,6 +188,7 @@
       policy,
       metrics,
       actions,
+      btnSendSanitized,
       btnSendAnyway,
       btnDismiss,
     };
@@ -245,8 +269,16 @@
   function renderPanel(result, contextText = "", meta = {}) {
     const panel = ensurePanel();
     mountPanel(panel);
-    const { title, list, policy, metrics, btnSendAnyway, btnDismiss, actions } =
-      panel._els;
+    const {
+      title,
+      list,
+      policy,
+      metrics,
+      btnSendAnyway,
+      btnSendSanitized,
+      btnDismiss,
+      actions,
+    } = panel._els;
     list.innerHTML = "";
 
     const { risk_level = "unknown", detected_fields = [] } = result || {};
@@ -397,15 +429,25 @@
       list.appendChild(empty);
     }
 
+    const hasSanitizedText =
+      typeof result?.anonymized_text === "string" &&
+      result.anonymized_text.trim().length > 0;
+
     if (actions && btnDismiss && btnSendAnyway) {
       if (!actions.contains(btnSendAnyway))
         actions.insertBefore(btnSendAnyway, btnDismiss);
+      if (!actions.contains(btnSendSanitized))
+        actions.insertBefore(btnSendSanitized, btnSendAnyway);
+      btnSendSanitized.style.display = hasSanitizedText
+        ? "inline-block"
+        : "none";
       btnSendAnyway.style.display = "inline-block";
       btnDismiss.style.display = "inline-block";
+      btnSendSanitized.style.flex = "1";
       btnSendAnyway.style.flex = "1";
       btnDismiss.style.flex = "0";
       actions.style.justifyContent = "flex-start";
-      actions.style.gap = "12px";
+      actions.style.gap = "10px";
     }
 
     panel.style.display = "flex";
@@ -420,6 +462,10 @@
     if (typeof callback === "function") sendListeners.add(callback);
   }
 
+  function onSendSanitized(callback) {
+    if (typeof callback === "function") sendSanitizedListeners.add(callback);
+  }
+
   function onDismiss(callback) {
     if (typeof callback === "function") dismissListeners.add(callback);
   }
@@ -429,6 +475,7 @@
     render: renderPanel,
     hide: hidePanel,
     onSendAnyway,
+    onSendSanitized,
     onDismiss,
   };
 })(typeof window !== "undefined" ? window : globalThis);

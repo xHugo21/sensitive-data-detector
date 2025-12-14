@@ -25,6 +25,13 @@
     return platform ? platform.getComposerText(el) : "";
   }
 
+  function setComposerText(el, text) {
+    const platform = getActivePlatform();
+    if (platform && typeof platform.setComposerText === "function") {
+      platform.setComposerText(el, text);
+    }
+  }
+
   function findSendButton() {
     const platform = getActivePlatform();
     return platform ? platform.findSendButton() : null;
@@ -60,6 +67,7 @@
   sg.chatSelectors = {
     findComposer,
     getComposerText,
+    setComposerText,
     findSendButton,
     extractMessageText,
     isMessageNode,

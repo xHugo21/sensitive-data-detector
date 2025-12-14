@@ -18,6 +18,7 @@
     sg.panel.ensure();
     sg.highlights.ensureHighlightCSS();
     sg.panel.onSendAnyway(handleSendAnywayOverride);
+    sg.panel.onSendSanitized(handleSendSanitized);
 
     composer.addEventListener("keydown", handleComposerKeydown, true);
     document.addEventListener("click", handleSendButtonClick, true);
@@ -69,6 +70,7 @@
   async function analyzeBeforeSend({ composer, button = null, text }) {
     const startedAt = now();
     let panelShown = false;
+    lastSendIntent = null;
     const loadingTarget = {
       composer,
       button: button || sg.chatSelectors.findSendButton(),
@@ -82,10 +84,15 @@
         result?.detected_fields || [],
         "user",
       );
+      lastSendIntent = {
+        composer,
+        button,
+        originalText: text,
+        detectionResult: result,
+      };
 
       if (sg.riskUtils.shouldBlock(result)) {
         const durationMs = now() - startedAt;
-        lastSendIntent = { composer, button };
         sg.panel.render(result, text, { durationMs });
         panelShown = true;
         return;
@@ -110,7 +117,11 @@
     lastSendIntent = null;
   }
 
-  function dispatchSend(composer, button) {
+  function dispatchSend(composer, button, overrideText) {
+    if (overrideText && sg.chatSelectors.setComposerText) {
+      sg.chatSelectors.setComposerText(composer, overrideText);
+    }
+
     sg.alertStore.setOverrideActive(true);
     try {
       sg.chatSelectors.triggerSend(composer, button);
@@ -128,6 +139,22 @@
     sg.alertStore.setOverrideActive(true);
     sg.panel.hide();
     dispatchSend(lastSendIntent.composer, lastSendIntent.button);
+    setTimeout(() => sg.alertStore.setOverrideActive(false), 1500);
+    lastSendIntent = null;
+  }
+
+  function handleSendSanitized() {
+    if (!lastSendIntent) {
+      sg.panel.hide();
+      return;
+    }
+    const sanitized =
+      lastSendIntent.detectionResult?.anonymized_text ||
+      lastSendIntent.originalText;
+
+    sg.alertStore.setOverrideActive(true);
+    sg.panel.hide();
+    dispatchSend(lastSendIntent.composer, lastSendIntent.button, sanitized);
     setTimeout(() => sg.alertStore.setOverrideActive(false), 1500);
     lastSendIntent = null;
   }

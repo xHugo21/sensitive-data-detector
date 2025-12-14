@@ -33,7 +33,9 @@
 
     try {
       // Show loading state
-      sg.loadingState.show(`Analyzing ${fileInfo.label.toLowerCase()}...`);
+      sg.loadingState.show({
+        message: `Analyzing ${fileInfo.label.toLowerCase()}...`,
+      });
 
       // Analyze file through backend
       const result = await sg.fileAnalyzer.analyzeFile(file);

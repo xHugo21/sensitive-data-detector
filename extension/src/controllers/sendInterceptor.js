@@ -63,7 +63,11 @@
   }
 
   async function analyzeBeforeSend({ composer, button = null, text }) {
-    const loadingTarget = button || sg.chatSelectors.findSendButton();
+    const loadingTarget = {
+      composer,
+      button: button || sg.chatSelectors.findSendButton(),
+      message: "Analyzing message...",
+    };
     sg.loadingState.show(loadingTarget);
     try {
       const result = await sg.detectorClient.detectText(text);
@@ -87,7 +91,7 @@
       );
       allowSend(composer, button);
     } finally {
-      sg.loadingState.hide(loadingTarget);
+      sg.loadingState.hide();
     }
   }
 

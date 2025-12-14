@@ -23,7 +23,7 @@ flowchart TD
     DLP --> MergeDLP[Merge Detections]
     MergeDLP --> HasDLP{Any DLP hits?}
     HasDLP -->|Yes| RiskDLP[Risk Evaluation]
-    HasDLP -->|No| ShouldAnonymize{Cloud LLM provider & ANONYMIZE_FOR_REMOTE_LLM true?}
+    HasDLP -->|No| ShouldAnonymize{Cloud LLM provider?}
     
     RiskDLP --> PolicyDLP[Policy Check]
     
@@ -32,8 +32,8 @@ flowchart TD
     DecisionBlock -->|Yes| Remediation[Remediation]
     DecisionBlock -->|No| ShouldAnonymize
     
-    ShouldAnonymize -->|Yes| Anonymize[Anonymize Detected Values]
-    ShouldAnonymize -->|No| LLM[LLM Detector]
+    ShouldAnonymize -->|Yes (non-ollama)| Anonymize[Anonymize Detected Values]
+    ShouldAnonymize -->|No (ollama)| LLM[LLM Detector]
     Anonymize --> LLM[LLM Detector]
     
     LLM --> MergeFinal[Merge Detections]

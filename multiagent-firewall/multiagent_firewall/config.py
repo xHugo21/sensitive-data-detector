@@ -29,18 +29,10 @@ class OCRConfig:
 
 
 @dataclass(frozen=True)
-class AnonymizationConfig:
-    anonymize_for_remote_llm: bool = True
-
-
-@dataclass(frozen=True)
 class GuardConfig:
     llm: LLMConfig
     llm_ocr: LLMConfig | None = None
     ocr: OCRConfig = field(default_factory=OCRConfig)
-    anonymization: AnonymizationConfig = field(
-        default_factory=AnonymizationConfig
-    )
     debug: bool = False
 
     def llm_ocr_config(self) -> LLMConfig:
@@ -85,11 +77,6 @@ class GuardConfig:
             threshold = 0
         tesseract_cmd = os.getenv("TESSERACT_CMD")
 
-        anonymize_for_remote_llm = _str_to_bool(
-            os.getenv("ANONYMIZE_FOR_REMOTE_LLM"),
-            True,
-        )
-
         debug_mode = _str_to_bool(os.getenv("DEBUG_MODE"), False)
 
         return cls(
@@ -100,9 +87,6 @@ class GuardConfig:
                 config=ocr_config,
                 confidence_threshold=threshold,
                 tesseract_cmd=tesseract_cmd,
-            ),
-            anonymization=AnonymizationConfig(
-                anonymize_for_remote_llm=anonymize_for_remote_llm
             ),
             debug=debug_mode,
         )

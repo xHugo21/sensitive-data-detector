@@ -59,5 +59,4 @@ def route_after_merge_final(state: GuardState) -> str:
 
 def _use_anonymizer(state: GuardState) -> bool:
     provider = (state.get("llm_provider") or "openai").strip().lower()
-    anonymize_flag = state.get("anonymize_for_remote_llm")
-    return bool(anonymize_flag) and provider != "ollama"
+    return provider != "ollama"

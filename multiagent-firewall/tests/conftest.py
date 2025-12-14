@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from multiagent_firewall.config import (
-    AnonymizationConfig,
     GuardConfig,
     LLMConfig,
     OCRConfig,
@@ -20,6 +19,5 @@ def guard_config() -> GuardConfig:
         ),
         llm_ocr=None,
         ocr=OCRConfig(),
-        anonymization=AnonymizationConfig(anonymize_for_remote_llm=True),
         debug=False,
     )

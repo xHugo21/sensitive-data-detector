@@ -48,7 +48,6 @@ class GuardOrchestrator:
             "file_path": file_path,
             "min_block_risk": _normalize_risk(min_block_risk),
             "llm_provider": self._config.llm.provider,
-            "anonymize_for_remote_llm": self._config.anonymization.anonymize_for_remote_llm,
             "metadata": {},
             "warnings": [],
             "errors": [],

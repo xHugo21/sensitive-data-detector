@@ -1,10 +1,9 @@
-from .config import GuardConfig, LLMConfig, OCRConfig, AnonymizationConfig
+from .config import GuardConfig, LLMConfig, OCRConfig
 from .orchestrator import GuardOrchestrator
 
 __all__ = [
     "GuardConfig",
     "LLMConfig",
     "OCRConfig",
-    "AnonymizationConfig",
     "GuardOrchestrator",
 ]

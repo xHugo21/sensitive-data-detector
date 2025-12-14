@@ -52,18 +52,6 @@
     title.textContent = "⚠️ Risk Detected";
     titleRow.appendChild(title);
 
-    const originBadge = document.createElement("div");
-    originBadge.id = "sg-llm-origin";
-    originBadge.textContent = "Source: User";
-    Object.assign(originBadge.style, {
-      background: "rgba(255,255,255,0.08)",
-      padding: "4px 10px",
-      borderRadius: "999px",
-      fontSize: "13px",
-      marginLeft: "12px",
-      color: "#ECECF1",
-    });
-    titleRow.appendChild(originBadge);
     panel.appendChild(titleRow);
 
     const policy = document.createElement("div");
@@ -143,7 +131,6 @@
     panel._els = {
       title,
       list,
-      originBadge,
       policy,
       actions,
       btnSendAnyway,
@@ -276,7 +263,6 @@
     const {
       title,
       list,
-      originBadge,
       policy,
       btnSendAnyway,
       btnDismiss,
@@ -295,7 +281,6 @@
             : "Unknown";
 
     title.textContent = `⚠️ ${riskLabel} Risk Detected`;
-    originBadge.textContent = `Source: ${origin}`;
 
     const baseText = contextText || "";
 

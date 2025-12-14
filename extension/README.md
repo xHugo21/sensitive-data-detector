@@ -60,7 +60,7 @@ The extension makes it easy to add support for new LLM chat platforms
 Run the unit tests (requires Node.js)
 
 ```bash
-node --test .
+node --test
 ```
 
 ## License

@@ -42,10 +42,7 @@
       sg.loadingState.hide();
 
       // Only display panel if blocked
-      if (
-        sg.riskUtils.shouldBlock(result) &&
-        !sg.alertStore.shouldSuppressUserAlerts()
-      ) {
+      if (sg.riskUtils.shouldBlock(result)) {
         const displayName = `${fileInfo.label}: ${file.name}`;
         sg.panel.render(result, "User", displayName);
       }
@@ -73,17 +70,15 @@
       );
 
       // Optionally show error to user
-      if (!sg.alertStore.shouldSuppressUserAlerts()) {
-        sg.panel.render(
-          {
-            risk_level: "unknown",
-            detected_fields: [],
-            error: `Failed to analyze file: ${err.message}`,
-          },
-          "User",
-          `${fileInfo.label}: ${file.name}`,
-        );
-      }
+      sg.panel.render(
+        {
+          risk_level: "unknown",
+          detected_fields: [],
+          error: `Failed to analyze file: ${err.message}`,
+        },
+        "User",
+        `${fileInfo.label}: ${file.name}`,
+      );
     }
   }
 

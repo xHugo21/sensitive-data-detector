@@ -8,44 +8,44 @@ The firewall uses a multi-agent architecture built on LangGraph with conditional
 
 ```mermaid
 flowchart TD
-    Start(INPUT) --> HasFile{has file_path?}
-    
-    HasFile -->|Yes| Document[Document Parsing<br/>+ Tesseract OCR]
+    Start([INPUT]) --> HasFile{file_path?}
+
+    HasFile -->|Yes| Document[Document parsing<br/>+ Tesseract OCR]
     HasFile -->|No| Normalize[Normalize<br/>Preprocess text]
-    
-    Document --> NeedsLLMOCR{Image and no<br/>text found?}
-    NeedsLLMOCR -->|Yes| LLMOCR[LLM OCR<br/>Vision Model]
+
+    Document --> NeedsLLMOCR{Image and<br/>no text found?}
+    NeedsLLMOCR -->|Yes| LLMOCR[LLM OCR<br/>Vision model]
     NeedsLLMOCR -->|No| Normalize
-    
     LLMOCR --> Normalize
-    Normalize --> DLP[DLP Detector]
-    
-    DLP --> MergeDLP[Merge Detections]
+
+    Normalize --> DLP[DLP detector]
+    DLP --> MergeDLP[Merge detections]
     MergeDLP --> HasDLP{Any DLP hits?}
-    HasDLP -->|Yes| RiskDLP[Risk Evaluation]
+
+    HasDLP -->|Yes| RiskDLP[Risk evaluation (DLP)]
     HasDLP -->|No| ShouldAnonymize{Cloud LLM provider?}
-    
-    RiskDLP --> PolicyDLP[Policy Check]
-    
+
+    RiskDLP --> PolicyDLP[Policy check (DLP)]
     PolicyDLP --> DecisionBlock{Decision = block?}
-    
     DecisionBlock -->|Yes| Remediation[Remediation]
     DecisionBlock -->|No| ShouldAnonymize
-    
-    ShouldAnonymize -->|Yes (non-ollama)| Anonymize[Anonymize Detected Values]
-    ShouldAnonymize -->|No (ollama)| LLM[LLM Detector]
-    Anonymize --> LLM[LLM Detector]
-    
-    LLM --> MergeFinal[Merge Detections]
-    MergeFinal --> FinalRoute{LLM added new fields?}
-    FinalRoute -->|No & prior decision| Remediation
-    FinalRoute -->|Yes or no decision| RiskFinal[Risk Evaluation]
-    RiskFinal --> PolicyFinal[Policy Check]
-    
+
+    ShouldAnonymize -->|Yes, non-ollama| AnonymizeDLP[Anonymize DLP findings]
+    ShouldAnonymize -->|No, ollama| LLM[LLM detector]
+    AnonymizeDLP --> LLM
+
+    LLM --> MergeFinal[Merge detections]
+    MergeFinal --> FinalRoute{LLM added fields<br/>or no decision?}
+    FinalRoute -->|Skip risk| Remediation
+    FinalRoute -->|Run risk| RiskFinal[Risk evaluation (final)]
+    RiskFinal --> PolicyFinal[Policy check (final)]
     PolicyFinal --> Remediation
-    
-    Remediation --> End(OUTPUT)
-    
+
+    Remediation --> FinalAnonCheck{Any LLM findings?}
+    FinalAnonCheck -->|Yes| FinalAnonymize[Anonymize LLM findings]
+    FinalAnonCheck -->|No| End([OUTPUT])
+    FinalAnonymize --> End
+
     style Start fill:#e1f5ff,stroke:#333,color:#000
     style End fill:#e1f5ff,stroke:#333,color:#000
     style HasFile fill:#fff4e6,stroke:#333,color:#000
@@ -53,10 +53,12 @@ flowchart TD
     style HasDLP fill:#fff4e6,stroke:#333,color:#000
     style FinalRoute fill:#fff4e6,stroke:#333,color:#000
     style DecisionBlock fill:#fff4e6,stroke:#333,color:#000
+    style FinalAnonCheck fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLMOCR fill:#f0e6ff,stroke:#333,color:#000
     style ShouldAnonymize fill:#fff4e6,stroke:#333,color:#000
-    style Anonymize fill:#f0e6ff,stroke:#333,color:#000
+    style AnonymizeDLP fill:#f0e6ff,stroke:#333,color:#000
+    style FinalAnonymize fill:#f0e6ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000

@@ -4,8 +4,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-from langchain_core.messages import SystemMessage, HumanMessage
-
 from ..constants import OCR_DETECTOR_PROMPT
 
 from ..types import GuardState
@@ -80,6 +78,7 @@ class TesseractOCRDetector:
                 f"Tesseract OCR failed to process image: {str(e)}"
             ) from e
 
+
 class LLMOCRDetector:
     """LLM-based OCR detector"""
 
@@ -117,7 +116,7 @@ class LLMOCRDetector:
         try:
             import base64
             import mimetypes
-            from langchain_core.messages import HumanMessage
+            from langchain_core.messages import HumanMessage, SystemMessage
 
             mime_type, _ = mimetypes.guess_type(file_path)
 
@@ -147,4 +146,6 @@ class LLMOCRDetector:
 
         except Exception as e:
             raise RuntimeError(f"LLM OCR failed to process image: {str(e)}") from e
+
+
 __all__ = ["TesseractOCRDetector", "LLMOCRDetector"]

@@ -68,8 +68,6 @@ class LiteLLMConfig:
 
 
 class LiteLLMDetector:
-    _DEBUG_PROMPT_ENV = "DEBUG_LLM_PROMPT"
-
     def __init__(
         self,
         config: LiteLLMConfig,
@@ -160,12 +158,5 @@ class LiteLLMDetector:
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),
         ]
-        if os.getenv(self._DEBUG_PROMPT_ENV):
-            print("\n--- LiteLLMDetector Prompt ---\n")
-            print("SYSTEM:\n")
-            print(system_prompt)
-            print("\nUSER:\n")
-            print(user_prompt)
-            print("\n--- End LiteLLMDetector Prompt ---\n")
         response = model.invoke(messages)
         return coerce_litellm_content_to_text(response)

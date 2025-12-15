@@ -61,7 +61,6 @@ HIGH_RISK_FIELDS = {
     "DNI",
     "PASSPORTNUMBER",
     "CREDITCARDNUMBER",
-    "IP",
     "IPV4",
     "IPV6",
     "MAC",

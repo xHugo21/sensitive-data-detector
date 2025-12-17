@@ -1,7 +1,5 @@
 /**
  * Gemini Platform Adapter
- *
- * Implements platform-specific selectors and behaviors for Google Gemini (gemini.google.com).
  */
 (function initGeminiPlatform(root) {
   const sg = (root.SG = root.SG || {});
@@ -46,10 +44,8 @@
       const composer = this.findComposer();
       if (!composer) return null;
 
-      // Try to find the input-area-container (main container for the entire input area)
       const inputContainer = document.querySelector(".input-area-container");
       if (inputContainer) {
-        // Find the input-area-v2 element to insert before
         const inputAreaV2 = inputContainer.querySelector("input-area-v2");
         if (inputAreaV2) {
           return {
@@ -59,7 +55,6 @@
         }
       }
 
-      // Fallback: Use the default behavior from BasePlatform
       return super.findPanelInsertionPoint();
     }
 
@@ -72,7 +67,6 @@
 
   sg.GeminiPlatform = GeminiPlatform;
 
-  // Self-register when script loads
   if (sg.platformRegistry) {
     sg.platformRegistry.register(GeminiPlatform);
   }

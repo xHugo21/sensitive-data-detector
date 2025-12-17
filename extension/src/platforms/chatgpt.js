@@ -18,19 +18,15 @@
     }
 
     findComposer() {
-      // Try to find contenteditable elements first
-      const editable = Array.from(
-        document.querySelectorAll(
-          '[contenteditable="true"][role="textbox"], div[contenteditable="true"]',
-        ),
-      ).find((el) => el.offsetParent !== null && el.clientHeight > 0);
-      if (editable) return editable;
-
-      // Fallback to textarea
-      const textarea = Array.from(document.querySelectorAll("textarea")).find(
-        (el) => el.offsetParent !== null && el.clientHeight > 0,
-      );
-      return textarea || null;
+      const composer = document.getElementById("prompt-textarea");
+      if (
+        composer &&
+        composer.classList.contains("ProseMirror") &&
+        composer.offsetParent !== null
+      ) {
+        return composer;
+      }
+      return null;
     }
 
     findSendButton() {

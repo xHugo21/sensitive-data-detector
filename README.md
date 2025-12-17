@@ -95,7 +95,7 @@ uv run python -m app.main
 2. Toggle on "Developer mode"
 3. Click "Load unpacked" → choose path to `sensitive-data-detector/extension/`
 
-The extension will intercept web chatbots interactions (ChatGPT, Claude, Gemini...) and provide feedback to the user regarding any potential sensitive information leakage
+The extension will intercept web chatbots interactions (ChatGPT, Gemini...) and provide feedback to the user regarding any potential sensitive information leakage
 
 ### 4b. Run proxy
 

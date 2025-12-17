@@ -8,7 +8,6 @@
     {
       "matches": [
         "https://chatgpt.com/*",
-        "https://claude.ai/*",
         "https://gemini.google.com/*"
       ],
       "js": [
@@ -23,11 +22,9 @@
         "src/platforms/base.js",
         "src/platforms/registry.js",
         "src/platforms/chatgpt.js",
-        "src/platforms/claude.js",
         "src/platforms/gemini.js",
         "src/dom/chatSelectors.js",
         "src/controllers/sendInterceptor.js",
-        "src/controllers/messageAnalyzer.js",
         "src/controllers/fileInterceptor.js",
         "src/main.js"
       ],

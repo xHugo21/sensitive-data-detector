@@ -25,7 +25,6 @@
 
     // Attach controllers
     sg.sendInterceptor.attach();
-    sg.messageAnalyzer.start();
     sg.fileInterceptor.attach();
   }
 

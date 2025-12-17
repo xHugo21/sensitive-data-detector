@@ -27,7 +27,6 @@
         "src/platforms/gemini.js",
         "src/dom/chatSelectors.js",
         "src/controllers/sendInterceptor.js",
-        "src/controllers/messageAnalyzer.js",
         "src/controllers/fileInterceptor.js",
         "src/main.js"
       ],

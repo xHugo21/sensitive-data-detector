@@ -131,11 +131,16 @@
     }
 
     sg.alertStore.setOverrideActive(true);
-    try {
-      sg.chatSelectors.triggerSend(composer, sendButton);
-    } finally {
-      setTimeout(() => sg.alertStore.setOverrideActive(false), 150);
-    }
+
+    const sendDelay = overrideText ? 50 : 0;
+
+    setTimeout(() => {
+      try {
+        sg.chatSelectors.triggerSend(composer, sendButton);
+      } finally {
+        setTimeout(() => sg.alertStore.setOverrideActive(false), 150);
+      }
+    }, sendDelay);
   }
 
   function handleSendAnywayOverride() {

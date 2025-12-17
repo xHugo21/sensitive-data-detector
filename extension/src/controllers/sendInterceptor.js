@@ -122,6 +122,12 @@
       sg.chatSelectors.setComposerText(composer, overrideText);
     }
 
+    if (button) {
+      button.disabled = false;
+      button.removeAttribute("aria-disabled");
+      button.removeAttribute("aria-busy");
+    }
+
     sg.alertStore.setOverrideActive(true);
     try {
       sg.chatSelectors.triggerSend(composer, button);

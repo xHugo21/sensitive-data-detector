@@ -91,3 +91,31 @@ def test_anonymize_text_handles_llm_fields_after_dlp(guard_config):
     assert "secret123" not in masked
     assert mapping.get("john@example.com") == "<<REDACTED:EMAIL>>"
     assert mapping.get("secret123") == "<<REDACTED:PASSWORD>>"
+
+
+def test_anonymize_text_masks_case_insensitive_llm_values(guard_config):
+    state: GuardState = {
+        "normalized_text": "hi my name is andres",
+        "llm_fields": [{"field": "FIRSTNAME", "value": "ANDRES", "source": "llm_explicit"}],
+        "metadata": {},
+        "warnings": [],
+        "errors": [],
+    }
+
+    result = anonymize_text(
+        state,
+        fw_config=guard_config,
+        findings_key="llm_fields",
+        text_keys=("normalized_text",),
+    )
+
+    masked = result.get("anonymized_text", "")
+    mapping = (
+        result.get("metadata", {})
+        .get("llm_anonymized_values", {})
+        .get("mapping", {})
+    )
+
+    assert "<<REDACTED:FIRSTNAME>>" in masked
+    assert "andres" not in masked.lower()
+    assert mapping.get("ANDRES") == "<<REDACTED:FIRSTNAME>>"

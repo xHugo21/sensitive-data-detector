@@ -74,7 +74,12 @@ def _apply_mapping(text: str, mapping: Dict[str, str]) -> str:
     for original, anonymized_token in sorted(
         mapping.items(), key=lambda kv: len(kv[0]), reverse=True
     ):
-        masked_text = re.sub(re.escape(original), anonymized_token, masked_text)
+        masked_text = re.sub(
+            re.escape(original),
+            anonymized_token,
+            masked_text,
+            flags=re.IGNORECASE,
+        )
     return masked_text
 
 

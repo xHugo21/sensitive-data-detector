@@ -20,93 +20,26 @@
     }
 
     findComposer() {
-      // Gemini uses Quill editor inside a <rich-textarea> component
-      const qlEditor = document.querySelector(
-        'rich-textarea .ql-editor[contenteditable="true"][role="textbox"]',
+      const composer = document.querySelector(
+        'div.ql-editor.textarea.new-input-ui[contenteditable="true"]',
       );
-      if (qlEditor && qlEditor.offsetParent !== null) {
-        return qlEditor;
-      }
-
-      // Fallback: Find any contenteditable with role="textbox" inside rich-textarea
-      const richTextarea = document.querySelector("rich-textarea");
-      if (richTextarea) {
-        const editable = richTextarea.querySelector(
-          '[contenteditable="true"][role="textbox"]',
-        );
-        if (editable && editable.offsetParent !== null) {
-          return editable;
-        }
-      }
-
-      // Generic fallback
-      const generic = Array.from(
-        document.querySelectorAll('[contenteditable="true"][role="textbox"]'),
-      ).find((el) => el.offsetParent !== null && el.clientHeight > 0);
-
-      if (generic) {
-        return generic;
-      }
-
-      return null;
+      return composer && composer.offsetParent !== null ? composer : null;
     }
 
     findSendButton() {
-      const composer = this.findComposer();
-      if (!composer) {
-        return null;
-      }
-
-      // Try to find button within the same form or parent container
-      const form = composer.closest("form");
-      if (form) {
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton) {
-          return submitButton;
-        }
-      }
-
-      // Try to find button by aria-label (including Spanish/multilingual support)
-      const buttons = document.querySelectorAll("button");
+      const buttons = document.querySelectorAll("button.send-button.submit");
       for (const btn of buttons) {
-        const ariaLabel = btn.getAttribute("aria-label")?.toLowerCase() || "";
-        const title = btn.getAttribute("title")?.toLowerCase() || "";
-        if (
-          ariaLabel.includes("send") ||
-          ariaLabel.includes("submit") ||
-          ariaLabel.includes("enviar") || // Spanish
-          title.includes("send") ||
-          title.includes("submit") ||
-          title.includes("enviar")
-        ) {
-          if (btn.offsetParent !== null) {
-            return btn;
-          }
+        if (btn.offsetParent === null) continue;
+        const aria = btn.getAttribute("aria-label")?.toLowerCase() || "";
+        const hasIcon = btn.querySelector(
+          'mat-icon[fonticon="send"][data-mat-icon-name="send"]',
+        );
+        if (aria === "send message" || aria === "enviar mensaje" || hasIcon) {
+          return btn;
         }
       }
 
-      // Try to find button with specific data attributes
-      const dataButton = document.querySelector(
-        '[data-test-id*="send"], [data-testid*="send"]',
-      );
-      if (dataButton) {
-        return dataButton;
-      }
-
-      // Fallback: find button near composer in the input container
-      const inputContainer = composer.closest(
-        ".text-input-field_textarea-wrapper",
-      );
-      if (inputContainer) {
-        const nearbyButton =
-          inputContainer.parentElement?.querySelector("button");
-        if (nearbyButton) {
-          return nearbyButton;
-        }
-      }
-
-      // Last resort: find button near composer
-      return composer.parentElement?.querySelector("button") || null;
+      return null;
     }
 
     isMessageNode(n) {
@@ -217,46 +150,6 @@
 
       // Fallback: Use the default behavior from BasePlatform
       return super.findPanelInsertionPoint();
-    }
-
-    isSendButton(button) {
-      if (!button || button.tagName !== "BUTTON") return false;
-
-      const ariaLabel = button.getAttribute("aria-label") || "";
-      const className =
-        typeof button.className === "string"
-          ? button.className
-          : button.className?.baseVal || "";
-      const ariaDisabled = button.getAttribute("aria-disabled");
-
-      const hasSendButtonClass = className.includes("send-button");
-      const hasSubmitClass = className.includes("submit");
-      const isNotDisabled = ariaDisabled !== "true";
-
-      // Check for the exact mat-icon structure
-      const matIcon = button.querySelector(
-        'mat-icon[fonticon="send"][data-mat-icon-name="send"]',
-      );
-      const hasCorrectIcon = matIcon !== null;
-
-      // Check aria-label matches send message pattern
-      const ariaLabelLower = ariaLabel.toLowerCase();
-      const hasCorrectAriaLabel =
-        ariaLabelLower === "enviar mensaje" ||
-        ariaLabelLower === "send message";
-
-      // ALL conditions must be true
-      if (
-        hasSendButtonClass &&
-        hasSubmitClass &&
-        hasCorrectIcon &&
-        hasCorrectAriaLabel &&
-        isNotDisabled
-      ) {
-        return true;
-      }
-
-      return false;
     }
 
     initialize() {

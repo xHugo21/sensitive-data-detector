@@ -88,18 +88,6 @@
       return null;
     }
 
-    isSendButton(button) {
-      if (!button || button.tagName !== "BUTTON") return false;
-      if (button.dataset.sgPanelButton === "true") return false;
-      if (button.closest("#sg-llm-panel")) return false;
-      if (button.offsetParent === null) return false;
-
-      return (
-        button.id === "composer-submit-button" ||
-        button.dataset.testid === "send-button"
-      );
-    }
-
     initialize() {
       console.log(
         "[SensitiveDataDetector] ChatGPT platform adapter initialized",

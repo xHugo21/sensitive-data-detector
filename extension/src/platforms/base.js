@@ -146,17 +146,15 @@
      * @returns {boolean} True if this is the send button
      */
     isSendButton(button) {
-      if (!button || button.tagName !== 'BUTTON') return false;
-      
+      if (!button || button.tagName !== "BUTTON") return false;
+
       // Exclude panel buttons explicitly (applies to all platforms)
-      if (button.dataset.sgPanelButton === 'true') return false;
-      if (button.closest('#sg-llm-panel')) return false;
-      
-      // Check standard attributes
-      if (button.type === 'submit') return true;
-      if (button.dataset.testid === 'send-button') return true;
-      
-      return false;
+      if (button.dataset.sgPanelButton === "true") return false;
+      if (button.closest("#sg-llm-panel")) return false;
+      if (button.offsetParent === null) return false;
+
+      const expected = this.findSendButton();
+      return expected ? button === expected : false;
     }
 
     /**

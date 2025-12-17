@@ -37,26 +37,6 @@
     return platform ? platform.findSendButton() : null;
   }
 
-  function extractMessageText(node) {
-    const platform = getActivePlatform();
-    return platform ? platform.extractMessageText(node) : "";
-  }
-
-  function isMessageNode(n) {
-    const platform = getActivePlatform();
-    return platform ? platform.isMessageNode(n) : false;
-  }
-
-  function findAssistantContentEl(host) {
-    const platform = getActivePlatform();
-    return platform ? platform.findAssistantContentEl(host) : host;
-  }
-
-  function getMessageRole(node) {
-    const platform = getActivePlatform();
-    return platform ? platform.getMessageRole(node) : null;
-  }
-
   function triggerSend(composer, button) {
     const platform = getActivePlatform();
     if (platform) {
@@ -69,10 +49,6 @@
     getComposerText,
     setComposerText,
     findSendButton,
-    extractMessageText,
-    isMessageNode,
-    findAssistantContentEl,
-    getMessageRole,
     triggerSend,
   };
 })(typeof window !== "undefined" ? window : globalThis);

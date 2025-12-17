@@ -98,45 +98,6 @@
     }
 
     /**
-     * Extract text from a message node
-     * @param {Node} node - The message node
-     * @returns {string} The extracted text
-     */
-    extractMessageText(node) {
-      if (!node) return "";
-      return (node.innerText || node.textContent || "").trim();
-    }
-
-    /**
-     * Check if a node is a message container
-     * @param {Node} node - The node to check
-     * @returns {boolean} True if node is a message
-     */
-    isMessageNode(node) {
-      throw new Error("Platform must implement 'isMessageNode' method");
-    }
-
-    /**
-     * Find the assistant response content element within a message container
-     * @param {Element} host - The message container element
-     * @returns {Element} The content element
-     */
-    findAssistantContentEl(host) {
-      throw new Error(
-        "Platform must implement 'findAssistantContentEl' method",
-      );
-    }
-
-    /**
-     * Get the author role of a message node (e.g., "user" or "assistant")
-     * @param {Element} node - The message node
-     * @returns {string|null} The role ("user", "assistant") or null if unknown
-     */
-    getMessageRole(node) {
-      throw new Error("Platform must implement 'getMessageRole' method");
-    }
-
-    /**
      * Platform-specific behavior configuration
      */
 

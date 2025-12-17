@@ -118,19 +118,21 @@
   }
 
   function dispatchSend(composer, button, overrideText) {
+    const sendButton = button || sg.chatSelectors.findSendButton?.();
+
     if (overrideText && sg.chatSelectors.setComposerText) {
       sg.chatSelectors.setComposerText(composer, overrideText);
     }
 
-    if (button) {
-      button.disabled = false;
-      button.removeAttribute("aria-disabled");
-      button.removeAttribute("aria-busy");
+    if (sendButton) {
+      sendButton.disabled = false;
+      sendButton.removeAttribute("aria-disabled");
+      sendButton.removeAttribute("aria-busy");
     }
 
     sg.alertStore.setOverrideActive(true);
     try {
-      sg.chatSelectors.triggerSend(composer, button);
+      sg.chatSelectors.triggerSend(composer, sendButton);
     } finally {
       setTimeout(() => sg.alertStore.setOverrideActive(false), 150);
     }

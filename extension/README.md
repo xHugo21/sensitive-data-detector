@@ -5,7 +5,6 @@ A browser extension that intercepts messages in LLM chat platforms and detects s
 ## Supported Platforms
 
 - **ChatGPT** - chatgpt.com
-- **Claude** - claude.ai
 - **Gemini** - gemini.google.com
 
 ## Installation

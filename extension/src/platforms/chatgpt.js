@@ -37,18 +37,10 @@
       const composer = this.findComposer();
       if (!composer) return null;
 
-      const formButton = composer
-        .closest("form")
-        ?.querySelector('button[type="submit"]');
-      if (formButton) return formButton;
-
-      const testIdButton = document.querySelector(
-        '[data-testid="send-button"]',
+      return (
+        document.getElementById("composer-submit-button") ||
+        document.querySelector('button[data-testid="send-button"]')
       );
-      if (testIdButton) return testIdButton;
-
-      // Fallback: find any button near the composer
-      return composer.parentElement?.querySelector("button") || null;
     }
 
     isMessageNode(n) {
@@ -98,6 +90,18 @@
       if (roleAttr === "user") return "user";
 
       return null;
+    }
+
+    isSendButton(button) {
+      if (!button || button.tagName !== "BUTTON") return false;
+      if (button.dataset.sgPanelButton === "true") return false;
+      if (button.closest("#sg-llm-panel")) return false;
+      if (button.offsetParent === null) return false;
+
+      return (
+        button.id === "composer-submit-button" ||
+        button.dataset.testid === "send-button"
+      );
     }
 
     initialize() {

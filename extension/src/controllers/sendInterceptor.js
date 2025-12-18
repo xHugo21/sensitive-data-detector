@@ -103,7 +103,9 @@
         sg.panel.render(result, text, { durationMs, mode: "warn" });
         panelShown = true;
 
-        allowSend(composer, button);
+        setTimeout(() => {
+          allowSend(composer, button);
+        }, 50);
         return;
       }
 

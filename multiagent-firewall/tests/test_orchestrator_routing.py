@@ -55,7 +55,7 @@ class TestNoDetectionsRouting:
             ),
             patch(
                 "multiagent_firewall.nodes.apply_policy",
-                side_effect=track_node("policy"),
+                return_value={"decision": "warn"},
             ),
             patch(
                 "multiagent_firewall.nodes.generate_remediation",
@@ -160,7 +160,7 @@ class TestDLPOnlyRouting:
 
         def fake_policy(state):
             executed_nodes.append("policy")
-            state["decision"] = "allow_with_warning"
+            state["decision"] = "warn"
             return state
 
         def fake_anonymize(state, **kwargs):
@@ -295,7 +295,7 @@ class TestLLMOnlyRouting:
 
         def fake_policy(state):
             executed_nodes.append("policy")
-            state["decision"] = "allow_with_warning"
+            state["decision"] = "warn"
             return state
 
         def fake_remediation(state):
@@ -370,7 +370,7 @@ class TestBothDetectorsRouting:
         def count_policy(state):
             nonlocal policy_count
             policy_count += 1
-            state["decision"] = "allow_with_warning"
+            state["decision"] = "warn"
             return state
 
         with (
@@ -438,7 +438,7 @@ class TestRemediationAnonymizationSequence:
             ),
             patch(
                 "multiagent_firewall.nodes.apply_policy",
-                return_value={"decision": "allow_with_warning"},
+                return_value={"decision": "warn"},
             ),
             patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
         ):
@@ -536,7 +536,7 @@ class TestAnonymizeLLMConditional:
             ),
             patch(
                 "multiagent_firewall.nodes.apply_policy",
-                return_value={"decision": "allow_with_warning"},
+                return_value={"decision": "warn"},
             ),
             patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
             patch("multiagent_firewall.nodes.generate_remediation", return_value={}),
@@ -619,7 +619,7 @@ class TestDefaultValuesPresent:
             return state
 
         def fake_policy(state):
-            state["decision"] = "allow_with_warning"
+            state["decision"] = "warn"
             return state
 
         with (
@@ -642,5 +642,5 @@ class TestDefaultValuesPresent:
             result = orchestrator.run(text="Email: test@example.com")
 
         # Should be overridden from defaults
-        assert result.get("decision") == "allow_with_warning"
+        assert result.get("decision") == "warn"
         assert result.get("risk_level") == "low"

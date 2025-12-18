@@ -132,7 +132,7 @@ The orchestrator returns a `GuardState` dictionary with:
         }
     ],
     "risk_level": str,            # None/Low/Medium/High
-    "decision": str,              # allow/allow_with_warning/block
+    "decision": str,              # allow/warn/block
     "remediation": str            # Suggested action
 }
 ```

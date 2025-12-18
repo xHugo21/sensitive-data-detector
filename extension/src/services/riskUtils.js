@@ -32,9 +32,16 @@
     return result.risk_level === "high";
   }
 
+  function shouldWarn(result) {
+    if (!result || sg.alertStore.isOverrideActive()) return false;
+    const decision = String(result.decision || "").toLowerCase();
+    return decision === "warn";
+  }
+
   sg.riskUtils = {
     classifyField,
     compareFieldGroups,
     shouldBlock,
+    shouldWarn,
   };
 })(typeof window !== "undefined" ? window : globalThis);

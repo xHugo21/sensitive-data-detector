@@ -93,8 +93,19 @@
 
       if (sg.riskUtils.shouldBlock(result)) {
         const durationMs = now() - startedAt;
-        sg.panel.render(result, text, { durationMs });
+        sg.panel.render(result, text, { durationMs, mode: "block" });
         panelShown = true;
+        return;
+      }
+
+      if (sg.riskUtils.shouldWarn(result)) {
+        const durationMs = now() - startedAt;
+        sg.panel.render(result, text, { durationMs, mode: "warn" });
+        panelShown = true;
+
+        setTimeout(() => {
+          allowSend(composer, button);
+        }, 50);
         return;
       }
 

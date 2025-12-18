@@ -281,6 +281,7 @@
     } = panel._els;
     list.innerHTML = "";
 
+    const mode = meta.mode || "block";
     const { risk_level = "unknown", detected_fields = [] } = result || {};
     const riskLabel =
       risk_level === "high"
@@ -432,20 +433,31 @@
       result.anonymized_text.trim().length > 0;
 
     if (actions && btnDismiss && btnSendAnyway) {
-      if (!actions.contains(btnSendAnyway))
-        actions.insertBefore(btnSendAnyway, btnDismiss);
-      if (!actions.contains(btnSendSanitized))
-        actions.insertBefore(btnSendSanitized, btnSendAnyway);
-      btnSendSanitized.style.display = hasSanitizedText
-        ? "inline-block"
-        : "none";
-      btnSendAnyway.style.display = "inline-block";
-      btnDismiss.style.display = "inline-block";
-      btnSendSanitized.style.flex = "1";
-      btnSendAnyway.style.flex = "1";
-      btnDismiss.style.flex = "0";
-      actions.style.justifyContent = "flex-start";
-      actions.style.gap = "10px";
+      if (mode === "warn") {
+        // Warn mode: hide action buttons, show only dismiss at full width
+        btnSendSanitized.style.display = "none";
+        btnSendAnyway.style.display = "none";
+        btnDismiss.style.display = "inline-block";
+        btnDismiss.style.flex = "1";
+        actions.style.justifyContent = "flex-start";
+        actions.style.gap = "10px";
+      } else {
+        // Block mode: show action buttons
+        if (!actions.contains(btnSendAnyway))
+          actions.insertBefore(btnSendAnyway, btnDismiss);
+        if (!actions.contains(btnSendSanitized))
+          actions.insertBefore(btnSendSanitized, btnSendAnyway);
+        btnSendSanitized.style.display = hasSanitizedText
+          ? "inline-block"
+          : "none";
+        btnSendAnyway.style.display = "inline-block";
+        btnDismiss.style.display = "inline-block";
+        btnSendSanitized.style.flex = "1";
+        btnSendAnyway.style.flex = "1";
+        btnDismiss.style.flex = "0";
+        actions.style.justifyContent = "flex-start";
+        actions.style.gap = "10px";
+      }
     }
 
     panel.style.display = "flex";

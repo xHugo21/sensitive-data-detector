@@ -281,7 +281,7 @@
     } = panel._els;
     list.innerHTML = "";
 
-    const mode = meta.mode || "block"; // "block" or "warn"
+    const mode = meta.mode || "block";
     const { risk_level = "unknown", detected_fields = [] } = result || {};
     const riskLabel =
       risk_level === "high"
@@ -292,9 +292,7 @@
             ? "Low"
             : "Unknown";
 
-    title.textContent = mode === "warn" 
-      ? `⚠️ ${riskLabel} Risk Warning` 
-      : `⚠️ ${riskLabel} Risk Detected`;
+    title.textContent = `⚠️ ${riskLabel} Risk Detected`;
 
     const baseText = contextText || "";
 

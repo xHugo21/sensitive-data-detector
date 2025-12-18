@@ -32,7 +32,9 @@ def apply_policy(state: GuardState) -> GuardState:
 
 
 def generate_remediation(state: GuardState) -> GuardState:
-    if state.get("decision") == "block":
+    decision = state.get("decision")
+
+    if decision == "block":
         unique_fields = {
             item.get("field", "unknown") for item in state.get("detected_fields", [])
         }
@@ -40,6 +42,15 @@ def generate_remediation(state: GuardState) -> GuardState:
         state["remediation"] = (
             f"Sensitive data detected ({fields or 'unspecified'}). "
             "Redact or remove the flagged content before resubmitting."
+        )
+    elif decision == "warn":
+        unique_fields = {
+            item.get("field", "unknown") for item in state.get("detected_fields", [])
+        }
+        fields = ", ".join(unique_fields)
+        state["remediation"] = (
+            f"Sensitive data detected ({fields or 'unspecified'}). "
+            "Consider redacting or removing sensitive information before interacting with remote LLMs."
         )
     else:
         state["remediation"] = ""

@@ -35,7 +35,7 @@
   function shouldWarn(result) {
     if (!result || sg.alertStore.isOverrideActive()) return false;
     const decision = String(result.decision || "").toLowerCase();
-    return decision === "allow_with_warning";
+    return decision === "warn";
   }
 
   sg.riskUtils = {

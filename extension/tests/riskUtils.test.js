@@ -26,11 +26,11 @@ test("shouldBlock respects decision and override flag", () => {
   store.setOverrideActive(false);
 });
 
-test("shouldWarn detects allow_with_warning decision", () => {
+test("shouldWarn detects warn decision", () => {
   const { shouldWarn } = globalThis.SG.riskUtils;
   
   store.setOverrideActive(false);
-  assert.equal(shouldWarn({ decision: "allow_with_warning" }), true);
+  assert.equal(shouldWarn({ decision: "warn" }), true);
   assert.equal(shouldWarn({ decision: "block" }), false);
   assert.equal(shouldWarn({ decision: "allow" }), false);
   assert.equal(shouldWarn({ risk_level: "high" }), false);
@@ -38,6 +38,6 @@ test("shouldWarn detects allow_with_warning decision", () => {
   
   // Override should suppress warnings too
   store.setOverrideActive(true);
-  assert.equal(shouldWarn({ decision: "allow_with_warning" }), false);
+  assert.equal(shouldWarn({ decision: "warn" }), false);
   store.setOverrideActive(false);
 });

@@ -25,7 +25,7 @@ def apply_policy(state: GuardState) -> GuardState:
     if risk_value >= threshold_value and risk_value > 0:
         state["decision"] = "block"
     elif state.get("detected_fields"):
-        state["decision"] = "allow_with_warning"
+        state["decision"] = "warn"
     else:
         state["decision"] = "allow"
     return state

@@ -115,7 +115,7 @@ def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
 
     assert mock_evaluate_risk.call_count == 1  # Only DLP path
     assert mock_apply_policy.call_count == 1
-    assert result.get("decision") == "allow_with_warning"
+    assert result.get("decision") == "warn"
     assert result.get("risk_level") == "low"
 
 

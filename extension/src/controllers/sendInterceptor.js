@@ -100,7 +100,7 @@
 
       if (sg.riskUtils.shouldWarn(result)) {
         const durationMs = now() - startedAt;
-        sg.panel.render(result, text, { durationMs, mode: "warning" });
+        sg.panel.render(result, text, { durationMs, mode: "warn" });
         panelShown = true;
 
         allowSend(composer, button);

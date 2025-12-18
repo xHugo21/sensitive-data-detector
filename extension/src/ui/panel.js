@@ -281,7 +281,7 @@
     } = panel._els;
     list.innerHTML = "";
 
-    const mode = meta.mode || "block"; // "block" or "warning"
+    const mode = meta.mode || "block"; // "block" or "warn"
     const { risk_level = "unknown", detected_fields = [] } = result || {};
     const riskLabel =
       risk_level === "high"
@@ -292,7 +292,7 @@
             ? "Low"
             : "Unknown";
 
-    title.textContent = mode === "warning" 
+    title.textContent = mode === "warn" 
       ? `⚠️ ${riskLabel} Risk Warning` 
       : `⚠️ ${riskLabel} Risk Detected`;
 
@@ -435,8 +435,8 @@
       result.anonymized_text.trim().length > 0;
 
     if (actions && btnDismiss && btnSendAnyway) {
-      if (mode === "warning") {
-        // Warning mode: hide action buttons, show only dismiss at full width
+      if (mode === "warn") {
+        // Warn mode: hide action buttons, show only dismiss at full width
         btnSendSanitized.style.display = "none";
         btnSendAnyway.style.display = "none";
         btnDismiss.style.display = "inline-block";

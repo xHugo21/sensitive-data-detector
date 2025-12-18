@@ -28,7 +28,7 @@ def should_run_llm(state: GuardState) -> str:
     decision = (state.get("decision") or "").lower()
     if decision == "block":
         return "remediation"
-    return "anonymize_llm" if _use_anonymizer(state) else "llm_detector"
+    return "anonymize_llm"
 
 
 def route_after_dlp(state: GuardState) -> str:
@@ -36,7 +36,7 @@ def route_after_dlp(state: GuardState) -> str:
     state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
     if state.get("dlp_fields"):
         return "risk_dlp"
-    return "anonymize_llm" if _use_anonymizer(state) else "llm_detector"
+    return "anonymize_llm"
 
 
 def route_after_merge_final(state: GuardState) -> str:
@@ -57,11 +57,6 @@ def route_after_merge_final(state: GuardState) -> str:
         return "remediation"
 
     return "risk_final"
-
-
-def _use_anonymizer(state: GuardState) -> bool:
-    provider = (state.get("llm_provider") or "openai").strip().lower()
-    return provider != "ollama"
 
 
 def route_after_remediation(state: GuardState) -> str:

@@ -56,10 +56,3 @@ def route_after_merge_final(state: GuardState) -> str:
         return "remediation"
 
     return "risk_final"
-
-
-def route_after_remediation(state: GuardState) -> str:
-    """Run final anonymization only if any detections exist."""
-    if state.get("detected_fields"):
-        return "final_anonymize"
-    return END

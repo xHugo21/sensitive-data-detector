@@ -50,7 +50,6 @@ flowchart TD
     style HasDLP fill:#fff4e6,stroke:#333,color:#000
     style FinalRoute fill:#fff4e6,stroke:#333,color:#000
     style DecisionBlock fill:#fff4e6,stroke:#333,color:#000
-    style FinalAnonCheck fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLMOCR fill:#f0e6ff,stroke:#333,color:#000
     style AnonymizeLLM fill:#f0e6ff,stroke:#333,color:#000

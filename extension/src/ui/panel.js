@@ -76,7 +76,7 @@
     Object.assign(policy.style, {
       opacity: "0.9",
       fontSize: "14px",
-      margin: "6px 0 12px",
+      margin: "6px 0",
       color: "#C5C5D2",
       textAlign: "left",
     });
@@ -297,9 +297,7 @@
 
     // Display remediation message from backend
     const remediation = result?.remediation || "";
-    policy.innerHTML = remediation
-      ? `<div style="margin-bottom:6px;">${remediation}</div>`
-      : "";
+    policy.innerHTML = remediation ? `<div>${remediation}</div>` : "";
 
     // Show timing if provided
     const durationMs = meta?.durationMs;

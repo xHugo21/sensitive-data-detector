@@ -33,7 +33,6 @@ def should_run_llm(state: GuardState) -> str:
 
 def route_after_dlp(state: GuardState) -> str:
     """Skip DLP risk/policy if no DLP detections were found."""
-    state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
     if state.get("dlp_fields"):
         return "risk_dlp"
     return "anonymize_llm"
@@ -43,14 +42,12 @@ def route_after_merge_final(state: GuardState) -> str:
     """Avoid redundant final risk/policy when nothing new was added."""
     detected_fields = state.get("detected_fields") or []
     llm_fields = state.get("llm_fields") or []
-    dlp_detected_count = state.get("_dlp_detected_count")
+    dlp_fields = state.get("dlp_fields") or []
 
     if not detected_fields:
         return "risk_final"
 
-    no_new_fields = (
-        dlp_detected_count is not None and len(detected_fields) == dlp_detected_count
-    )
+    no_new_fields = dlp_fields is not None and len(detected_fields) == len(dlp_fields)
     if no_new_fields and state.get("decision"):
         return "remediation"
     if not llm_fields and state.get("decision"):

@@ -23,20 +23,20 @@ flowchart TD
     MergeDLP --> HasDLP{Any DLP findings?}
 
     HasDLP -->|Yes| RiskDLP[risk_dlp<br/>Risk evaluation]
-    HasDLP -->|No| AnonymizeLLM[anonymize_llm<br/>Anonymize before LLM]
+    HasDLP -->|No| LLM[llm_detector<br/>LLM-based detection]
 
     RiskDLP --> PolicyDLP[policy_dlp<br/>Policy check]
     PolicyDLP --> DecisionBlock{decision = block?}
     DecisionBlock -->|Yes| Remediation[remediation<br/>Generate remediation message]
-    DecisionBlock -->|No| AnonymizeLLM
+    DecisionBlock -->|No| AnonymizeLLM[anonymize_llm<br/>Anonymize DLP findings]
 
-    AnonymizeLLM --> LLM[llm_detector<br/>LLM-based detection]
+    AnonymizeLLM --> LLM
 
     LLM --> MergeFinal[merge_final<br/>Merge detections]
     MergeFinal --> FinalRoute{Has detected fields?}
     FinalRoute -->|No| End([END])
-    FinalRoute -->|Yes, needs risk eval| RiskFinal[risk_final<br/>Risk evaluation]
-    FinalRoute -->|Yes, skip risk eval| Remediation[remediation<br/>Generate remediation message]
+    FinalRoute -->|Yes, including new fields| RiskFinal[risk_final<br/>Risk evaluation]
+    FinalRoute -->|Yes, but no new ones| Remediation[remediation<br/>Generate remediation message]
     RiskFinal --> PolicyFinal[policy_final<br/>Policy check]
     PolicyFinal --> Remediation
 

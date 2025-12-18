@@ -208,7 +208,7 @@ def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config)
 def test_orchestrator_skips_final_anonymizer_without_llm(
     mock_llm_detector, guard_config
 ):
-    """Final anonymizer should not run when no LLM findings are produced."""
+    """Anonymizers should not run when no findings are detected."""
     mock_detector = MagicMock()
     mock_detector.return_value = {"detected_fields": []}
     mock_llm_detector.return_value = mock_detector
@@ -231,8 +231,10 @@ def test_orchestrator_skips_final_anonymizer_without_llm(
         orchestrator = GuardOrchestrator(guard_config)
         result = orchestrator.run(text="Hello world")
 
-    assert call_count["count"] == 1  # only DLP anonymizer ran
-    assert result.get("anonymized_text") == "Hello world"
+    # No DLP findings and no LLM findings, so no anonymizers should run
+    assert call_count["count"] == 0
+    # anonymized_text should not be set when there are no findings
+    assert "anonymized_text" not in result or result.get("anonymized_text") == ""
 
 
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")

@@ -35,7 +35,7 @@ def route_after_dlp(state: GuardState) -> str:
     """Skip DLP risk/policy if no DLP detections were found."""
     if state.get("dlp_fields"):
         return "risk_dlp"
-    return "anonymize_llm"
+    return "llm_detector"
 
 
 def route_after_merge_final(state: GuardState) -> str:

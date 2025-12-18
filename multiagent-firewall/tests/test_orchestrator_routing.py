@@ -1,0 +1,646 @@
+"""
+Test orchestrator routing logic to ensure correct node execution paths.
+
+This module tests all possible routing scenarios through the multiagent firewall
+to validate that nodes execute in the correct order and conditional branches work as expected.
+"""
+
+from unittest.mock import MagicMock, patch
+import pytest
+
+from multiagent_firewall import GuardOrchestrator, GuardConfig
+from multiagent_firewall.config import LLMConfig, OCRConfig
+from multiagent_firewall.types import GuardState
+
+
+@pytest.fixture
+def guard_config():
+    """Minimal config for testing."""
+    return GuardConfig(
+        llm=LLMConfig(
+            provider="openai",
+            model="gpt-4o-mini",
+            client_params={"api_key": "test-key"},
+        ),
+        ocr=OCRConfig(),
+    )
+
+
+class TestNoDetectionsRouting:
+    """Test routing when no sensitive data is detected."""
+
+    def test_no_dlp_no_llm_skips_all_processing(self, guard_config):
+        """When neither DLP nor LLM detect anything, skip risk/policy/remediation/anonymization."""
+        executed_nodes = []
+
+        def track_node(node_name):
+            def wrapper(state, **kwargs):
+                executed_nodes.append(node_name)
+                return state
+
+            return wrapper
+
+        with (
+            patch(
+                "multiagent_firewall.nodes.run_dlp_detector",
+                side_effect=track_node("dlp_detector"),
+            ),
+            patch(
+                "multiagent_firewall.nodes.merge_detections",
+                side_effect=track_node("merge"),
+            ),
+            patch(
+                "multiagent_firewall.nodes.evaluate_risk",
+                side_effect=track_node("risk"),
+            ),
+            patch(
+                "multiagent_firewall.nodes.apply_policy",
+                side_effect=track_node("policy"),
+            ),
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=track_node("remediation"),
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text",
+                side_effect=track_node("anonymize"),
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            result = orchestrator.run(text="Hello world")
+
+        # Should execute: dlp_detector, merge (dlp), llm_detector, merge (final)
+        # Should NOT execute: risk, policy, remediation, anonymize
+        assert "dlp_detector" in executed_nodes
+        assert "risk" not in executed_nodes
+        assert "policy" not in executed_nodes
+        assert "remediation" not in executed_nodes
+        assert "anonymize" not in executed_nodes
+
+        # Check defaults are set
+        assert result.get("decision") == "allow"
+        assert result.get("risk_level") == "none"
+
+    def test_route_merge_dlp_to_llm_detector_directly(self, guard_config):
+        """When DLP finds nothing, route directly to llm_detector (skip anonymize_llm)."""
+        routing_path = []
+
+        def track_dlp(state):
+            routing_path.append("dlp_detector")
+            state["dlp_fields"] = []
+            state["detected_fields"] = []
+            return state
+
+        def track_merge_dlp(state):
+            routing_path.append("merge_dlp")
+            return state
+
+        def track_anonymize_llm(state, **kwargs):
+            routing_path.append("anonymize_llm")
+            return state
+
+        def track_llm_detector(state, **kwargs):
+            routing_path.append("llm_detector")
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=track_dlp,
+            ),
+            patch(
+                "multiagent_firewall.nodes.merge_detections",
+                side_effect=track_merge_dlp,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text",
+                side_effect=track_anonymize_llm,
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Clean text")
+
+        # Verify anonymize_llm was NOT called (direct route to llm_detector)
+        assert "dlp_detector" in routing_path
+        assert "merge_dlp" in routing_path
+        assert "anonymize_llm" not in routing_path
+
+
+class TestDLPOnlyRouting:
+    """Test routing when only DLP detects sensitive data."""
+
+    def test_dlp_findings_trigger_risk_policy_chain(self, guard_config):
+        """When DLP finds data, execute risk_dlp -> policy_dlp -> anonymize_llm -> llm_detector."""
+        executed_nodes = []
+
+        def fake_dlp(state):
+            executed_nodes.append("dlp_detector")
+            state["dlp_fields"] = [{"type": "EMAIL", "value": "test@example.com"}]
+            return state
+
+        def fake_merge(state):
+            executed_nodes.append("merge")
+            state["detected_fields"] = state.get("dlp_fields", [])
+            return state
+
+        def fake_risk(state):
+            executed_nodes.append("risk")
+            state["risk_level"] = "low"
+            return state
+
+        def fake_policy(state):
+            executed_nodes.append("policy")
+            state["decision"] = "allow_with_warning"
+            return state
+
+        def fake_anonymize(state, **kwargs):
+            executed_nodes.append("anonymize")
+            return state
+
+        def fake_remediation(state):
+            executed_nodes.append("remediation")
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch("multiagent_firewall.nodes.merge_detections", side_effect=fake_merge),
+            patch("multiagent_firewall.nodes.evaluate_risk", side_effect=fake_risk),
+            patch("multiagent_firewall.nodes.apply_policy", side_effect=fake_policy),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=fake_anonymize
+            ),
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=fake_remediation,
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Contact: test@example.com")
+
+        # Should execute DLP risk/policy chain
+        assert "dlp_detector" in executed_nodes
+        assert "risk" in executed_nodes
+        assert "policy" in executed_nodes
+        assert "anonymize" in executed_nodes  # anonymize_llm + final_anonymize
+        assert "remediation" in executed_nodes
+
+    def test_dlp_block_skips_llm_detector(self, guard_config):
+        """When DLP policy blocks, skip llm_detector entirely."""
+        executed_nodes = []
+
+        def fake_dlp(state):
+            executed_nodes.append("dlp_detector")
+            state["dlp_fields"] = [{"type": "SSN", "value": "123-45-6789"}]
+            state["detected_fields"] = state["dlp_fields"]
+            return state
+
+        def fake_risk(state):
+            executed_nodes.append("risk")
+            state["risk_level"] = "high"
+            return state
+
+        def fake_policy(state):
+            executed_nodes.append("policy")
+            state["decision"] = "block"
+            return state
+
+        def fake_llm(state, **kwargs):
+            executed_nodes.append("llm_detector")
+            return state
+
+        def fake_remediation(state):
+            executed_nodes.append("remediation")
+            return state
+
+        def fake_anonymize(state, **kwargs):
+            executed_nodes.append("anonymize")
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch("multiagent_firewall.nodes.merge_detections", return_value={}),
+            patch("multiagent_firewall.nodes.evaluate_risk", side_effect=fake_risk),
+            patch("multiagent_firewall.nodes.apply_policy", side_effect=fake_policy),
+            patch("multiagent_firewall.nodes.run_llm_detector", side_effect=fake_llm),
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=fake_remediation,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=fake_anonymize
+            ),
+        ):
+            orchestrator = GuardOrchestrator(guard_config)
+            result = orchestrator.run(text="SSN: 123-45-6789")
+
+        # Should skip llm_detector when blocked
+        assert "dlp_detector" in executed_nodes
+        assert "risk" in executed_nodes
+        assert "policy" in executed_nodes
+        assert "llm_detector" not in executed_nodes
+        assert "remediation" in executed_nodes
+        assert "anonymize" in executed_nodes
+        assert result.get("decision") == "block"
+
+
+class TestLLMOnlyRouting:
+    """Test routing when only LLM detects sensitive data."""
+
+    def test_llm_findings_trigger_final_risk_policy(self, guard_config):
+        """When LLM finds new data, execute risk_final -> policy_final -> remediation."""
+        executed_nodes = []
+
+        def fake_dlp(state):
+            executed_nodes.append("dlp_detector")
+            state["dlp_fields"] = []
+            return state
+
+        def fake_llm_detector(state, **kwargs):
+            executed_nodes.append("llm_detector")
+            state["llm_fields"] = [{"type": "OTHER", "value": "sensitive info"}]
+            return state
+
+        def fake_merge(state):
+            executed_nodes.append("merge")
+            # Simulate merge_final adding llm_fields to detected_fields
+            if state.get("llm_fields"):
+                state["detected_fields"] = state["llm_fields"]
+            return state
+
+        def fake_risk(state):
+            executed_nodes.append("risk")
+            state["risk_level"] = "medium"
+            return state
+
+        def fake_policy(state):
+            executed_nodes.append("policy")
+            state["decision"] = "allow_with_warning"
+            return state
+
+        def fake_remediation(state):
+            executed_nodes.append("remediation")
+            return state
+
+        def fake_anonymize(state, **kwargs):
+            executed_nodes.append("anonymize")
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch("multiagent_firewall.nodes.merge_detections", side_effect=fake_merge),
+            patch(
+                "multiagent_firewall.nodes.run_llm_detector",
+                side_effect=fake_llm_detector,
+            ),
+            patch("multiagent_firewall.nodes.evaluate_risk", side_effect=fake_risk),
+            patch("multiagent_firewall.nodes.apply_policy", side_effect=fake_policy),
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=fake_remediation,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=fake_anonymize
+            ),
+        ):
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Some text with sensitive info")
+
+        # Should execute final risk/policy after LLM detection
+        assert "dlp_detector" in executed_nodes
+        assert "llm_detector" in executed_nodes
+        assert "risk" in executed_nodes  # risk_final
+        assert "policy" in executed_nodes  # policy_final
+        assert "remediation" in executed_nodes
+        assert "anonymize" in executed_nodes  # final_anonymize
+
+
+class TestBothDetectorsRouting:
+    """Test routing when both DLP and LLM detect sensitive data."""
+
+    def test_both_findings_execute_all_risk_policy_nodes(self, guard_config):
+        """When both detectors find data, execute DLP risk/policy AND final risk/policy."""
+        risk_count = 0
+        policy_count = 0
+
+        def fake_dlp(state):
+            state["dlp_fields"] = [{"type": "EMAIL", "value": "test@example.com"}]
+            return state
+
+        def fake_merge(state):
+            if "llm_fields" in state:
+                # merge_final: combine dlp + llm
+                state["detected_fields"] = state.get("dlp_fields", []) + state.get(
+                    "llm_fields", []
+                )
+            else:
+                # merge_dlp: just dlp
+                state["detected_fields"] = state.get("dlp_fields", [])
+            return state
+
+        def count_risk(state):
+            nonlocal risk_count
+            risk_count += 1
+            state["risk_level"] = "medium"
+            return state
+
+        def count_policy(state):
+            nonlocal policy_count
+            policy_count += 1
+            state["decision"] = "allow_with_warning"
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch("multiagent_firewall.nodes.merge_detections", side_effect=fake_merge),
+            patch("multiagent_firewall.nodes.evaluate_risk", side_effect=count_risk),
+            patch("multiagent_firewall.nodes.apply_policy", side_effect=count_policy),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+            patch("multiagent_firewall.nodes.anonymize_text", return_value={}),
+            patch("multiagent_firewall.nodes.generate_remediation", return_value={}),
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {
+                "detected_fields": [{"type": "OTHER", "value": "secret data"}]
+            }
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Email: test@example.com and secret data")
+
+        # Should call risk and policy twice: once for DLP, once for final
+        assert risk_count == 2
+        assert policy_count == 2
+
+
+class TestRemediationAnonymizationSequence:
+    """Test that remediation and final_anonymize always run together."""
+
+    def test_remediation_always_followed_by_final_anonymize(self, guard_config):
+        """When remediation runs, final_anonymize must always run next."""
+        execution_order = []
+
+        def track_remediation(state):
+            execution_order.append("remediation")
+            return state
+
+        def track_anonymize(state, **kwargs):
+            execution_order.append("anonymize")
+            return state
+
+        def fake_dlp(state):
+            state["dlp_fields"] = [{"type": "EMAIL", "value": "test@example.com"}]
+            state["detected_fields"] = state["dlp_fields"]
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=track_remediation,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=track_anonymize
+            ),
+            patch("multiagent_firewall.nodes.merge_detections", return_value={}),
+            patch(
+                "multiagent_firewall.nodes.evaluate_risk",
+                return_value={"risk_level": "low"},
+            ),
+            patch(
+                "multiagent_firewall.nodes.apply_policy",
+                return_value={"decision": "allow_with_warning"},
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Email: test@example.com")
+
+        # Verify remediation is followed by anonymize
+        remediation_idx = execution_order.index("remediation")
+        anonymize_indices = [
+            i for i, x in enumerate(execution_order) if x == "anonymize"
+        ]
+
+        # final_anonymize should be the last anonymize call and come after remediation
+        assert len(anonymize_indices) >= 1
+        assert max(anonymize_indices) > remediation_idx
+
+    def test_no_detections_skips_both_remediation_and_anonymize(self, guard_config):
+        """When no fields detected, skip both remediation and final_anonymize."""
+        remediation_called = False
+        anonymize_called = False
+
+        def track_remediation(state):
+            nonlocal remediation_called
+            remediation_called = True
+            return state
+
+        def track_anonymize(state, **kwargs):
+            nonlocal anonymize_called
+            anonymize_called = True
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=track_remediation,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=track_anonymize
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Clean text")
+
+        # Neither should run when no detections
+        assert not remediation_called
+        assert not anonymize_called
+
+
+class TestAnonymizeLLMConditional:
+    """Test that anonymize_llm only runs when DLP has findings."""
+
+    def test_anonymize_llm_runs_only_with_dlp_findings(self, guard_config):
+        """anonymize_llm should only execute when dlp_fields is not empty."""
+        anonymize_calls = []
+
+        def track_anonymize(state, **kwargs):
+            findings_key = kwargs.get("findings_key", "unknown")
+            anonymize_calls.append(findings_key)
+            return state
+
+        def fake_dlp_with_findings(state):
+            state["dlp_fields"] = [{"type": "EMAIL", "value": "test@example.com"}]
+            return state
+
+        def fake_merge(state):
+            # Simulate merge keeping detected_fields
+            if state.get("dlp_fields"):
+                state["detected_fields"] = state["dlp_fields"]
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp_with_findings,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=track_anonymize
+            ),
+            patch(
+                "multiagent_firewall.nodes.merge_detections",
+                side_effect=fake_merge,
+            ),
+            patch(
+                "multiagent_firewall.nodes.evaluate_risk",
+                return_value={"risk_level": "low"},
+            ),
+            patch(
+                "multiagent_firewall.nodes.apply_policy",
+                return_value={"decision": "allow_with_warning"},
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+            patch("multiagent_firewall.nodes.generate_remediation", return_value={}),
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Email: test@example.com")
+
+        # Should have called anonymize_text at least twice: anonymize_llm (dlp_fields) and final_anonymize (detected_fields)
+        assert "dlp_fields" in anonymize_calls
+        assert "detected_fields" in anonymize_calls
+
+    def test_anonymize_llm_skipped_without_dlp_findings(self, guard_config):
+        """anonymize_llm should be skipped when dlp_fields is empty."""
+        anonymize_calls = []
+
+        def track_anonymize(state, **kwargs):
+            findings_key = kwargs.get("findings_key", "unknown")
+            anonymize_calls.append(findings_key)
+            return state
+
+        def fake_dlp_no_findings(state):
+            state["dlp_fields"] = []
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp_no_findings,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=track_anonymize
+            ),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            orchestrator.run(text="Clean text")
+
+        # Should NOT have called anonymize_llm (dlp_fields)
+        assert "dlp_fields" not in anonymize_calls
+        # Should also NOT have called final_anonymize since no detections
+        assert len(anonymize_calls) == 0
+
+
+class TestDefaultValuesPresent:
+    """Test that output always contains decision and risk_level fields."""
+
+    def test_decision_and_risk_level_always_present(self, guard_config):
+        """decision and risk_level should always be in output, even with no detections."""
+        with patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm:
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            result = orchestrator.run(text="Clean text")
+
+        assert "decision" in result
+        assert "risk_level" in result
+        assert result["decision"] == "allow"
+        assert result["risk_level"] == "none"
+
+    def test_defaults_overridden_when_findings_detected(self, guard_config):
+        """Default values should be overridden by policy nodes when findings exist."""
+
+        def fake_dlp(state):
+            state["dlp_fields"] = [{"type": "EMAIL", "value": "test@example.com"}]
+            state["detected_fields"] = state["dlp_fields"]
+            return state
+
+        def fake_risk(state):
+            state["risk_level"] = "low"
+            return state
+
+        def fake_policy(state):
+            state["decision"] = "allow_with_warning"
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch("multiagent_firewall.nodes.evaluate_risk", side_effect=fake_risk),
+            patch("multiagent_firewall.nodes.apply_policy", side_effect=fake_policy),
+            patch("multiagent_firewall.nodes.merge_detections", return_value={}),
+            patch("multiagent_firewall.nodes.anonymize_text", return_value={}),
+            patch("multiagent_firewall.nodes.generate_remediation", return_value={}),
+            patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
+        ):
+            mock_detector = MagicMock()
+            mock_detector.return_value = {"detected_fields": []}
+            mock_llm.return_value = mock_detector
+
+            orchestrator = GuardOrchestrator(guard_config)
+            result = orchestrator.run(text="Email: test@example.com")
+
+        # Should be overridden from defaults
+        assert result.get("decision") == "allow_with_warning"
+        assert result.get("risk_level") == "low"

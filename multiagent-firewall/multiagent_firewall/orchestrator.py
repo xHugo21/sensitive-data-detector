@@ -52,6 +52,7 @@ class GuardOrchestrator:
             "metadata": {},
             "warnings": [],
             "errors": [],
+            "decision": "allow",
         }
         if self._config.debug:
             return debug_invoke(self._graph, initial_state)
@@ -95,7 +96,7 @@ class GuardOrchestrator:
             partial(
                 nodes.anonymize_text,
                 fw_config=self._config,
-                findings_key="llm_fields",
+                findings_key="detected_fields",
                 text_keys=("anonymized_text", "normalized_text"),
             ),
         )

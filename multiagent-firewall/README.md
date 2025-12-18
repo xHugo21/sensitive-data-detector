@@ -8,7 +8,7 @@ The firewall uses a multi-agent architecture built on LangGraph with conditional
 
 ```mermaid
 flowchart TD
-    Start([INPUT]) --> HasFile{Has file?}
+    Start([START]) --> HasFile{Has file?}
 
     HasFile -->|Yes| Document[read_document<br/>Document parsing + Tesseract OCR]
     HasFile -->|No| Normalize[normalize]
@@ -33,15 +33,14 @@ flowchart TD
     AnonymizeLLM --> LLM[llm_detector<br/>LLM-based detection]
 
     LLM --> MergeFinal[merge_final<br/>Merge detections]
-    MergeFinal --> FinalRoute{LLM added fields<br/>or no decision?}
-    FinalRoute -->|No| Remediation
-    FinalRoute -->|Yes| RiskFinal[risk_final<br/>Risk evaluation]
+    MergeFinal --> FinalRoute{Has detected fields?}
+    FinalRoute -->|No| End([END])
+    FinalRoute -->|Yes, needs risk eval| RiskFinal[risk_final<br/>Risk evaluation]
+    FinalRoute -->|Yes, skip risk eval| Remediation[remediation<br/>Generate remediation message]
     RiskFinal --> PolicyFinal[policy_final<br/>Policy check]
     PolicyFinal --> Remediation
 
-    Remediation --> FinalAnonCheck{Any LLM findings?}
-    FinalAnonCheck -->|Yes| FinalAnonymize[final_anonymize<br/>Anonymize LLM findings]
-    FinalAnonCheck -->|No| End([OUTPUT])
+    Remediation --> FinalAnonymize[final_anonymize<br/>Anonymize all detected fields]
     FinalAnonymize --> End
 
     style Start fill:#e1f5ff,stroke:#333,color:#000

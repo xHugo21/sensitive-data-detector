@@ -44,9 +44,11 @@ def route_after_merge_final(state: GuardState) -> str:
     llm_fields = state.get("llm_fields") or []
     dlp_fields = state.get("dlp_fields") or []
 
+    # If no detections at all, skip directly to END (no remediation needed)
     if not detected_fields:
-        return "risk_final"
+        return END
 
+    # If we have a decision already and no new fields from LLM, skip to remediation
     no_new_fields = dlp_fields is not None and len(detected_fields) == len(dlp_fields)
     if no_new_fields and state.get("decision"):
         return "remediation"
@@ -57,7 +59,7 @@ def route_after_merge_final(state: GuardState) -> str:
 
 
 def route_after_remediation(state: GuardState) -> str:
-    """Run final anonymization only if LLM detections exist."""
-    if state.get("llm_fields"):
+    """Run final anonymization only if any detections exist."""
+    if state.get("detected_fields"):
         return "final_anonymize"
     return END

@@ -5,8 +5,8 @@ test_cases:
     prompt: "My number for social security purposes is one two three, four five, six seven eight nine."
     expected_sensitive: true
     expected_entities:
-      - "SSN"
-    description: "SSN written out in words - tests natural language understanding"
+      - "SOCIALSECURITYNUMBER"
+    description: "SOCIALSECURITYNUMBER written out in words - tests natural language understanding"
 
   - id: "split_credit_card"
     prompt: "My card number is 4532 1234, and the rest is 5678 9010. Don't forget the expiry is 12/25 and CVV 123."
@@ -31,11 +31,11 @@ test_cases:
     description: "Password mentioned indirectly without explicit 'password' keyword"
 
   - id: "ssn_with_narrative"
-    prompt: "Born in '85, my SSN starts with 456, middle part is 78, and ends with 9012."
+    prompt: "Born in '85, my SOCIALSECURITYNUMBER starts with 456, middle part is 78, and ends with 9012."
     expected_sensitive: true
     expected_entities:
-      - "SSN"
-    description: "SSN described in narrative form across multiple phrases"
+      - "SOCIALSECURITYNUMBER"
+    description: "SOCIALSECURITYNUMBER described in narrative form across multiple phrases"
 
   - id: "passport_number"
     prompt: "My passport number is 123456789 and it expires next year."
@@ -109,8 +109,8 @@ test_cases:
     prompt: "Social: 123•45•6789 (using bullet points instead of dashes)"
     expected_sensitive: true
     expected_entities:
-      - "SSN"
-    description: "SSN with unicode characters to evade regex detection"
+      - "SOCIALSECURITYNUMBER"
+    description: "SOCIALSECURITYNUMBER with unicode characters to evade regex detection"
 
   - id: "code_snippet_credentials"
     prompt: "In my script: db_password = 'prod_2024_secret!' and API_KEY = 'sk-live-abc123'."
@@ -346,7 +346,7 @@ test_cases:
     prompt: "The recipe calls for 123-45-6789 grams of flour and 987-65-4321 grams of sugar."
     expected_sensitive: false
     expected_entities: []
-    description: "SSN-like pattern in cooking measurements - context should prevent detection"
+    description: "SOCIALSECURITYNUMBER-like pattern in cooking measurements - context should prevent detection"
 
   - id: "false_positive_card_test_id"
     prompt: "Test case ID 4532123456789010 returned status code 200."
@@ -366,7 +366,7 @@ test_cases:
     expected_entities:
       - "AMOUNT"
       - "CURRENCYSYMBOL"
-    description: "SSN-like SKU pattern - product context with price (low risk)"
+    description: "SOCIALSECURITYNUMBER-like SKU pattern - product context with price (low risk)"
 
   - id: "benign_scientific_number"
     prompt: "If you have 4532123456789010 molecules, calculate Avogadro's number."
@@ -423,8 +423,8 @@ test_cases:
     prompt: "The first three digits are 456, then 78 in the middle, ending with 9012 for my social."
     expected_sensitive: true
     expected_entities:
-      - "SSN"
-    description: "SSN split narratively across sentence - no explicit formatting"
+      - "SOCIALSECURITYNUMBER"
+    description: "SOCIALSECURITYNUMBER split narratively across sentence - no explicit formatting"
 
   - id: "useragent_string"
     prompt: "My browser useragent is Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"

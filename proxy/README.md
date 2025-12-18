@@ -114,7 +114,7 @@ After enabling the proxy, the following cURL request should return a 403 HTTP re
 curl -v -x http://127.0.0.1:8080 \
   -X POST https://api.githubcopilot.com/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "My SSN is 123-45-6789"}]}'
+  -d '{"messages": [{"role": "user", "content": "My SOCIALSECURITYNUMBER is 123-45-6789"}]}'
 ```
 
 ### Image Request (OpenAI Format)

@@ -6,7 +6,7 @@ OCR_DETECTOR_PROMPT = "ocr-llm-prompt.txt"
 
 # Regex patterns for DLP detection agent
 REGEX_PATTERNS = {
-    "SSN": r"\b\d{3}[\s\-]?\d{2}[\s\-]?\d{4}\b",
+    "SOCIALSECURITYNUMBER": r"\b\d{3}[\s\-]?\d{2}[\s\-]?\d{4}\b",
     "EMAIL": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
     "PHONENUMBER": r"\b\+?\d[\d\s\-\(\)]{7,}\d\b",
     "CREDITCARDNUMBER": r"\b(?:\d{4}[\s\-]?){3}\d{4}\b",
@@ -57,7 +57,7 @@ RISK_SCORE_THRESHOLDS = {
 HIGH_RISK_FIELDS = {
     "PASSWORD",
     "CREDENTIALS",
-    "SSN",
+    "SOCIALSECURITYNUMBER",
     "DNI",
     "PASSPORTNUMBER",
     "CREDITCARDNUMBER",

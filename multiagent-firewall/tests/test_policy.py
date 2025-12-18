@@ -11,7 +11,9 @@ class TestApplyPolicy:
         state = {
             "risk_level": "high",
             "min_block_risk": "medium",
-            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
+            "detected_fields": [
+                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+            ],
         }
         result = apply_policy(state)
         assert result["decision"] == "block"
@@ -81,7 +83,9 @@ class TestApplyPolicy:
         state = {
             "risk_level": "high",
             "min_block_risk": "high",
-            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
+            "detected_fields": [
+                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+            ],
         }
         result = apply_policy(state)
         assert result["decision"] == "block"
@@ -95,7 +99,7 @@ class TestGenerateRemediation:
         state = {
             "decision": "block",
             "detected_fields": [
-                {"field": "SSN", "value": "123-45-6789"},
+                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"},
                 {"field": "PASSWORD", "value": "secret123"},
             ],
         }
@@ -104,7 +108,7 @@ class TestGenerateRemediation:
         assert "remediation" in result
         remediation = result["remediation"]
         assert "Sensitive data detected" in remediation
-        assert "SSN" in remediation
+        assert "SOCIALSECURITYNUMBER" in remediation
         assert "PASSWORD" in remediation
         assert (
             "Redact or remove the flagged content before resubmitting." in remediation
@@ -184,21 +188,24 @@ class TestGenerateRemediation:
         state = {
             "decision": "block",
             "detected_fields": [
-                {"field": "SSN", "value": "123-45-6789"},
+                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"},
                 {"field": "EMAIL", "value": "test@example.com"},
                 {"field": "PHONE", "value": "123-456-7890"},
-                {"field": "SSN", "value": "987-65-4321"},  # Duplicate field type
+                {
+                    "field": "SOCIALSECURITYNUMBER",
+                    "value": "987-65-4321",
+                },  # Duplicate field type
             ],
         }
         result = generate_remediation(state)
 
         remediation = result["remediation"]
         # Should list unique field types
-        assert "SSN" in remediation
+        assert "SOCIALSECURITYNUMBER" in remediation
         assert "EMAIL" in remediation
         assert "PHONE" in remediation
-        # Should only appear once despite two SSN values
-        assert remediation.count("SSN") == 1
+        # Should only appear once despite two SOCIALSECURITYNUMBER values
+        assert remediation.count("SOCIALSECURITYNUMBER") == 1
 
     def test_remediation_with_unknown_field(self):
         """Test remediation handles fields without explicit field key."""
@@ -253,7 +260,9 @@ class TestGenerateRemediation:
         """Test that block message focuses on redaction before resubmitting."""
         state = {
             "decision": "block",
-            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
+            "detected_fields": [
+                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+            ],
         }
         result = generate_remediation(state)
 
@@ -269,7 +278,9 @@ class TestPolicyIntegration:
         state = {
             "risk_level": "high",
             "min_block_risk": "medium",
-            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
+            "detected_fields": [
+                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+            ],
         }
 
         # Apply policy
@@ -279,7 +290,7 @@ class TestPolicyIntegration:
         # Generate remediation
         state = generate_remediation(state)
         assert state["remediation"] != ""
-        assert "SSN" in state["remediation"]
+        assert "SOCIALSECURITYNUMBER" in state["remediation"]
         assert "Redact or remove" in state["remediation"]
 
     def test_full_warn_flow(self):

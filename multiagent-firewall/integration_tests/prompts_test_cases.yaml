@@ -3,7 +3,7 @@ test_cases:
     prompt: "My Social Security Number is 123-45-6789 and I need help with my taxes."
     expected_sensitive: true
     expected_entities:
-      - "SSN"
+      - "SOCIALSECURITYNUMBER"
     description: "Prompt containing a US Social Security Number"
 
   - id: "credit_card_detection"
@@ -24,7 +24,7 @@ test_cases:
     prompt: "Call me at (555) 123-4567 when you have a chance."
     expected_sensitive: true
     expected_entities:
-      - "PHONE"
+      - "PHONENUMBER"
     description: "Prompt containing a phone number"
 
   - id: "api_key_detection"
@@ -42,10 +42,10 @@ test_cases:
     description: "Prompt explicitly mentioning a password"
 
   - id: "multiple_pii"
-    prompt: "Hi, I'm Jane Smith. My SSN is 987-65-4321, email is jane@example.com, and phone is 555-9876."
+    prompt: "Hi, I'm Jane Smith. My SOCIALSECURITYNUMBER is 987-65-4321, email is jane@example.com, and phone is 555-9876."
     expected_sensitive: true
     expected_entities:
-      - "SSN"
+      - "SOCIALSECURITYNUMBER"
       - "EMAIL"
       - "PHONE"
     description: "Prompt containing multiple types of PII"
@@ -95,5 +95,5 @@ test_cases:
     prompt: "My social is 123 45 6789 (spaces instead of dashes)."
     expected_sensitive: true
     expected_entities:
-      - "SSN"
-    description: "SSN with non-standard formatting"
+      - "SOCIALSECURITYNUMBER"
+    description: "SOCIALSECURITYNUMBER with non-standard formatting"

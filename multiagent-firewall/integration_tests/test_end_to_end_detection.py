@@ -104,7 +104,7 @@ def test_sensitive_detection(
 
 @pytest.mark.integration
 def test_orchestrator_returns_complete_state(orchestrator):
-    prompt = "My SSN is 123-45-6789"
+    prompt = "My SOCIALSECURITYNUMBER is 123-45-6789"
     result = orchestrator.run(text=prompt)
 
     assert "raw_text" in result

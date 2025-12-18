@@ -21,7 +21,7 @@ def test_detect_keywords_default():
     -----END PRIVATE KEY-----
     """
     findings = detect_keywords(text)
-    
+
     assert len(findings) >= 1
     field_names = [f["field"] for f in findings]
     assert "SECRET" in field_names
@@ -33,7 +33,7 @@ def test_detect_keywords_custom():
         "CUSTOM_FIELD": ["foo", "bar"],
     }
     findings = detect_keywords(text, custom_keywords)
-    
+
     assert len(findings) == 2
     assert all(f["field"] == "CUSTOM_FIELD" for f in findings)
     assert all(f["source"] == "dlp_keyword" for f in findings)
@@ -42,7 +42,7 @@ def test_detect_keywords_custom():
 def test_detect_keywords_case_insensitive():
     text = "ssh key header -----begin private key----- content"
     findings = detect_keywords(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "SECRET" in field_names
 
@@ -69,7 +69,7 @@ def test_luhn_checksum_too_short():
 def test_detect_checksums_valid_card():
     text = "My card number is 4532015112830366"
     findings = detect_checksums(text)
-    
+
     assert len(findings) == 1
     assert findings[0]["field"] == "CREDITCARDNUMBER"
     assert findings[0]["value"] == "4532015112830366"
@@ -79,14 +79,14 @@ def test_detect_checksums_valid_card():
 def test_detect_checksums_invalid_card():
     text = "Invalid card: 1234567890123456"
     findings = detect_checksums(text)
-    
+
     assert len(findings) == 0
 
 
 def test_detect_checksums_multiple_cards():
     text = "Cards: 4532015112830366 and 5425233430109903"
     findings = detect_checksums(text)
-    
+
     assert len(findings) == 2
 
 
@@ -98,7 +98,7 @@ def test_detect_checksums_empty_text():
 def test_detect_regex_patterns_default():
     text = "Contact me at test@example.com or +1-555-123-4567"
     findings = detect_regex_patterns(text)
-    
+
     assert len(findings) >= 2
     field_names = [f["field"] for f in findings]
     assert "EMAIL" in field_names
@@ -111,7 +111,7 @@ def test_detect_regex_patterns_custom():
         "ORDER_ID": r"\b[A-Z]{3}\d{3}\b",
     }
     findings = detect_regex_patterns(text, custom_patterns)
-    
+
     assert len(findings) == 1
     assert findings[0]["field"] == "ORDER_ID"
     assert findings[0]["value"] == "ABC123"
@@ -135,7 +135,7 @@ def test_detect_regex_patterns_tuple_match():
         "EMAIL_PARTS": r"(\w+)@(\w+\.\w+)",
     }
     findings = detect_regex_patterns(text, custom_patterns)
-    
+
     assert len(findings) == 1
     assert "test example.com" in findings[0]["value"]
 
@@ -144,10 +144,11 @@ def test_detect_regex_patterns_tuple_match():
 # Extended Regex Pattern Tests
 # ============================================================================
 
+
 def test_detect_regex_ipv4():
     text = "Server IP is 192.168.1.1 and gateway is 10.0.0.1"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "IPV4" in field_names
     values = [f["value"] for f in findings if f["field"] == "IPV4"]
@@ -158,7 +159,7 @@ def test_detect_regex_ipv4():
 def test_detect_regex_ipv6():
     text = "IPv6 address: 2001:0db8:85a3:0000:0000:8a2e:0370:7334"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "IPV6" in field_names
 
@@ -166,7 +167,7 @@ def test_detect_regex_ipv6():
 def test_detect_regex_mac_address():
     text = "MAC: 00:1A:2B:3C:4D:5E and 00-1A-2B-3C-4D-5F"
     findings = detect_regex_patterns(text)
-    
+
     mac_findings = [f for f in findings if f["field"] == "MAC"]
     assert len(mac_findings) >= 1
 
@@ -174,7 +175,7 @@ def test_detect_regex_mac_address():
 def test_detect_regex_url():
     text = "Visit https://example.com or http://test.org"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "URL" in field_names
 
@@ -182,7 +183,7 @@ def test_detect_regex_url():
 def test_detect_regex_credit_card():
     text = "Card: 4532-0151-1283-0366"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "CREDITCARDNUMBER" in field_names
 
@@ -190,7 +191,7 @@ def test_detect_regex_credit_card():
 def test_detect_regex_bitcoin_address():
     text = "Send BTC to 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "BITCOINADDRESS" in field_names
 
@@ -199,7 +200,7 @@ def test_detect_regex_ethereum_address():
     # Ethereum addresses are 42 characters (0x + 40 hex chars)
     text = "ETH wallet: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEbC"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "ETHEREUMADDRESS" in field_names
 
@@ -207,7 +208,7 @@ def test_detect_regex_ethereum_address():
 def test_detect_regex_date():
     text = "Date: 2024-12-31 or 12/31/2024"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "DATE" in field_names
 
@@ -215,7 +216,7 @@ def test_detect_regex_date():
 def test_detect_regex_time():
     text = "Meeting at 14:30:00 or 9:15"
     findings = detect_regex_patterns(text)
-    
+
     field_names = [f["field"] for f in findings]
     assert "TIME" in field_names
 
@@ -223,6 +224,7 @@ def test_detect_regex_time():
 # ============================================================================
 # Extended Keyword Tests
 # ============================================================================
+
 
 def test_detect_keywords_ignores_generic_terms():
     text = "Enter your credentials to login with fingerprint and medical info"
@@ -234,6 +236,7 @@ def test_detect_keywords_ignores_generic_terms():
 # ============================================================================
 # Checksum Validator Tests
 # ============================================================================
+
 
 def test_validate_iban_valid():
     assert validate_iban("GB82WEST12345698765432") is True
@@ -288,10 +291,11 @@ def test_validate_vin_invalid():
 # Extended Checksum Detection Tests
 # ============================================================================
 
+
 def test_detect_checksums_iban():
     text = "Transfer to IBAN: GB82WEST12345698765432"
     findings = detect_checksums(text)
-    
+
     iban_findings = [f for f in findings if f["field"] == "IBAN"]
     assert len(iban_findings) == 1
     assert iban_findings[0]["source"] == "dlp_checksum"
@@ -300,17 +304,17 @@ def test_detect_checksums_iban():
 def test_detect_checksums_dni():
     text = "DNI number: 12345678Z"
     findings = detect_checksums(text)
-    
+
     dni_findings = [f for f in findings if f["field"] == "DNI"]
     assert len(dni_findings) == 1
     assert dni_findings[0]["source"] == "dlp_checksum"
 
 
 def test_detect_checksums_ssn():
-    text = "SSN: 123-45-6789"
+    text = "SOCIALSECURITYNUMBER: 123-45-6789"
     findings = detect_checksums(text)
-    
-    ssn_findings = [f for f in findings if f["field"] == "SSN"]
+
+    ssn_findings = [f for f in findings if f["field"] == "SOCIALSECURITYNUMBER"]
     assert len(ssn_findings) == 1
     assert ssn_findings[0]["source"] == "dlp_checksum"
 
@@ -318,7 +322,7 @@ def test_detect_checksums_ssn():
 def test_detect_checksums_vin():
     text = "Vehicle VIN: 1HGBH41JXMN109186"
     findings = detect_checksums(text)
-    
+
     vin_findings = [f for f in findings if f["field"] == "VEHICLEVIN"]
     assert len(vin_findings) == 1
     assert vin_findings[0]["source"] == "dlp_checksum"
@@ -331,7 +335,7 @@ def test_detect_checksums_mixed():
     DNI: 12345678Z
     """
     findings = detect_checksums(text)
-    
+
     assert len(findings) >= 3
     field_names = [f["field"] for f in findings]
     assert "CREDITCARDNUMBER" in field_names
@@ -346,7 +350,7 @@ def test_detect_checksums_invalid_mixed():
     Invalid DNI: 12345678A
     """
     findings = detect_checksums(text)
-    
+
     # Should not detect invalid data
     assert len(findings) == 0
 
@@ -355,6 +359,7 @@ def test_detect_checksums_invalid_mixed():
 # Integration Tests
 # ============================================================================
 
+
 def test_integration_high_risk_data():
     text = """
     User credentials:
@@ -362,21 +367,21 @@ def test_integration_high_risk_data():
     mySecret123
     -----END PRIVATE KEY-----
     Credit Card: 4532-0151-1283-0366
-    SSN: 123-45-6789
+    SOCIALSECURITYNUMBER: 123-45-6789
     """
-    
+
     keyword_findings = detect_keywords(text)
     regex_findings = detect_regex_patterns(text)
     checksum_findings = detect_checksums(text)
-    
+
     # Should detect multiple high-risk fields
     all_findings = keyword_findings + regex_findings + checksum_findings
     field_names = [f["field"] for f in all_findings]
-    
+
     assert "SECRET" in field_names
-    # Credit card and SSN should be detected by both regex and checksum
+    # Credit card and SOCIALSECURITYNUMBER should be detected by both regex and checksum
     assert "CREDITCARDNUMBER" in field_names
-    assert "SSN" in field_names
+    assert "SOCIALSECURITYNUMBER" in field_names
 
 
 def test_integration_medium_risk_data():
@@ -386,13 +391,13 @@ def test_integration_medium_risk_data():
     Phone: +1-555-123-4567
     Company: Acme Corp
     """
-    
+
     keyword_findings = detect_keywords(text)
     regex_findings = detect_regex_patterns(text)
-    
+
     all_findings = keyword_findings + regex_findings
     field_names = [f["field"] for f in all_findings]
-    
+
     assert "EMAIL" in field_names
     assert "PHONENUMBER" in field_names
     assert "SECRET" not in field_names

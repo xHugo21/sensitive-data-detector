@@ -34,7 +34,7 @@ The backend should be accessible at `http://127.0.0.1:8000` (configurable in `sr
 ### Text Detection
 
 1. Navigate to a supported chat platform
-2. Type a message containing sensitive data (e.g., "My SSN is 123-45-6789")
+2. Type a message containing sensitive data (e.g., "My SOCIALSECURITYNUMBER is 123-45-6789")
 3. Click send or press Enter
 4. The extension will intercept the message and analyze it
 5. A risk panel will appear showing detected sensitive fields

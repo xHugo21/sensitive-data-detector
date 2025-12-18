@@ -208,14 +208,14 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     }
                 )
 
-    # SSN detection (validation rules)
-    if "SSN" in REGEX_PATTERNS:
-        potential_ssns = re.findall(REGEX_PATTERNS["SSN"], text)
+    # SOCIALSECURITYNUMBER detection (validation rules)
+    if "SOCIALSECURITYNUMBER" in REGEX_PATTERNS:
+        potential_ssns = re.findall(REGEX_PATTERNS["SOCIALSECURITYNUMBER"], text)
         for ssn in potential_ssns:
             if validate_ssn(ssn):
                 findings.append(
                     {
-                        "field": "SSN",
+                        "field": "SOCIALSECURITYNUMBER",
                         "value": ssn,
                         "source": "dlp_checksum",
                     }

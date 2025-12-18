@@ -81,7 +81,7 @@ orchestrator = GuardOrchestrator(config)
 
 # Detect sensitive data in text
 result = orchestrator.run(
-  text="My SSN is 123-45-6789",
+  text="My SOCIALSECURITYNUMBER is 123-45-6789",
   min_block_risk="low"
 )
 
@@ -125,7 +125,7 @@ The orchestrator returns a `GuardState` dictionary with:
     "normalized_text": str,       # Preprocessed text
     "detected_fields": [          # List of detected sensitive fields
         {
-            "type": str,          # Field type (SSN, EMAIL, etc.)
+            "type": str,          # Field type (SOCIALSECURITYNUMBER, EMAIL, etc.)
             "value": str,         # Detected value
             "confidence": float,  # Detection confidence (0-1)
             "source": str         # Detection source (dlp/llm)

@@ -52,6 +52,7 @@ class GuardOrchestrator:
             "warnings": [],
             "errors": [],
             "decision": "allow",
+            "risk_level": "none",
         }
         if self._config.debug:
             return debug_invoke(self._graph, initial_state)

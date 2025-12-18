@@ -8,42 +8,39 @@ The firewall uses a multi-agent architecture built on LangGraph with conditional
 
 ```mermaid
 flowchart TD
-    Start([INPUT]) --> HasFile{file_path?}
+    Start([START]) --> HasFile{Has file?}
 
-    HasFile -->|Yes| Document[Document parsing<br/>+ Tesseract OCR]
-    HasFile -->|No| Normalize[Normalize<br/>Preprocess text]
+    HasFile -->|Yes| Document[read_document<br/>Document parsing + Tesseract OCR]
+    HasFile -->|No| Normalize[normalize]
 
-    Document --> NeedsLLMOCR{Image and<br/>no text found?}
-    NeedsLLMOCR -->|Yes| LLMOCR[LLM OCR<br/>Vision model]
+    Document --> NeedsLLMOCR{Image and<br/>no OCR results?}
+    NeedsLLMOCR -->|Yes| LLMOCR[llm_ocr<br/>LLM Vision Model OCR]
     NeedsLLMOCR -->|No| Normalize
     LLMOCR --> Normalize
 
-    Normalize --> DLP[DLP detector]
-    DLP --> MergeDLP[Merge detections]
-    MergeDLP --> HasDLP{Any DLP hits?}
+    Normalize --> DLP[dlp_detector<br/>Regex, Keyword, Checksum]
+    DLP --> MergeDLP[merge_dlp<br/>Merge detections]
+    MergeDLP --> HasDLP{Any DLP findings?}
 
-    HasDLP -->|Yes| RiskDLP[Risk evaluation (DLP)]
-    HasDLP -->|No| ShouldAnonymize{Cloud LLM provider?}
+    HasDLP -->|Yes| RiskDLP[risk_dlp<br/>Risk evaluation]
+    HasDLP -->|No| LLM[llm_detector<br/>LLM-based detection]
 
-    RiskDLP --> PolicyDLP[Policy check (DLP)]
-    PolicyDLP --> DecisionBlock{Decision = block?}
-    DecisionBlock -->|Yes| Remediation[Remediation]
-    DecisionBlock -->|No| ShouldAnonymize
+    RiskDLP --> PolicyDLP[policy_dlp<br/>Policy check]
+    PolicyDLP --> DecisionBlock{decision = block?}
+    DecisionBlock -->|Yes| Remediation[remediation<br/>Generate remediation message]
+    DecisionBlock -->|No| AnonymizeLLM[anonymize_llm<br/>Anonymize DLP findings]
 
-    ShouldAnonymize -->|Yes, non-ollama| AnonymizeDLP[Anonymize DLP findings]
-    ShouldAnonymize -->|No, ollama| LLM[LLM detector]
-    AnonymizeDLP --> LLM
+    AnonymizeLLM --> LLM
 
-    LLM --> MergeFinal[Merge detections]
-    MergeFinal --> FinalRoute{LLM added fields<br/>or no decision?}
-    FinalRoute -->|Skip risk| Remediation
-    FinalRoute -->|Run risk| RiskFinal[Risk evaluation (final)]
-    RiskFinal --> PolicyFinal[Policy check (final)]
+    LLM --> MergeFinal[merge_final<br/>Merge detections]
+    MergeFinal --> FinalRoute{Has detected fields?}
+    FinalRoute -->|No| End([END])
+    FinalRoute -->|Yes, including new fields| RiskFinal[risk_final<br/>Risk evaluation]
+    FinalRoute -->|Yes, but no new ones| Remediation[remediation<br/>Generate remediation message]
+    RiskFinal --> PolicyFinal[policy_final<br/>Policy check]
     PolicyFinal --> Remediation
 
-    Remediation --> FinalAnonCheck{Any LLM findings?}
-    FinalAnonCheck -->|Yes| FinalAnonymize[Anonymize LLM findings]
-    FinalAnonCheck -->|No| End([OUTPUT])
+    Remediation --> FinalAnonymize[final_anonymize<br/>Anonymize all detected fields]
     FinalAnonymize --> End
 
     style Start fill:#e1f5ff,stroke:#333,color:#000
@@ -53,16 +50,19 @@ flowchart TD
     style HasDLP fill:#fff4e6,stroke:#333,color:#000
     style FinalRoute fill:#fff4e6,stroke:#333,color:#000
     style DecisionBlock fill:#fff4e6,stroke:#333,color:#000
-    style FinalAnonCheck fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
     style LLMOCR fill:#f0e6ff,stroke:#333,color:#000
-    style ShouldAnonymize fill:#fff4e6,stroke:#333,color:#000
-    style AnonymizeDLP fill:#f0e6ff,stroke:#333,color:#000
+    style AnonymizeLLM fill:#f0e6ff,stroke:#333,color:#000
     style FinalAnonymize fill:#f0e6ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000
-
+    style MergeDLP fill:#fff9e6,stroke:#333,color:#000
+    style MergeFinal fill:#fff9e6,stroke:#333,color:#000
+    style RiskDLP fill:#e6f3ff,stroke:#333,color:#000
+    style RiskFinal fill:#e6f3ff,stroke:#333,color:#000
+    style PolicyDLP fill:#ffe6f0,stroke:#333,color:#000
+    style PolicyFinal fill:#ffe6f0,stroke:#333,color:#000
 ```
 
 ## Usage

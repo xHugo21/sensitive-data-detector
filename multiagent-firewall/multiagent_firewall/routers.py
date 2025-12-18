@@ -33,34 +33,26 @@ def should_run_llm(state: GuardState) -> str:
 
 def route_after_dlp(state: GuardState) -> str:
     """Skip DLP risk/policy if no DLP detections were found."""
-    state["_dlp_detected_count"] = len(state.get("detected_fields") or [])
     if state.get("dlp_fields"):
         return "risk_dlp"
-    return "anonymize_llm"
+    return "llm_detector"
 
 
 def route_after_merge_final(state: GuardState) -> str:
     """Avoid redundant final risk/policy when nothing new was added."""
     detected_fields = state.get("detected_fields") or []
     llm_fields = state.get("llm_fields") or []
-    dlp_detected_count = state.get("_dlp_detected_count")
+    dlp_fields = state.get("dlp_fields") or []
 
+    # If no detections at all, skip directly to END (no remediation needed)
     if not detected_fields:
-        return "risk_final"
+        return END
 
-    no_new_fields = (
-        dlp_detected_count is not None and len(detected_fields) == dlp_detected_count
-    )
+    # If we have a decision already and no new fields from LLM, skip to remediation
+    no_new_fields = dlp_fields is not None and len(detected_fields) == len(dlp_fields)
     if no_new_fields and state.get("decision"):
         return "remediation"
     if not llm_fields and state.get("decision"):
         return "remediation"
 
     return "risk_final"
-
-
-def route_after_remediation(state: GuardState) -> str:
-    """Run final anonymization only if LLM detections exist."""
-    if state.get("llm_fields"):
-        return "final_anonymize"
-    return END

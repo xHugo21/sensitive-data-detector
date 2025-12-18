@@ -10,7 +10,6 @@ from .config import GuardConfig
 from .routers import (
     route_after_dlp,
     route_after_merge_final,
-    route_after_remediation,
     should_read_document,
     should_run_llm,
     should_run_llm_ocr,
@@ -52,6 +51,8 @@ class GuardOrchestrator:
             "metadata": {},
             "warnings": [],
             "errors": [],
+            "decision": "allow",
+            "risk_level": "none",
         }
         if self._config.debug:
             return debug_invoke(self._graph, initial_state)
@@ -95,7 +96,7 @@ class GuardOrchestrator:
             partial(
                 nodes.anonymize_text,
                 fw_config=self._config,
-                findings_key="llm_fields",
+                findings_key="detected_fields",
                 text_keys=("anonymized_text", "normalized_text"),
             ),
         )
@@ -127,7 +128,7 @@ class GuardOrchestrator:
         )
         graph.add_edge("risk_final", "policy_final")
         graph.add_edge("policy_final", "remediation")
-        graph.add_conditional_edges("remediation", route_after_remediation)
+        graph.add_edge("remediation", "final_anonymize")
         graph.add_edge("final_anonymize", END)
 
         return graph.compile()

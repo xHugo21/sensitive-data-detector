@@ -2,15 +2,6 @@
 
 A transparent HTTP/HTTPS proxy built with `mitmproxy` that intercepts LLM API requests and blocks requests containing sensitive data before they reach the API providers.
 
-## Features
-
-- **Transparent Interception**: Works system-wide via `HTTP_PROXY`/`HTTPS_PROXY` environment variables
-- **Configurable Endpoints**: Define which API hosts and paths to monitor
-- **Sensitive Data Detection**: Integrates with the sensitive-data-detector backend
-- **Image Analysis**: Extracts and analyzes images from LLM API requests (OpenAI Vision, Claude, Copilot, Gemini)
-- **Risk-Based Blocking**: Uses backend policy (configured via backend `MIN_BLOCK_RISK`)
-- **Zero Code Changes**: No need to modify application code or API endpoints
-
 > [!NOTE]
 > Proxy only analyses prompt data from the role: 'user'. This avoids having false positives from system prompts included by external apps.
 
@@ -99,10 +90,11 @@ The proxy adds detection metadata to response headers:
                                │  ▲
                                │  |
                                ▼  |
-                         ┌──────────────┐
-                         │   Backend    │
-                         │   Detector   │
-                         └──────────────┘
+                         ┌────────────────┐
+                         │   API          │
+                         │   Interacts    │
+                         │ with multiagent│
+                         └────────────────┘
 ```
 
 ## Manual test via cURL

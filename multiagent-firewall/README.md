@@ -120,23 +120,48 @@ print(f"Detected Fields: {result['detected_fields']}")
 
 ### Response Structure
 
-The orchestrator returns a `GuardState` dictionary with:
+The orchestrator returns a `GuardState` dictionary. Keys are added as the pipeline runs,
+so some fields are optional depending on the input and routing:
 
 ```python
 {
-    "raw_text": str,              # Original input text
-    "normalized_text": str,       # Preprocessed text
-    "detected_fields": [          # List of detected sensitive fields
+    "raw_text": str,              # Input text or extracted file text
+    "file_path": str | None,      # Provided file path (if any)
+    "min_block_risk": str,        # Normalized threshold (none/low/medium/high)
+    "llm_provider": str,          # Provider from config
+    "normalized_text": str,       # Preprocessed text used by detectors
+    "anonymized_text": str,       # Redacted text (only when findings exist)
+    "detected_fields": [          # Final merged findings
         {
-            "type": str,          # Field type (SOCIALSECURITYNUMBER, EMAIL, etc.)
+            "field": str,         # Canonical field name (EMAIL, PASSWORD, OTHER, ...)
             "value": str,         # Detected value
-            "confidence": float,  # Detection confidence (0-1)
-            "source": str         # Detection source (dlp/llm)
+            "risk": str,          # low/medium/high
+            "source": str         # dlp_regex/dlp_keyword/dlp_checksum/llm_explicit/llm_inferred/llm_detector
         }
     ],
-    "risk_level": str,            # None/Low/Medium/High
+    "dlp_fields": [               # Raw DLP findings (same shape as LLM minus risk)
+        {"field": str, "value": str, "source": str}
+    ],
+    "llm_fields": [               # Raw LLM findings (same shape as LLM minus risk)
+        {"field": str, "value": str, "source": str}
+    ],
+    "risk_level": str,            # none/low/medium/high
     "decision": str,              # allow/warn/block
-    "remediation": str            # Suggested action
+    "remediation": str,           # Empty string when allow
+    "metadata": {                 # File + anonymization metadata
+        "file_type": "image|pdf|text",
+        "ocr_attempted": bool,
+        "tesseract_text_found": bool,
+        "llm_ocr_used": bool,
+        "ocr_method": "tesseract|llm",
+        "llm_anonymized_values": {
+            "enabled": True,
+            "provider": "openai",
+            "mapping": {"secret123": "<<REDACTED:PASSWORD>>"}
+        }
+    },
+    "warnings": [str],            # Non-fatal issues (missing text, OCR fallback, ...)
+    "errors": [str]               # Errors during extraction/detection
 }
 ```
 

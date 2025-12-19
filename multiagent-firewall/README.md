@@ -1,6 +1,6 @@
 # Multiagent Firewall for LLM Interactions
 
-Multi-agent system that detects sensitive data in LLM prompts using a combination of DLP (Data Loss Prevention), OCR (Optical Character Recognition), LLM-based detection, and risk evaluation strategies.
+Multi-agent system that detects sensitive data in LLM prompts
 
 ## Architecture
 
@@ -68,7 +68,7 @@ flowchart TD
 ## Usage
 
 ### Via the backend package
-Our `backend/` package exposes an HTTP API that can be used to automatically call the multiagent pipeline.
+Our `backend/` package exposes an HTTP API that can be used to serve an endpoint and call the multiagent pipeline. See `backend/README.md` for more information
 
 ### From another Python project
 
@@ -97,8 +97,11 @@ from multiagent_firewall import GuardConfig, GuardOrchestrator
 config = GuardConfig.from_env()
 orchestrator = GuardOrchestrator(config)
 
-# Extracts text from PDF and detects sensitive data
 result = orchestrator.run(file_path="/path/to/document.pdf")
+
+print(f"Decision: {result['decision']}")
+print(f"Risk Level: {result['risk_level']}")
+print(f"Detected Fields: {result['detected_fields']}")
 ```
 
 #### Image Detection (OCR must be configured)
@@ -110,7 +113,7 @@ orchestrator = GuardOrchestrator(config)
 
 result = orchestrator.run(file_path="/path/to/screenshot.png")
 
-print(f"Extracted Text: {result['raw_text'][:100]}...")
+print(f"OCR extracted text: {result['raw_text']}")
 print(f"Risk Level: {result['risk_level']}")
 print(f"Detected Fields: {result['detected_fields']}")
 ```
@@ -146,6 +149,8 @@ from multiagent_firewall import GuardConfig, GuardOrchestrator
 
 config = GuardConfig.from_env()
 orchestrator = GuardOrchestrator(config)
+
+result = orchestrator.run(file_path="/path/to/screenshot.png", min_block_risk="low")
 ```
 
 ### Environment Variables
@@ -182,12 +187,6 @@ MIN_BLOCK_RISK=medium        # Options: low, medium, high
 ```
 `MIN_BLOCK_RISK` is applied per invocation (pass `min_block_risk` to `GuardOrchestrator.run`); it defaults to `medium` if omitted.
 
-### Supported File Types
-
-- **Text files**: `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.yaml`, `.sh`, `.sql`
-- **Documents**: `.pdf`
-- **Images**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tiff`, `.webp`
-- **Code files**: `.js`, `.py`, `.java`, `.cpp`, `.c`, `.html`, `.css`
 
 ## Testing
 
@@ -198,7 +197,7 @@ uv sync --group test
 ```
 
 ```bash
-uv run pytest
+uv run pytest tests
 ```
 
 ### Integration Tests
@@ -207,7 +206,7 @@ Integration tests run the full pipeline end-to-end with real LLM providers.
 
 #### Setup
 
-1. Create `.env` file in `integration_tests/`:
+1. Create `.env` file in `integration_tests/` based on `.env.example`:
 
 ```bash
 cd integration_tests
@@ -222,16 +221,14 @@ LLM_MODEL=gpt-4
 LLM_API_KEY=sk-your-actual-api-key-here
 ```
 
-**Note:** For Ollama (local models), LLM_API_KEY is not needed but must have a random value
+**Note:** For Ollama (local models) LLM_API_KEY is not needed but must have a random value
 
 #### Running Integration Tests
 
 ```bash
-cd integration_tests
-./run_tests.sh
+./run_integration_tests.sh
 ```
 
 This will:
 - Run all test cases against the full pipeline
 - Calculate accuracy, precision, recall, and F1 metrics
-- Cache results to avoid redundant LLM calls

@@ -136,7 +136,7 @@ so some fields are optional depending on the input and routing:
             "field": str,         # Canonical field name (EMAIL, PASSWORD, OTHER, ...)
             "value": str,         # Detected value
             "risk": str,          # low/medium/high
-            "source": str         # dlp_regex/dlp_keyword/dlp_checksum/llm_explicit/llm_inferred/llm_detector
+            "source": str         # dlp_regex/dlp_keyword/dlp_checksum/llm_explicit/llm_inferred
         }
     ],
     "dlp_fields": [               # Raw DLP findings (same shape as LLM minus risk)

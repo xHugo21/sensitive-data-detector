@@ -150,25 +150,38 @@
 
       durationMs = now() - startedAt;
 
-      const decision = blocked || warned;
-      if (decision) {
-        const fileInfo = sg.fileAnalyzer.getFileInfo(decision.file.name);
-        const displayName = `${fileInfo.label}: ${decision.file.name}`;
+      if (blocked) {
+        const fileInfo = sg.fileAnalyzer.getFileInfo(blocked.file.name);
+        const displayName = `${fileInfo.label}: ${blocked.file.name}`;
         lastFileIntent = {
           input,
           files,
-          file: decision.file,
-          result: decision.result,
+          file: blocked.file,
+          result: blocked.result,
         };
-        sg.panel.render(decision.result, displayName, {
+        sg.panel.render(blocked.result, displayName, {
           durationMs,
-          mode: blocked ? "block" : "warn",
+          mode: "block",
           requireAction: true,
           primaryActionLabel: "Upload anyway",
           hideSanitized: true,
         });
         panelShown = true;
         clearInput(input);
+        return;
+      }
+
+      if (warned) {
+        const fileInfo = sg.fileAnalyzer.getFileInfo(warned.file.name);
+        const displayName = `${fileInfo.label}: ${warned.file.name}`;
+        allowUpload(input, files);
+        sg.panel.render(warned.result, displayName, {
+          durationMs,
+          mode: "warn",
+          requireAction: false,
+          hideSanitized: true,
+        });
+        panelShown = true;
         return;
       }
 

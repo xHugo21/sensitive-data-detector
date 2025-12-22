@@ -12,6 +12,7 @@
     attached = true;
     document.addEventListener("change", handleFileChange, true);
     sg.panel.onSendAnyway(handleUploadAnyway);
+    sg.panel.onSendSanitized(handleSendSanitized);
     sg.panel.onDismiss(handleDismiss);
     console.log(
       "[SensitiveDataDetectorExtension] File interceptor attached - monitoring all file uploads",
@@ -63,6 +64,27 @@
     } catch (err) {
       // Ignore if browser prevents programmatic clearing.
     }
+  }
+
+  function sendSanitizedText(text) {
+    if (!text) return false;
+    const composer = sg.chatSelectors?.findComposer?.();
+    if (!composer) return false;
+    const button = sg.chatSelectors?.findSendButton?.();
+
+    if (sg.chatSelectors?.setComposerText) {
+      sg.chatSelectors.setComposerText(composer, text);
+    }
+
+    sg.alertStore.setOverrideActive(true);
+    setTimeout(() => {
+      try {
+        sg.chatSelectors?.triggerSend?.(composer, button);
+      } finally {
+        setTimeout(() => sg.alertStore.setOverrideActive(false), 150);
+      }
+    }, 50);
+    return true;
   }
 
   function shouldBlockFile(result) {
@@ -153,18 +175,22 @@
       if (blocked) {
         const fileInfo = sg.fileAnalyzer.getFileInfo(blocked.file.name);
         const displayName = `${fileInfo.label}: ${blocked.file.name}`;
+        const sanitizedText =
+          typeof blocked.result?.anonymized_text === "string"
+            ? blocked.result.anonymized_text.trim()
+            : "";
         lastFileIntent = {
           input,
           files,
           file: blocked.file,
           result: blocked.result,
+          sanitizedText: sanitizedText || null,
         };
         sg.panel.render(blocked.result, displayName, {
           durationMs,
           mode: "block",
           requireAction: true,
           primaryActionLabel: "Upload anyway",
-          hideSanitized: true,
         });
         panelShown = true;
         clearInput(input);
@@ -238,6 +264,17 @@
     const { input, files } = lastFileIntent;
     sg.panel.hide();
     allowUpload(input, files);
+    lastFileIntent = null;
+  }
+
+  function handleSendSanitized() {
+    if (!lastFileIntent) return;
+    const { sanitizedText, input } = lastFileIntent;
+    sg.panel.hide();
+    if (sanitizedText) {
+      sendSanitizedText(sanitizedText);
+      clearInput(input);
+    }
     lastFileIntent = null;
   }
 

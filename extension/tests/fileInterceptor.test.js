@@ -6,6 +6,14 @@ function setup({ resultFactory }) {
   const dispatched = [];
   let renderCall = null;
   let sendAnywayHandler = null;
+  let sendSanitizedHandler = null;
+  const composer = {
+    tagName: "TEXTAREA",
+    value: "",
+    dispatchEvent: () => {},
+  };
+  const sendButton = { tagName: "BUTTON" };
+  let sendCount = 0;
 
   globalThis.document = {
     addEventListener: (type, handler) => {
@@ -44,6 +52,9 @@ function setup({ resultFactory }) {
     onSendAnyway: (fn) => {
       sendAnywayHandler = fn;
     },
+    onSendSanitized: (fn) => {
+      sendSanitizedHandler = fn;
+    },
     onDismiss: () => {},
     hide: () => {},
   };
@@ -51,6 +62,17 @@ function setup({ resultFactory }) {
   globalThis.SG.loadingState = {
     show: () => {},
     hide: () => {},
+  };
+
+  globalThis.SG.chatSelectors = {
+    findComposer: () => composer,
+    findSendButton: () => sendButton,
+    setComposerText: (el, text) => {
+      el.value = text;
+    },
+    triggerSend: () => {
+      sendCount += 1;
+    },
   };
 
   const analyzeCalls = [];
@@ -91,6 +113,15 @@ function setup({ resultFactory }) {
     },
     get sendAnywayHandler() {
       return sendAnywayHandler;
+    },
+    get sendSanitizedHandler() {
+      return sendSanitizedHandler;
+    },
+    get composer() {
+      return composer;
+    },
+    get sendCount() {
+      return sendCount;
     },
   };
 }
@@ -163,4 +194,33 @@ test("block gates upload until user action", async () => {
   env.sendAnywayHandler();
   assert.equal(env.dispatched.length, 1);
   assert.equal(input.dataset.sgBypass, "true");
+});
+
+test("block with anonymized text sends sanitized message", async () => {
+  const env = setup({
+    resultFactory: () => ({
+      decision: "block",
+      risk_level: "high",
+      detected_fields: [],
+      anonymized_text: "REDACTED",
+    }),
+  });
+
+  const input = env.createInput([{ name: "secret.txt", size: 42 }]);
+
+  await env.handler({
+    target: input,
+    preventDefault: () => {},
+    stopImmediatePropagation: () => {},
+  });
+
+  assert.equal(env.dispatched.length, 0);
+  assert.equal(input.value, "");
+  assert.equal(typeof env.sendSanitizedHandler, "function");
+
+  env.sendSanitizedHandler();
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(env.composer.value, "REDACTED");
+  assert.equal(env.sendCount, 1);
+  assert.equal(env.dispatched.length, 0);
 });

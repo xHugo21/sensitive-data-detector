@@ -92,27 +92,30 @@ def run_dlp_detector(state: GuardState) -> GuardState:
     """
     text = state.get("normalized_text") or ""
     findings: FieldList = []
+    errors: list[str] = []
 
     try:
         regex_findings = detect_regex_patterns(text, REGEX_PATTERNS)
         findings.extend(regex_findings)
     except Exception as exc:
-        append_error(state, f"Regex detector failed: {exc}")
+        errors.append(f"Regex detector failed: {exc}")
 
     try:
         keyword_findings = detect_keywords(text, KEYWORDS)
         findings.extend(keyword_findings)
     except Exception as exc:
-        append_error(state, f"Keyword detector failed: {exc}")
+        errors.append(f"Keyword detector failed: {exc}")
 
     try:
         checksum_findings = detect_checksums(text)
         findings.extend(checksum_findings)
     except Exception as exc:
-        append_error(state, f"Checksum detector failed: {exc}")
+        errors.append(f"Checksum detector failed: {exc}")
 
-    state["dlp_fields"] = findings
-    return state
+    update: GuardState = {"dlp_fields": findings}
+    if errors:
+        update["errors"] = errors
+    return update
 
 
 def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
@@ -121,13 +124,11 @@ def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
     """
     text = state.get("normalized_text") or ""
     if not text:
-        state["ner_fields"] = []
-        return state
+        return {"ner_fields": []}
 
     ner_config = getattr(fw_config, "ner", None)
     if not ner_config or not ner_config.enabled:
-        state["ner_fields"] = []
-        return state
+        return {"ner_fields": []}
 
     try:
         ner_detector = GlinerNERDetector(
@@ -137,8 +138,9 @@ def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
             device=ner_config.device,
             min_score=ner_config.min_score,
         )
-        state["ner_fields"] = ner_detector.detect(text)
+        return {"ner_fields": ner_detector.detect(text)}
     except Exception as exc:
-        append_error(state, f"NER detector failed: {exc}")
-        state["ner_fields"] = []
-    return state
+        return {
+            "ner_fields": [],
+            "errors": [f"NER detector failed: {exc}"],
+        }

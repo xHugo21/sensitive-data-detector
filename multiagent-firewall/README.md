@@ -146,7 +146,7 @@ so some fields are optional depending on the input and routing:
         {"field": str, "value": str, "source": str}
     ],
     "ner_fields": [               # Raw NER findings (same shape as LLM minus risk)
-        {"field": str, "value": str, "source": str}
+        {"field": str, "value": str, "source": str, "score": float | None}
     ],
     "llm_fields": [               # Raw LLM findings (same shape as LLM minus risk)
         {"field": str, "value": str, "source": str}
@@ -202,14 +202,10 @@ TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
 ```
 
 #### NER Configuration (Optional)
-Install the optional NER extra before enabling GLiNER:
+NER comes as an extra optional dependency due to its large download size. The following command and configuration enables it:
 
 ```bash
 uv sync --extra ner
-```
-
-```bash
-pip install "multiagent-firewall[ner]"
 ```
 
 ```bash

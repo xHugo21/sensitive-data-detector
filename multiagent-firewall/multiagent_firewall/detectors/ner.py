@@ -67,7 +67,7 @@ def _load_gliner(model_name: str, device: str | None):
         from gliner import GLiNER
     except Exception as exc:
         raise RuntimeError(
-            "GLiNER is not installed. Add 'gliner' to multiagent-firewall dependencies."
+            "GLiNER is not installed. Install it as an extra using uv sync --extra ner"
         ) from exc
 
     model = GLiNER.from_pretrained(model_name)

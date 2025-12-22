@@ -135,7 +135,6 @@ def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
             model=ner_config.model,
             labels=ner_config.labels,
             label_map=ner_config.label_map,
-            device=ner_config.device,
             min_score=ner_config.min_score,
         )
         return {"ner_fields": ner_detector.detect(text)}

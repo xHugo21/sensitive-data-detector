@@ -45,7 +45,6 @@ class NERConfig:
     model: str = "urchade/gliner_multi-v2.1"
     labels: tuple[str, ...] = field(default_factory=lambda: tuple(NER_LABELS.keys()))
     label_map: Dict[str, str] = field(default_factory=lambda: dict(NER_LABELS))
-    device: str | None = None
     min_score: float = 0.5
 
 
@@ -103,7 +102,6 @@ class GuardConfig:
 
         ner_enabled = _str_to_bool(os.getenv("NER_ENABLED"), False)
         ner_model = (os.getenv("NER_MODEL") or "urchade/gliner_multi-v2.1").strip()
-        ner_device = os.getenv("NER_DEVICE")
         ner_min_score = _parse_float(
             os.getenv("NER_MIN_SCORE"),
             0.5,
@@ -125,7 +123,6 @@ class GuardConfig:
                 model=ner_model or "urchade/gliner_multi-v2.1",
                 labels=tuple(NER_LABELS.keys()),
                 label_map=ner_label_map,
-                device=ner_device,
                 min_score=ner_min_score,
             ),
             debug=debug_mode,

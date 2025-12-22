@@ -15,7 +15,6 @@ class GlinerNERDetector:
         model: str,
         labels: Sequence[str],
         label_map: Mapping[str, str] | None = None,
-        device: str | None = None,
         min_score: float = 0.0,
     ) -> None:
         if not labels:
@@ -26,13 +25,12 @@ class GlinerNERDetector:
             key.strip().upper(): value.strip().upper()
             for key, value in (label_map or {}).items()
         }
-        self._device = device
         self._min_score = min_score
 
     def detect(self, text: str) -> FieldList:
         if not text:
             return []
-        gliner = _load_gliner(self._model_name, self._device)
+        gliner = _load_gliner(self._model_name)
         entities = gliner.predict_entities(text, self._labels)
         findings: FieldList = []
         for entity in entities or []:
@@ -62,7 +60,7 @@ class GlinerNERDetector:
 
 
 @lru_cache(maxsize=2)
-def _load_gliner(model_name: str, device: str | None):
+def _load_gliner(model_name: str):
     try:
         from gliner import GLiNER
     except Exception as exc:
@@ -71,8 +69,6 @@ def _load_gliner(model_name: str, device: str | None):
         ) from exc
 
     model = GLiNER.from_pretrained(model_name)
-    if device:
-        model = model.to(device)
     return model
 
 

@@ -1,6 +1,7 @@
 (function initFileInterceptor(root) {
   const sg = (root.SG = root.SG || {});
   let attached = false;
+  let lastFileIntent = null;
 
   function now() {
     return (root.performance || {}).now ? performance.now() : Date.now();
@@ -10,74 +11,191 @@
     if (attached) return;
     attached = true;
     document.addEventListener("change", handleFileChange, true);
+    sg.panel.onSendAnyway(handleUploadAnyway);
+    sg.panel.onDismiss(handleDismiss);
     console.log(
       "[SensitiveDataDetectorExtension] File interceptor attached - monitoring all file uploads",
     );
+  }
+
+  function consumeBypassFlag(input) {
+    if (!input || !input.dataset) return false;
+    if (input.dataset.sgBypass !== "true") return false;
+    delete input.dataset.sgBypass;
+    return true;
+  }
+
+  function allowUpload(input, files) {
+    if (!input) return;
+
+    try {
+      const dataTransfer = new DataTransfer();
+      if (Array.isArray(files)) {
+        files.forEach((file) => dataTransfer.items.add(file));
+      }
+      if (dataTransfer.files?.length) {
+        try {
+          input.files = dataTransfer.files;
+        } catch (err) {
+          console.warn(
+            "[SensitiveDataDetectorExtension] Could not reset file input files:",
+            err,
+          );
+        }
+      }
+    } catch (err) {
+      console.warn(
+        "[SensitiveDataDetectorExtension] Could not rebuild file list:",
+        err,
+      );
+    }
+
+    if (input.dataset) {
+      input.dataset.sgBypass = "true";
+    }
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function clearInput(input) {
+    if (!input) return;
+    try {
+      input.value = "";
+    } catch (err) {
+      // Ignore if browser prevents programmatic clearing.
+    }
+  }
+
+  function shouldBlockFile(result) {
+    if (!result) return false;
+    const decision = String(result.decision || "").toLowerCase();
+    if (decision === "block") return true;
+    return result.risk_level === "high";
+  }
+
+  function shouldWarnFile(result) {
+    if (!result) return false;
+    const decision = String(result.decision || "").toLowerCase();
+    return decision === "warn";
   }
 
   async function handleFileChange(event) {
     const input = event.target;
     if (!input || input.type !== "file" || !input.files?.length) return;
 
-    let panelShown = false;
-    const file = input.files[0];
-    if (!file) return;
+    if (consumeBypassFlag(input)) return;
 
-    // Check if file type is supported
-    if (!sg.fileAnalyzer.isSupportedFile(file.name)) {
-      console.log(
-        `[SensitiveDataDetectorExtension] Skipping unsupported file: ${file.name}`,
-      );
-      return;
-    }
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
 
-    const fileInfo = sg.fileAnalyzer.getFileInfo(file.name);
-    console.log(
-      `[SensitiveDataDetectorExtension] Detected ${fileInfo.label} file upload: ${file.name}`,
+    const supportedFiles = files.filter((file) =>
+      sg.fileAnalyzer.isSupportedFile(file.name),
     );
 
+    const inFlight = sg.alertStore.isInFlight(input);
+    if (!inFlight && supportedFiles.length === 0) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    if (inFlight) return;
+
+    sg.alertStore.beginInFlight(input);
+
     const startedAt = now();
+    let durationMs = 0;
+    let panelShown = false;
+    let loadingShown = false;
 
     try {
+      const previewFile = supportedFiles[0];
+      const previewInfo = sg.fileAnalyzer.getFileInfo(previewFile.name);
+      console.log(
+        `[SensitiveDataDetectorExtension] Detected ${previewInfo.label} file upload: ${previewFile.name}`,
+      );
+
       // Show loading state
       sg.loadingState.show({
-        message: `Analyzing ${fileInfo.label.toLowerCase()}...`,
+        message:
+          supportedFiles.length > 1
+            ? "Analyzing files..."
+            : `Analyzing ${previewInfo.label.toLowerCase()}...`,
       });
+      loadingShown = true;
 
-      // Analyze file through backend
-      const result = await sg.fileAnalyzer.analyzeFile(file);
-      const durationMs = now() - startedAt;
+      let blocked = null;
+      let warned = null;
 
-      // Only display panel if blocked
-      if (sg.riskUtils.shouldBlock(result)) {
-        const displayName = `${fileInfo.label}: ${file.name}`;
-        sg.panel.render(result, displayName, { durationMs });
+      for (const file of supportedFiles) {
+        const result = await sg.fileAnalyzer.analyzeFile(file);
+        if (result?.extracted_snippet) {
+          console.log(
+            `[SensitiveDataDetectorExtension] Extracted snippet from ${file.name}:`,
+            result.extracted_snippet.substring(0, 200) + "...",
+          );
+        }
+        if (result?.detected_fields?.length > 0) {
+          console.log(
+            `[SensitiveDataDetectorExtension] Detected ${result.detected_fields.length} sensitive fields in ${file.name}:`,
+            result.detected_fields.map((f) => f.field),
+          );
+        }
+        if (shouldBlockFile(result)) {
+          blocked = { file, result };
+          break;
+        }
+        if (!warned && shouldWarnFile(result)) {
+          warned = { file, result };
+        }
+      }
+
+      durationMs = now() - startedAt;
+
+      if (blocked) {
+        const fileInfo = sg.fileAnalyzer.getFileInfo(blocked.file.name);
+        const displayName = `${fileInfo.label}: ${blocked.file.name}`;
+        lastFileIntent = {
+          input,
+          files,
+          file: blocked.file,
+          result: blocked.result,
+        };
+        sg.panel.render(blocked.result, displayName, {
+          durationMs,
+          mode: "block",
+          requireAction: true,
+          primaryActionLabel: "Upload anyway",
+          hideSanitized: true,
+        });
         panelShown = true;
+        clearInput(input);
+        return;
       }
 
-      // Hide loading state after panel decision so the toast behaves correctly
-      sg.loadingState.hide({ durationMs, panelShown });
-
-      // Log extracted text snippet if available
-      if (result?.extracted_snippet) {
-        console.log(
-          `[SensitiveDataDetectorExtension] Extracted snippet from ${file.name}:`,
-          result.extracted_snippet.substring(0, 200) + "...",
-        );
+      if (warned) {
+        const fileInfo = sg.fileAnalyzer.getFileInfo(warned.file.name);
+        const displayName = `${fileInfo.label}: ${warned.file.name}`;
+        allowUpload(input, files);
+        sg.panel.render(warned.result, displayName, {
+          durationMs,
+          mode: "warn",
+          requireAction: false,
+          hideSanitized: true,
+        });
+        panelShown = true;
+        return;
       }
 
-      // Log detection summary
-      if (result?.detected_fields?.length > 0) {
-        console.log(
-          `[SensitiveDataDetectorExtension] Detected ${result.detected_fields.length} sensitive fields in ${file.name}:`,
-          result.detected_fields.map((f) => f.field),
-        );
-      }
+      allowUpload(input, files);
     } catch (err) {
-      const durationMs = now() - startedAt;
-      sg.loadingState.hide({ durationMs, panelShown: true });
+      durationMs = now() - startedAt;
+      const fallbackFile = supportedFiles[0] || files[0];
+      const fileInfo = fallbackFile
+        ? sg.fileAnalyzer.getFileInfo(fallbackFile.name)
+        : { label: "File" };
       console.error(
-        `[SensitiveDataDetectorExtension] Error analyzing ${file.name}:`,
+        `[SensitiveDataDetectorExtension] Error analyzing ${
+          fallbackFile?.name || "file"
+        }:`,
         err,
       );
 
@@ -88,10 +206,44 @@
           detected_fields: [],
           error: `Failed to analyze file: ${err.message}`,
         },
-        `${fileInfo.label}: ${file.name}`,
-        { durationMs },
+        fallbackFile
+          ? `${fileInfo.label}: ${fallbackFile.name}`
+          : "File upload",
+        {
+          durationMs,
+          mode: "warn",
+          requireAction: true,
+          primaryActionLabel: "Upload anyway",
+          hideSanitized: true,
+        },
       );
+      panelShown = true;
+      lastFileIntent = {
+        input,
+        files,
+        file: fallbackFile || null,
+        error: err,
+      };
+      clearInput(input);
+    } finally {
+      sg.alertStore.endInFlight(input);
+      if (loadingShown) {
+        sg.loadingState.hide({ durationMs, panelShown });
+      }
     }
+  }
+
+  function handleUploadAnyway() {
+    if (!lastFileIntent) return;
+    const { input, files } = lastFileIntent;
+    sg.panel.hide();
+    allowUpload(input, files);
+    lastFileIntent = null;
+  }
+
+  function handleDismiss() {
+    if (!lastFileIntent) return;
+    lastFileIntent = null;
   }
 
   sg.fileInterceptor = { attach };

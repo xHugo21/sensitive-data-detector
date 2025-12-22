@@ -39,19 +39,8 @@ KEYWORDS = {
     ],
 }
 
-# Default labels for GLiNER-based NER detection.
-NER_LABELS = (
-    "PERSON",
-    "ORGANIZATION",
-    "LOCATION",
-    "ADDRESS",
-    "CITY",
-    "STATE",
-    "ZIPCODE",
-)
-
-# Map NER labels to canonical risk fields.
-NER_LABEL_MAP = {
+# Labels for NER detection and their mapping to application sensitive fields.
+NER_LABELS = {
     "PERSON": "FIRSTNAME",
     "ORGANIZATION": "COMPANYNAME",
     "LOCATION": "CITY",

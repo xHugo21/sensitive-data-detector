@@ -218,7 +218,7 @@ NER_MODEL=urchade/gliner_multi-v2.1      # GLiNER model name or path (See urchad
 NER_MIN_SCORE=0.5            # Minimum score threshold (default: 0.5)
 NER_DEVICE=cpu               # Optional torch device (cpu, cuda, mps)
 ```
-Label mapping is defined in `multiagent-firewall/multiagent_firewall/constants.py`.
+Label mapping is defined in `multiagent-firewall/multiagent_firewall/constants.py` as `NER_LABELS` (NER label → multiagent-firewall field).
 
 #### LLM OCR Fallback (Optional)
 

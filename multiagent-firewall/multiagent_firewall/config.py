@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
-from .constants import NER_LABELS, NER_LABEL_MAP
+from .constants import NER_LABELS
 from .detectors.utils import load_litellm_env
 
 
@@ -43,8 +43,8 @@ class OCRConfig:
 class NERConfig:
     enabled: bool = False
     model: str = "urchade/gliner_multi-v2.1"
-    labels: tuple[str, ...] = field(default_factory=lambda: tuple(NER_LABELS))
-    label_map: Dict[str, str] = field(default_factory=lambda: dict(NER_LABEL_MAP))
+    labels: tuple[str, ...] = field(default_factory=lambda: tuple(NER_LABELS.keys()))
+    label_map: Dict[str, str] = field(default_factory=lambda: dict(NER_LABELS))
     device: str | None = None
     min_score: float = 0.5
 
@@ -109,7 +109,7 @@ class GuardConfig:
             0.5,
             min_value=0.0,
         )
-        ner_label_map = dict(NER_LABEL_MAP)
+        ner_label_map = dict(NER_LABELS)
 
         return cls(
             llm=llm_config,
@@ -123,7 +123,7 @@ class GuardConfig:
             ner=NERConfig(
                 enabled=ner_enabled,
                 model=ner_model or "urchade/gliner_multi-v2.1",
-                labels=tuple(NER_LABELS),
+                labels=tuple(NER_LABELS.keys()),
                 label_map=ner_label_map,
                 device=ner_device,
                 min_score=ner_min_score,

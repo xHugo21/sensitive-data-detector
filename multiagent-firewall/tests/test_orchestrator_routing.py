@@ -30,7 +30,7 @@ class TestNoDetectionsRouting:
     """Test routing when no sensitive data is detected."""
 
     def test_no_dlp_no_llm_skips_all_processing(self, guard_config):
-        """When neither DLP nor LLM detect anything, skip risk/policy/remediation/anonymization."""
+        """When neither DLP/NER nor LLM detect anything, skip risk/policy/remediation/anonymization."""
         executed_nodes = []
 
         def track_node(node_name):
@@ -86,8 +86,8 @@ class TestNoDetectionsRouting:
         assert result.get("decision") == "allow"
         assert result.get("risk_level") == "none"
 
-    def test_route_merge_dlp_to_llm_detector_directly(self, guard_config):
-        """When DLP finds nothing, route directly to llm_detector (skip anonymize_llm)."""
+    def test_route_merge_dlp_ner_to_llm_detector_directly(self, guard_config):
+        """When DLP/NER find nothing, route directly to llm_detector (skip anonymize_dlp_ner)."""
         routing_path = []
 
         def track_dlp(state):
@@ -96,12 +96,12 @@ class TestNoDetectionsRouting:
             state["detected_fields"] = []
             return state
 
-        def track_merge_dlp(state):
-            routing_path.append("merge_dlp")
+        def track_merge_dlp_ner(state):
+            routing_path.append("merge_dlp_ner")
             return state
 
-        def track_anonymize_llm(state, **kwargs):
-            routing_path.append("anonymize_llm")
+        def track_anonymize_dlp_ner(state, **kwargs):
+            routing_path.append("anonymize_dlp_ner")
             return state
 
         def track_llm_detector(state, **kwargs):
@@ -115,11 +115,11 @@ class TestNoDetectionsRouting:
             ),
             patch(
                 "multiagent_firewall.nodes.merge_detections",
-                side_effect=track_merge_dlp,
+                side_effect=track_merge_dlp_ner,
             ),
             patch(
                 "multiagent_firewall.nodes.anonymize_text",
-                side_effect=track_anonymize_llm,
+                side_effect=track_anonymize_dlp_ner,
             ),
             patch("multiagent_firewall.nodes.detection.LiteLLMDetector") as mock_llm,
         ):
@@ -130,17 +130,17 @@ class TestNoDetectionsRouting:
             orchestrator = GuardOrchestrator(guard_config)
             orchestrator.run(text="Clean text")
 
-        # Verify anonymize_llm was NOT called (direct route to llm_detector)
+        # Verify anonymize_dlp_ner was NOT called (direct route to llm_detector)
         assert "dlp_detector" in routing_path
-        assert "merge_dlp" in routing_path
-        assert "anonymize_llm" not in routing_path
+        assert "merge_dlp_ner" in routing_path
+        assert "anonymize_dlp_ner" not in routing_path
 
 
 class TestDLPOnlyRouting:
     """Test routing when only DLP detects sensitive data."""
 
     def test_dlp_findings_trigger_risk_policy_chain(self, guard_config):
-        """When DLP finds data, execute risk_dlp -> policy_dlp -> anonymize_llm -> llm_detector."""
+        """When DLP finds data, execute risk_dlp_ner -> policy_dlp_ner -> anonymize_dlp_ner -> llm_detector."""
         executed_nodes = []
 
         def fake_dlp(state):
@@ -199,7 +199,7 @@ class TestDLPOnlyRouting:
         assert "dlp_detector" in executed_nodes
         assert "risk" in executed_nodes
         assert "policy" in executed_nodes
-        assert "anonymize" in executed_nodes  # anonymize_llm + final_anonymize
+        assert "anonymize" in executed_nodes  # anonymize_dlp_ner + final_anonymize
         assert "remediation" in executed_nodes
 
     def test_dlp_block_skips_llm_detector(self, guard_config):
@@ -359,7 +359,7 @@ class TestBothDetectorsRouting:
                     "llm_fields", []
                 )
             else:
-                # merge_dlp: just dlp
+                # merge_dlp_ner: just dlp
                 state["detected_fields"] = state.get("dlp_fields", [])
             return state
 
@@ -499,10 +499,10 @@ class TestRemediationAnonymizationSequence:
 
 
 class TestAnonymizeLLMConditional:
-    """Test that anonymize_llm only runs when DLP has findings."""
+    """Test that anonymize_dlp_ner only runs when pre-LLM findings exist."""
 
-    def test_anonymize_llm_runs_only_with_dlp_findings(self, guard_config):
-        """anonymize_llm should only execute when dlp_fields is not empty."""
+    def test_anonymize_dlp_ner_runs_only_with_dlp_findings(self, guard_config):
+        """anonymize_dlp_ner should only execute when pre-LLM findings exist."""
         anonymize_calls = []
 
         def track_anonymize(state, **kwargs):
@@ -550,12 +550,11 @@ class TestAnonymizeLLMConditional:
             orchestrator = GuardOrchestrator(guard_config)
             orchestrator.run(text="Email: test@example.com")
 
-        # Should have called anonymize_text at least twice: anonymize_llm (dlp_fields) and final_anonymize (detected_fields)
-        assert "dlp_fields" in anonymize_calls
-        assert "detected_fields" in anonymize_calls
+        # Should have called anonymize_text at least twice: anonymize_dlp_ner + final_anonymize
+        assert anonymize_calls.count("detected_fields") >= 2
 
-    def test_anonymize_llm_skipped_without_dlp_findings(self, guard_config):
-        """anonymize_llm should be skipped when dlp_fields is empty."""
+    def test_anonymize_dlp_ner_skipped_without_dlp_findings(self, guard_config):
+        """anonymize_dlp_ner should be skipped when no pre-LLM findings exist."""
         anonymize_calls = []
 
         def track_anonymize(state, **kwargs):
@@ -584,9 +583,7 @@ class TestAnonymizeLLMConditional:
             orchestrator = GuardOrchestrator(guard_config)
             orchestrator.run(text="Clean text")
 
-        # Should NOT have called anonymize_llm (dlp_fields)
-        assert "dlp_fields" not in anonymize_calls
-        # Should also NOT have called final_anonymize since no detections
+        # Should NOT have called anonymize_dlp_ner or final_anonymize since no detections
         assert len(anonymize_calls) == 0
 
 

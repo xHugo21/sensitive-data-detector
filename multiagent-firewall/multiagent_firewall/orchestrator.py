@@ -8,7 +8,7 @@ from langgraph.graph import END, StateGraph
 from . import nodes
 from .config import GuardConfig
 from .routers import (
-    route_after_dlp,
+    route_after_dlp_ner,
     route_after_merge_final,
     should_read_document,
     should_run_llm,
@@ -71,18 +71,22 @@ class GuardOrchestrator:
         )
         graph.add_node("normalize", nodes.normalize)
         graph.add_node("dlp_detector", nodes.run_dlp_detector)
-        graph.add_node("merge_dlp", nodes.merge_detections)
         graph.add_node(
-            "anonymize_llm",
+            "ner_detector",
+            partial(nodes.run_ner_detector, fw_config=self._config),
+        )
+        graph.add_node("merge_dlp_ner", nodes.merge_detections)
+        graph.add_node(
+            "anonymize_dlp_ner",
             partial(
                 nodes.anonymize_text,
                 fw_config=self._config,
-                findings_key="dlp_fields",
+                findings_key="detected_fields",
                 text_keys=("normalized_text",),
             ),
         )
-        graph.add_node("risk_dlp", nodes.evaluate_risk)
-        graph.add_node("policy_dlp", nodes.apply_policy)
+        graph.add_node("risk_dlp_ner", nodes.evaluate_risk)
+        graph.add_node("policy_dlp_ner", nodes.apply_policy)
         graph.add_node(
             "llm_detector",
             partial(nodes.run_llm_detector, fw_config=self._config),
@@ -110,17 +114,19 @@ class GuardOrchestrator:
         )
         graph.add_edge("llm_ocr", "normalize")
         graph.add_edge("normalize", "dlp_detector")
-        graph.add_edge("dlp_detector", "merge_dlp")
+        graph.add_edge("normalize", "ner_detector")
+        graph.add_edge("dlp_detector", "merge_dlp_ner")
+        graph.add_edge("ner_detector", "merge_dlp_ner")
         graph.add_conditional_edges(
-            "merge_dlp",
-            route_after_dlp,
+            "merge_dlp_ner",
+            route_after_dlp_ner,
         )
-        graph.add_edge("risk_dlp", "policy_dlp")
+        graph.add_edge("risk_dlp_ner", "policy_dlp_ner")
         graph.add_conditional_edges(
-            "policy_dlp",
+            "policy_dlp_ner",
             should_run_llm,
         )
-        graph.add_edge("anonymize_llm", "llm_detector")
+        graph.add_edge("anonymize_dlp_ner", "llm_detector")
         graph.add_edge("llm_detector", "merge_final")
         graph.add_conditional_edges(
             "merge_final",

@@ -19,16 +19,18 @@ flowchart TD
     LLMOCR --> Normalize
 
     Normalize --> DLP[dlp_detector<br/>Regex, Keyword, Checksum]
-    DLP --> MergeDLP[merge_dlp<br/>Merge detections]
-    MergeDLP --> HasDLP{Any DLP findings?}
+    Normalize --> NER[ner_detector<br/>GLiNER NER]
+    DLP --> MergeDLP[merge_dlp_ner<br/>Merge detections]
+    NER --> MergeDLP
+    MergeDLP --> HasPreLLM{Any DLP/NER findings?}
 
-    HasDLP -->|Yes| RiskDLP[risk_dlp<br/>Risk evaluation]
-    HasDLP -->|No| LLM[llm_detector<br/>LLM-based detection]
+    HasPreLLM -->|Yes| RiskDLP[risk_dlp_ner<br/>Risk evaluation]
+    HasPreLLM -->|No| LLM[llm_detector<br/>LLM-based detection]
 
-    RiskDLP --> PolicyDLP[policy_dlp<br/>Policy check]
+    RiskDLP --> PolicyDLP[policy_dlp_ner<br/>Policy check]
     PolicyDLP --> DecisionBlock{decision = block?}
     DecisionBlock -->|Yes| Remediation[remediation<br/>Generate remediation message]
-    DecisionBlock -->|No| AnonymizeLLM[anonymize_llm<br/>Anonymize DLP findings]
+    DecisionBlock -->|No| AnonymizeLLM[anonymize_dlp_ner<br/>Anonymize DLP/NER findings]
 
     AnonymizeLLM --> LLM
 
@@ -47,7 +49,7 @@ flowchart TD
     style End fill:#e1f5ff,stroke:#333,color:#000
     style HasFile fill:#fff4e6,stroke:#333,color:#000
     style NeedsLLMOCR fill:#fff4e6,stroke:#333,color:#000
-    style HasDLP fill:#fff4e6,stroke:#333,color:#000
+    style HasPreLLM fill:#fff4e6,stroke:#333,color:#000
     style FinalRoute fill:#fff4e6,stroke:#333,color:#000
     style DecisionBlock fill:#fff4e6,stroke:#333,color:#000
     style Document fill:#e6f7ff,stroke:#333,color:#000
@@ -56,6 +58,7 @@ flowchart TD
     style FinalAnonymize fill:#f0e6ff,stroke:#333,color:#000
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
+    style NER fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000
     style MergeDLP fill:#fff9e6,stroke:#333,color:#000
     style MergeFinal fill:#fff9e6,stroke:#333,color:#000
@@ -136,11 +139,14 @@ so some fields are optional depending on the input and routing:
             "field": str,         # Canonical field name (EMAIL, PASSWORD, OTHER, ...)
             "value": str,         # Detected value
             "risk": str,          # low/medium/high
-            "source": str         # dlp_regex/dlp_keyword/dlp_checksum/llm_explicit/llm_inferred
+            "source": str         # dlp_regex/dlp_keyword/dlp_checksum/ner_gliner/llm_explicit/llm_inferred
         }
     ],
     "dlp_fields": [               # Raw DLP findings (same shape as LLM minus risk)
         {"field": str, "value": str, "source": str}
+    ],
+    "ner_fields": [               # Raw NER findings (same shape as LLM minus risk)
+        {"field": str, "value": str, "source": str, "score": float | None}
     ],
     "llm_fields": [               # Raw LLM findings (same shape as LLM minus risk)
         {"field": str, "value": str, "source": str}
@@ -194,6 +200,20 @@ OCR_LANG=eng                 # Tesseract language code (default: eng, more langu
 OCR_CONFIDENCE_THRESHOLD=60  # Minimum confidence 0-100 (default: 0)
 TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
 ```
+
+#### NER Configuration (Optional)
+NER comes as an extra optional dependency due to its large download size. The following command and configuration enables it:
+
+```bash
+uv sync --extra ner
+```
+
+```bash
+NER_ENABLED=true             # Enable GLiNER-based NER detector (default: false)
+NER_MODEL=urchade/gliner_multi-v2.1      # GLiNER model name or path (See urchade available models: https://huggingface.co/urchade/gliner_multi-v2.1#available-models)
+NER_MIN_SCORE=0.7            # Minimum score threshold (default: 0.5)
+```
+Label mapping is defined in `multiagent-firewall/multiagent_firewall/constants.py` as `NER_LABELS` (NER label → multiagent-firewall field).
 
 #### LLM OCR Fallback (Optional)
 

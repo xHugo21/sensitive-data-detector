@@ -17,6 +17,11 @@ dependencies = [
     "pillow>=10.0.0",
 ]
 
+[project.optional-dependencies]
+ner = [
+    "gliner>=0.1.15",
+]
+
 [dependency-groups]
 test = [
     "pytest>=9.0.1",

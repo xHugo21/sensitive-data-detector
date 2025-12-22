@@ -7,5 +7,5 @@ from ..types import GuardState
 DetectorResult = Mapping[str, Any]
 FieldList = List[Dict[str, Any]]
 LLMDetector = Callable[[str, str | None], DetectorResult]
+NERDetector = Callable[[str], FieldList]
 OCRDetector = Callable[[GuardState], FieldList]
-

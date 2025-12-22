@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..detectors import LiteLLMDetector
+from ..detectors import GlinerNERDetector, LiteLLMDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
 from ..constants import KEYWORDS, REGEX_PATTERNS
 from ..types import FieldList, GuardState
@@ -92,24 +92,54 @@ def run_dlp_detector(state: GuardState) -> GuardState:
     """
     text = state.get("normalized_text") or ""
     findings: FieldList = []
+    errors: list[str] = []
 
     try:
         regex_findings = detect_regex_patterns(text, REGEX_PATTERNS)
         findings.extend(regex_findings)
     except Exception as exc:
-        append_error(state, f"Regex detector failed: {exc}")
+        errors.append(f"Regex detector failed: {exc}")
 
     try:
         keyword_findings = detect_keywords(text, KEYWORDS)
         findings.extend(keyword_findings)
     except Exception as exc:
-        append_error(state, f"Keyword detector failed: {exc}")
+        errors.append(f"Keyword detector failed: {exc}")
 
     try:
         checksum_findings = detect_checksums(text)
         findings.extend(checksum_findings)
     except Exception as exc:
-        append_error(state, f"Checksum detector failed: {exc}")
+        errors.append(f"Checksum detector failed: {exc}")
 
-    state["dlp_fields"] = findings
-    return state
+    update: GuardState = {"dlp_fields": findings}
+    if errors:
+        update["errors"] = errors
+    return update
+
+
+def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
+    """
+    Run NER-based detection
+    """
+    text = state.get("normalized_text") or ""
+    if not text:
+        return {"ner_fields": []}
+
+    ner_config = getattr(fw_config, "ner", None)
+    if not ner_config or not ner_config.enabled:
+        return {"ner_fields": []}
+
+    try:
+        ner_detector = GlinerNERDetector(
+            model=ner_config.model,
+            labels=ner_config.labels,
+            label_map=ner_config.label_map,
+            min_score=ner_config.min_score,
+        )
+        return {"ner_fields": ner_detector.detect(text)}
+    except Exception as exc:
+        return {
+            "ner_fields": [],
+            "errors": [f"NER detector failed: {exc}"],
+        }

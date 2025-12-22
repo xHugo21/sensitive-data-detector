@@ -24,17 +24,19 @@ def should_run_llm_ocr(state: GuardState) -> str:
 
 
 def should_run_llm(state: GuardState) -> str:
-    """Route to anonymize_llm unless policy already blocks."""
+    """Route to anonymize_dlp_ner unless policy already blocks."""
     decision = (state.get("decision") or "").lower()
     if decision == "block":
         return "remediation"
-    return "anonymize_llm"
+    return "anonymize_dlp_ner"
 
 
-def route_after_dlp(state: GuardState) -> str:
-    """Skip DLP risk/policy if no DLP detections were found."""
-    if state.get("dlp_fields"):
-        return "risk_dlp"
+def route_after_dlp_ner(state: GuardState) -> str:
+    """Skip pre-LLM risk/policy if no DLP/NER detections were found."""
+    if state.get("detected_fields") or state.get("dlp_fields") or state.get(
+        "ner_fields"
+    ):
+        return "risk_dlp_ner"
     return "llm_detector"
 
 
@@ -43,13 +45,28 @@ def route_after_merge_final(state: GuardState) -> str:
     detected_fields = state.get("detected_fields") or []
     llm_fields = state.get("llm_fields") or []
     dlp_fields = state.get("dlp_fields") or []
+    ner_fields = state.get("ner_fields") or []
+
+    def signatures(fields) -> set[tuple[str, str]]:
+        seen = set()
+        for item in fields:
+            if not isinstance(item, dict):
+                continue
+            field = str(item.get("field") or "").strip().lower()
+            value = str(item.get("value") or "").strip().lower()
+            if not field and not value:
+                continue
+            seen.add((field, value))
+        return seen
 
     # If no detections at all, skip directly to END (no remediation needed)
     if not detected_fields:
         return END
 
     # If we have a decision already and no new fields from LLM, skip to remediation
-    no_new_fields = dlp_fields is not None and len(detected_fields) == len(dlp_fields)
+    pre_llm_signatures = signatures(dlp_fields) | signatures(ner_fields)
+    detected_signatures = signatures(detected_fields)
+    no_new_fields = detected_signatures.issubset(pre_llm_signatures)
     if no_new_fields and state.get("decision"):
         return "remediation"
     if not llm_fields and state.get("decision"):

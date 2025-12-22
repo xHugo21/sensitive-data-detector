@@ -431,9 +431,15 @@
     const hasSanitizedText =
       typeof result?.anonymized_text === "string" &&
       result.anonymized_text.trim().length > 0;
+    const showActions = mode !== "warn" || meta?.requireAction === true;
+    const showSanitized = hasSanitizedText && !meta?.hideSanitized;
+    const primaryLabel = meta?.primaryActionLabel || "Send anyway";
+    const secondaryLabel = meta?.secondaryActionLabel || "Send sanitized";
+    if (btnSendAnyway) btnSendAnyway.textContent = primaryLabel;
+    if (btnSendSanitized) btnSendSanitized.textContent = secondaryLabel;
 
     if (actions && btnDismiss && btnSendAnyway) {
-      if (mode === "warn") {
+      if (!showActions) {
         // Warn mode: hide action buttons, show only dismiss at full width
         btnSendSanitized.style.display = "none";
         btnSendAnyway.style.display = "none";
@@ -442,12 +448,12 @@
         actions.style.justifyContent = "flex-start";
         actions.style.gap = "10px";
       } else {
-        // Block mode: show action buttons
+        // Block mode or gated warn: show action buttons
         if (!actions.contains(btnSendAnyway))
           actions.insertBefore(btnSendAnyway, btnDismiss);
         if (!actions.contains(btnSendSanitized))
           actions.insertBefore(btnSendSanitized, btnSendAnyway);
-        btnSendSanitized.style.display = hasSanitizedText
+        btnSendSanitized.style.display = showSanitized
           ? "inline-block"
           : "none";
         btnSendAnyway.style.display = "inline-block";

@@ -39,6 +39,28 @@ KEYWORDS = {
     ],
 }
 
+# Default labels for GLiNER-based NER detection.
+NER_LABELS = (
+    "PERSON",
+    "ORGANIZATION",
+    "LOCATION",
+    "ADDRESS",
+    "CITY",
+    "STATE",
+    "ZIPCODE",
+)
+
+# Map NER labels to canonical risk fields.
+NER_LABEL_MAP = {
+    "PERSON": "FIRSTNAME",
+    "ORGANIZATION": "COMPANYNAME",
+    "LOCATION": "CITY",
+    "ADDRESS": "STREET",
+    "CITY": "CITY",
+    "STATE": "STATE",
+    "ZIPCODE": "ZIPCODE",
+}
+
 # Defines the scoring value each detected field category sums
 RISK_SCORE = {
     "high": 6,

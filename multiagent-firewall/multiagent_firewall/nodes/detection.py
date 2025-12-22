@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..detectors import LiteLLMDetector
+from ..detectors import GlinerNERDetector, LiteLLMDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
 from ..constants import KEYWORDS, REGEX_PATTERNS
 from ..types import FieldList, GuardState
@@ -112,4 +112,33 @@ def run_dlp_detector(state: GuardState) -> GuardState:
         append_error(state, f"Checksum detector failed: {exc}")
 
     state["dlp_fields"] = findings
+    return state
+
+
+def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
+    """
+    Run NER-based detection
+    """
+    text = state.get("normalized_text") or ""
+    if not text:
+        state["ner_fields"] = []
+        return state
+
+    ner_config = getattr(fw_config, "ner", None)
+    if not ner_config or not ner_config.enabled:
+        state["ner_fields"] = []
+        return state
+
+    try:
+        ner_detector = GlinerNERDetector(
+            model=ner_config.model,
+            labels=ner_config.labels,
+            label_map=ner_config.label_map,
+            device=ner_config.device,
+            min_score=ner_config.min_score,
+        )
+        state["ner_fields"] = ner_detector.detect(text)
+    except Exception as exc:
+        append_error(state, f"NER detector failed: {exc}")
+        state["ner_fields"] = []
     return state

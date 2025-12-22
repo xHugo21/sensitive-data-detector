@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
+from .constants import NER_LABELS, NER_LABEL_MAP
 from .detectors.utils import load_litellm_env
 
 
@@ -11,6 +12,16 @@ def _str_to_bool(value: str | None, default: bool) -> bool:
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _parse_float(value: str | None, default: float, *, min_value: float) -> float:
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except ValueError:
+        return default
+    return max(min_value, parsed)
 
 
 @dataclass(frozen=True)
@@ -29,10 +40,21 @@ class OCRConfig:
 
 
 @dataclass(frozen=True)
+class NERConfig:
+    enabled: bool = False
+    model: str = "gliner_medium"
+    labels: tuple[str, ...] = field(default_factory=lambda: tuple(NER_LABELS))
+    label_map: Dict[str, str] = field(default_factory=lambda: dict(NER_LABEL_MAP))
+    device: str | None = None
+    min_score: float = 0.5
+
+
+@dataclass(frozen=True)
 class GuardConfig:
     llm: LLMConfig
     llm_ocr: LLMConfig | None = None
     ocr: OCRConfig = field(default_factory=OCRConfig)
+    ner: NERConfig = field(default_factory=NERConfig)
     debug: bool = False
 
     def llm_ocr_config(self) -> LLMConfig:
@@ -79,6 +101,16 @@ class GuardConfig:
 
         debug_mode = _str_to_bool(os.getenv("DEBUG_MODE"), False)
 
+        ner_enabled = _str_to_bool(os.getenv("NER_ENABLED"), False)
+        ner_model = (os.getenv("NER_MODEL") or "gliner_medium").strip()
+        ner_device = os.getenv("NER_DEVICE")
+        ner_min_score = _parse_float(
+            os.getenv("NER_MIN_SCORE"),
+            0.5,
+            min_value=0.0,
+        )
+        ner_label_map = dict(NER_LABEL_MAP)
+
         return cls(
             llm=llm_config,
             llm_ocr=llm_ocr_config,
@@ -87,6 +119,14 @@ class GuardConfig:
                 config=ocr_config,
                 confidence_threshold=threshold,
                 tesseract_cmd=tesseract_cmd,
+            ),
+            ner=NERConfig(
+                enabled=ner_enabled,
+                model=ner_model or "gliner_medium",
+                labels=tuple(NER_LABELS),
+                label_map=ner_label_map,
+                device=ner_device,
+                min_score=ner_min_score,
             ),
             debug=debug_mode,
         )

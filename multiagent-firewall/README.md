@@ -202,6 +202,16 @@ TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
 ```
 
 #### NER Configuration (Optional)
+Install the optional NER extra before enabling GLiNER:
+
+```bash
+uv sync --extra ner
+```
+
+```bash
+pip install "multiagent-firewall[ner]"
+```
+
 ```bash
 NER_ENABLED=true             # Enable GLiNER-based NER detector (default: false)
 NER_MODEL=gliner_medium      # GLiNER model name or path

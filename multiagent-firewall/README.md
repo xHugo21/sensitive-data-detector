@@ -214,7 +214,7 @@ pip install "multiagent-firewall[ner]"
 
 ```bash
 NER_ENABLED=true             # Enable GLiNER-based NER detector (default: false)
-NER_MODEL=gliner_medium      # GLiNER model name or path
+NER_MODEL=urchade/gliner_medium-v2.1      # GLiNER model name or path
 NER_MIN_SCORE=0.5            # Minimum score threshold (default: 0.5)
 NER_DEVICE=cpu               # Optional torch device (cpu, cuda, mps)
 ```

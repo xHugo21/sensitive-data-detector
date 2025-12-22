@@ -42,7 +42,7 @@ class OCRConfig:
 @dataclass(frozen=True)
 class NERConfig:
     enabled: bool = False
-    model: str = "gliner_medium"
+    model: str = "urchade/gliner_medium-v2.1"
     labels: tuple[str, ...] = field(default_factory=lambda: tuple(NER_LABELS))
     label_map: Dict[str, str] = field(default_factory=lambda: dict(NER_LABEL_MAP))
     device: str | None = None
@@ -102,7 +102,7 @@ class GuardConfig:
         debug_mode = _str_to_bool(os.getenv("DEBUG_MODE"), False)
 
         ner_enabled = _str_to_bool(os.getenv("NER_ENABLED"), False)
-        ner_model = (os.getenv("NER_MODEL") or "gliner_medium").strip()
+        ner_model = (os.getenv("NER_MODEL") or "urchade/gliner_medium-v2.1").strip()
         ner_device = os.getenv("NER_DEVICE")
         ner_min_score = _parse_float(
             os.getenv("NER_MIN_SCORE"),
@@ -122,7 +122,7 @@ class GuardConfig:
             ),
             ner=NERConfig(
                 enabled=ner_enabled,
-                model=ner_model or "gliner_medium",
+                model=ner_model or "urchade/gliner_medium-v2.1",
                 labels=tuple(NER_LABELS),
                 label_map=ner_label_map,
                 device=ner_device,

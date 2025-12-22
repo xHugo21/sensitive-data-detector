@@ -41,13 +41,12 @@ KEYWORDS = {
 
 # Labels for NER detection and their mapping to application sensitive fields.
 NER_LABELS = {
-    "PERSON": "FIRSTNAME",
-    "ORGANIZATION": "COMPANYNAME",
-    "LOCATION": "CITY",
-    "ADDRESS": "STREET",
-    "CITY": "CITY",
-    "STATE": "STATE",
-    "ZIPCODE": "ZIPCODE",
+    "person": "FIRSTNAME",
+    "organization": "COMPANYNAME",
+    "street": "STREET",
+    "city": "CITY",
+    "state": "STATE",
+    "zipcode": "ZIPCODE",
 }
 
 # Defines the scoring value each detected field category sums

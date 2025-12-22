@@ -42,6 +42,7 @@ def test_extract_text_from_file_reads_plain_text(tmp_path):
 
 def test_extract_text_from_file_reads_pdf(monkeypatch, tmp_path):
     """Test PDF extraction using pdfplumber"""
+    pytest.importorskip("pdfplumber")
     pdf_path = tmp_path / "doc.pdf"
     pdf_path.write_bytes(b"%PDF-FAKE")
 
@@ -169,7 +170,8 @@ def test_is_image_file_rejects_non_images():
 
 
 @patch('multiagent_firewall.nodes.document._get_default_ocr_detector')
-def test_read_document_with_image_file_and_ocr_detector(mock_get_detector, tmp_path, guard_config):
+@patch('multiagent_firewall.nodes.document._has_ocr_support', return_value=True)
+def test_read_document_with_image_file_and_ocr_detector(mock_has_ocr_support, mock_get_detector, tmp_path, guard_config):
     """Test reading image file with OCR detector"""
     image_path = tmp_path / "screenshot.png"
     image_path.write_bytes(b"fake image data")
@@ -192,7 +194,8 @@ def test_read_document_with_image_file_and_ocr_detector(mock_get_detector, tmp_p
 
 
 @patch('multiagent_firewall.nodes.document._get_default_ocr_detector')
-def test_read_document_with_image_file_no_ocr_detector(mock_get_detector, tmp_path, guard_config):
+@patch('multiagent_firewall.nodes.document._has_ocr_support', return_value=True)
+def test_read_document_with_image_file_no_ocr_detector(mock_has_ocr_support, mock_get_detector, tmp_path, guard_config):
     """Test reading image file when OCR detector fails to initialize"""
     image_path = tmp_path / "screenshot.jpg"
     image_path.write_bytes(b"fake image data")
@@ -248,7 +251,8 @@ def test_read_document_sets_file_type_metadata_for_text(tmp_path, guard_config):
 
 
 @patch('multiagent_firewall.nodes.document._get_default_ocr_detector')
-def test_read_document_handles_ocr_exception(mock_get_detector, tmp_path, guard_config):
+@patch('multiagent_firewall.nodes.document._has_ocr_support', return_value=True)
+def test_read_document_handles_ocr_exception(mock_has_ocr_support, mock_get_detector, tmp_path, guard_config):
     """Test handling OCR detector exceptions"""
     image_path = tmp_path / "bad_image.png"
     image_path.write_bytes(b"corrupt image")
@@ -268,3 +272,47 @@ def test_read_document_handles_ocr_exception(mock_get_detector, tmp_path, guard_
 
     assert result["raw_text"] == ""
     assert any("OCR detection failed" in e for e in result["errors"])
+
+
+@patch('multiagent_firewall.nodes.document._has_pdf_support', return_value=False)
+def test_read_document_warns_when_pdf_support_missing(mock_has_pdf_support, tmp_path, guard_config):
+    pdf_path = tmp_path / "missing_support.pdf"
+    pdf_path.write_bytes(b"%PDF-fake")
+
+    state: GuardState = {
+        "file_path": str(pdf_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state, fw_config=guard_config)
+
+    assert result["raw_text"] == ""
+    assert any(
+        "PDF file detected but PDF support is not installed" in warning
+        for warning in result["warnings"]
+    )
+    assert result["errors"] == []
+
+
+@patch('multiagent_firewall.nodes.document._has_ocr_support', return_value=False)
+def test_read_document_warns_when_ocr_support_missing(mock_has_ocr_support, tmp_path, guard_config):
+    image_path = tmp_path / "missing_support.png"
+    image_path.write_bytes(b"fake image data")
+
+    state: GuardState = {
+        "file_path": str(image_path),
+        "warnings": [],
+        "errors": [],
+        "metadata": {},
+    }
+
+    result = read_document(state, fw_config=guard_config)
+
+    assert result["raw_text"] == ""
+    assert any(
+        "OCR dependencies are not installed" in warning
+        for warning in result["warnings"]
+    )
+    assert result["errors"] == []

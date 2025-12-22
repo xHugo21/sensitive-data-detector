@@ -12,12 +12,14 @@ dependencies = [
     "langgraph",
     "langchain-litellm",
     "typing_extensions>=4.7",
+]
+
+[project.optional-dependencies]
+file-analysis = [
     "pdfplumber",
     "pytesseract>=0.3.10",
     "pillow>=10.0.0",
 ]
-
-[project.optional-dependencies]
 ner = [
     "gliner>=0.1.15",
 ]

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib.util
 import os
+import sys
 import warnings
 from urllib.parse import urlparse, unquote
 
@@ -10,6 +12,7 @@ from ..utils import append_error, append_warning
 
 # Supported image file extensions for automatic OCR detection
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp"}
+FILE_ANALYSIS_EXTRA = "multiagent-firewall[file-analysis]"
 
 
 def sanitize_file_path(file_path: str) -> str:
@@ -24,6 +27,20 @@ def sanitize_file_path(file_path: str) -> str:
             parsed_path = parsed_path.lstrip("/")
         return parsed_path
     return file_path
+
+
+def _has_module(module_name: str) -> bool:
+    if module_name in sys.modules:
+        return True
+    return importlib.util.find_spec(module_name) is not None
+
+
+def _has_pdf_support() -> bool:
+    return _has_module("pdfplumber")
+
+
+def _has_ocr_support() -> bool:
+    return _has_module("pytesseract") and _has_module("PIL")
 
 
 def is_image_file(file_path: str) -> bool:
@@ -99,7 +116,8 @@ def _get_default_ocr_detector(fw_config):
         # Log warning but don't crash
         warnings.warn(
             f"Failed to initialize OCR detector: {e}. "
-            "Image text extraction won't be executed. Install Tesseract.",
+            "Image text extraction won't be executed. "
+            f"Install {FILE_ANALYSIS_EXTRA} and Tesseract.",
             RuntimeWarning,
         )
         return None
@@ -135,39 +153,54 @@ def read_document(state: GuardState, *, fw_config) -> GuardState:
                 state["metadata"] = {}
             state["metadata"]["file_type"] = "image"
 
-            ocr_detector = _get_default_ocr_detector(fw_config)
-            if ocr_detector:
-                try:
-                    # Call OCR detector with current state - returns plain text
-                    text = ocr_detector(state) or ""
-
-                    # Track OCR metadata
-                    state["metadata"]["ocr_attempted"] = True
-                    state["metadata"]["tesseract_text_found"] = bool(text)
-
-                    # Append to existing raw_text
-                    existing_text = state.get("raw_text", "")
-                    if existing_text and text:
-                        state["raw_text"] = f"{existing_text}\n{text}"
-                    elif text:
-                        state["raw_text"] = text
-
-                    if text:
-                        state["metadata"]["ocr_method"] = "tesseract"
-                    else:
-                        append_warning(
-                            state, f"No text extracted from image: {file_path}"
-                        )
-                except Exception as e:
-                    append_error(state, f"OCR detection failed: {str(e)}")
-            else:
+            if not _has_ocr_support():
                 append_warning(
                     state,
-                    f"Image file detected but no OCR detector available: {file_path}",
+                    "Image file detected but OCR dependencies are not installed. "
+                    f"Install {FILE_ANALYSIS_EXTRA} and Tesseract.",
                 )
+            else:
+                ocr_detector = _get_default_ocr_detector(fw_config)
+                if ocr_detector:
+                    try:
+                        # Call OCR detector with current state - returns plain text
+                        text = ocr_detector(state) or ""
+
+                        # Track OCR metadata
+                        state["metadata"]["ocr_attempted"] = True
+                        state["metadata"]["tesseract_text_found"] = bool(text)
+
+                        # Append to existing raw_text
+                        existing_text = state.get("raw_text", "")
+                        if existing_text and text:
+                            state["raw_text"] = f"{existing_text}\n{text}"
+                        elif text:
+                            state["raw_text"] = text
+
+                        if text:
+                            state["metadata"]["ocr_method"] = "tesseract"
+                        else:
+                            append_warning(
+                                state, f"No text extracted from image: {file_path}"
+                            )
+                    except Exception as e:
+                        append_error(state, f"OCR detection failed: {str(e)}")
+                else:
+                    append_warning(
+                        state,
+                        f"Image file detected but no OCR detector available: {file_path}",
+                    )
         else:
             # Handle PDF and text files
-            text = extract_text_from_file(file_path_clean)
+            if file_path_clean.lower().endswith(".pdf") and not _has_pdf_support():
+                append_warning(
+                    state,
+                    "PDF file detected but PDF support is not installed. "
+                    f"Install {FILE_ANALYSIS_EXTRA}.",
+                )
+                text = ""
+            else:
+                text = extract_text_from_file(file_path_clean)
 
             if text is None:
                 append_error(state, f"Failed to extract text from file: {file_path}")

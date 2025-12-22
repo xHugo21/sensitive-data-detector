@@ -94,6 +94,7 @@ print(f"Detected Fields: {result['detected_fields']}")
 ```
 
 #### PDF Detection
+Requires the optional `file-analysis` extra for PDF parsing.
 ```python
 from multiagent_firewall import GuardConfig, GuardOrchestrator
 
@@ -108,6 +109,7 @@ print(f"Detected Fields: {result['detected_fields']}")
 ```
 
 #### Image Detection (OCR must be configured)
+Requires the optional `file-analysis` extra and a system Tesseract install for OCR.
 ```python
 from multiagent_firewall import GuardConfig, GuardOrchestrator
 
@@ -200,6 +202,14 @@ OCR_LANG=eng                 # Tesseract language code (default: eng, more langu
 OCR_CONFIDENCE_THRESHOLD=60  # Minimum confidence 0-100 (default: 0)
 TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
 ```
+
+#### File Analysis Dependencies (Optional)
+PDF parsing and Tesseract OCR are shipped as a separate extra to keep the base install light.
+
+```bash
+uv sync --extra file-analysis
+```
+If you only need text detection, you can skip this extra.
 
 #### NER Configuration (Optional)
 NER comes as an extra optional dependency due to its large download size. The following command and configuration enables it:

@@ -2410,14 +2410,16 @@ dependencies = [
     { name = "langchain-litellm" },
     { name = "langgraph", version = "0.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "langgraph", version = "1.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "pdfplumber" },
-    { name = "pillow" },
-    { name = "pytesseract" },
     { name = "typing-extensions", version = "4.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
 
 [package.optional-dependencies]
+file-analysis = [
+    { name = "pdfplumber" },
+    { name = "pillow" },
+    { name = "pytesseract" },
+]
 ner = [
     { name = "gliner" },
 ]
@@ -2433,12 +2435,12 @@ requires-dist = [
     { name = "gliner", marker = "extra == 'ner'", specifier = ">=0.1.15" },
     { name = "langchain-litellm" },
     { name = "langgraph" },
-    { name = "pdfplumber" },
-    { name = "pillow", specifier = ">=10.0.0" },
-    { name = "pytesseract", specifier = ">=0.3.10" },
+    { name = "pdfplumber", marker = "extra == 'file-analysis'" },
+    { name = "pillow", marker = "extra == 'file-analysis'", specifier = ">=10.0.0" },
+    { name = "pytesseract", marker = "extra == 'file-analysis'", specifier = ">=0.3.10" },
     { name = "typing-extensions", specifier = ">=4.7" },
 ]
-provides-extras = ["ner"]
+provides-extras = ["file-analysis", "ner"]
 
 [package.metadata.requires-dev]
 test = [

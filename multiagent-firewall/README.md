@@ -225,6 +225,22 @@ NER_MIN_SCORE=0.7            # Minimum score threshold (default: 0.5)
 ```
 Label mapping is defined in `multiagent-firewall/multiagent_firewall/constants.py` as `NER_LABELS` (NER label → multiagent-firewall field).
 
+#### DLP Regex Configuration (Optional)
+Regex-based DLP patterns live in `multiagent-firewall/multiagent_firewall/constants.py` as `REGEX_PATTERNS`.
+Each entry defines the field, regex, and optional keyword window. When `keywords` is non-empty,
+the regex match is only accepted if at least one keyword appears within `window` words of the match.
+
+```python
+REGEX_PATTERNS = {
+    "CREDITCARDNUMBER": {
+        "field": "CREDITCARDNUMBER",
+        "regex": r"\b(?:\d{4}[\s\-]?){3}\d{4}\b",
+        "window": 4,
+        "keywords": ["card", "credit card"],
+    },
+}
+```
+
 #### LLM OCR Fallback (Optional)
 
 The firewall includes an intelligent OCR fallback system. When Tesseract OCR fails to extract text from an image, the system automatically falls back to using vision-capable LLMs.

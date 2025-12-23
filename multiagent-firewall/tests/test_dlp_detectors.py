@@ -108,7 +108,12 @@ def test_detect_regex_patterns_default():
 def test_detect_regex_patterns_custom():
     text = "Order ID: ABC123"
     custom_patterns = {
-        "ORDER_ID": r"\b[A-Z]{3}\d{3}\b",
+        "ORDER_ID": {
+            "field": "ORDER_ID",
+            "regex": r"\b[A-Z]{3}\d{3}\b",
+            "window": 0,
+            "keywords": [],
+        },
     }
     findings = detect_regex_patterns(text, custom_patterns)
 
@@ -132,12 +137,48 @@ def test_detect_regex_patterns_no_match():
 def test_detect_regex_patterns_tuple_match():
     text = "test@example.com"
     custom_patterns = {
-        "EMAIL_PARTS": r"(\w+)@(\w+\.\w+)",
+        "EMAIL_PARTS": {
+            "field": "EMAIL_PARTS",
+            "regex": r"(\w+)@(\w+\.\w+)",
+            "window": 0,
+            "keywords": [],
+        },
     }
     findings = detect_regex_patterns(text, custom_patterns)
 
     assert len(findings) == 1
     assert "test example.com" in findings[0]["value"]
+
+
+def test_detect_regex_patterns_keyword_window_allows_match():
+    text = "SSN: 123-45-6789"
+    custom_patterns = {
+        "SOCIALSECURITYNUMBER": {
+            "field": "SOCIALSECURITYNUMBER",
+            "regex": r"\b\d{3}-\d{2}-\d{4}\b",
+            "window": 1,
+            "keywords": ["ssn"],
+        },
+    }
+    findings = detect_regex_patterns(text, custom_patterns)
+
+    assert len(findings) == 1
+    assert findings[0]["field"] == "SOCIALSECURITYNUMBER"
+
+
+def test_detect_regex_patterns_keyword_window_blocks_match():
+    text = "SSN data for records 123-45-6789"
+    custom_patterns = {
+        "SOCIALSECURITYNUMBER": {
+            "field": "SOCIALSECURITYNUMBER",
+            "regex": r"\b\d{3}-\d{2}-\d{4}\b",
+            "window": 2,
+            "keywords": ["ssn"],
+        },
+    }
+    findings = detect_regex_patterns(text, custom_patterns)
+
+    assert findings == []
 
 
 # ============================================================================

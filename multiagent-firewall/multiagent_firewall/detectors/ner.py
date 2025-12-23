@@ -48,7 +48,7 @@ class GlinerNERDetector:
                 {
                     "field": field,
                     "value": str(value),
-                    "source": "ner_gliner",
+                    "sources": ["ner_gliner"],
                     "score": score,
                 }
             )

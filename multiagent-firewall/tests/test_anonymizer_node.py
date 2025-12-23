@@ -96,7 +96,9 @@ def test_anonymize_text_handles_llm_fields_after_dlp(guard_config):
 def test_anonymize_text_masks_case_insensitive_llm_values(guard_config):
     state: GuardState = {
         "normalized_text": "hi my name is andres",
-        "llm_fields": [{"field": "FIRSTNAME", "value": "ANDRES", "source": "llm_explicit"}],
+        "llm_fields": [
+            {"field": "FIRSTNAME", "value": "ANDRES", "sources": ["llm_explicit"]}
+        ],
         "metadata": {},
         "warnings": [],
         "errors": [],

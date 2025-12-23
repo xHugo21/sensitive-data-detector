@@ -52,7 +52,25 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
                 ):
                     # Skip unknown anonymized values to avoid surfacing obfuscated values
                     continue
-            fields.append({**item, "source": _normalize_llm_source(item.get("source"))})
+            raw_sources = item.get("sources")
+            if raw_sources is None:
+                raw_sources = item.get("source")
+            if isinstance(raw_sources, list):
+                source_items = raw_sources
+            elif raw_sources is None:
+                source_items = []
+            else:
+                source_items = [raw_sources]
+            normalized_sources: list[str] = []
+            for raw_source in source_items:
+                normalized = _normalize_llm_source(raw_source)
+                if normalized and normalized not in normalized_sources:
+                    normalized_sources.append(normalized)
+            if not normalized_sources:
+                normalized_sources.append("llm_explicit")
+            cleaned = {k: v for k, v in item.items() if k not in ("source", "sources")}
+            cleaned["sources"] = normalized_sources
+            fields.append(cleaned)
         state["llm_fields"] = fields
     except Exception as exc:
         append_error(state, f"LLM detector failed: {exc}")
@@ -63,7 +81,7 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
 def _normalize_llm_source(raw_source: object | None) -> str:
     """Normalize the LLM detector source label so it is identifiable as LLM output."""
     if not raw_source:
-        return "llm_detector"
+        return ""
     if isinstance(raw_source, str):
         normalized = raw_source.strip().lower()
         if normalized == "explicit":

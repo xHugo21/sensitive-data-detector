@@ -31,7 +31,9 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
     
     assert "llm_fields" in result
     assert len(result.get("llm_fields", [])) == 2
-    assert all(f["source"] == "llm_detector" for f in result.get("llm_fields", []))
+    assert all(
+        f.get("sources") == ["llm_explicit"] for f in result.get("llm_fields", [])
+    )
     assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
@@ -78,8 +80,8 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
     mock_detector = MagicMock()
     mock_detector.return_value = {
         "detected_fields": [
-            {"field": "EMAIL", "value": "test@example.com", "source": "Explicit"},
-            {"field": "NAME", "value": "John Doe", "source": "Inferred"},
+            {"field": "EMAIL", "value": "test@example.com", "sources": ["Explicit"]},
+            {"field": "NAME", "value": "John Doe", "sources": ["Inferred"]},
         ]
     }
     mock_llm_detector.return_value = mock_detector
@@ -92,8 +94,8 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
 
     result = run_llm_detector(state, fw_config=guard_config)
 
-    sources = [f["source"] for f in result.get("llm_fields", [])]
-    assert sources == ["llm_explicit", "llm_inferred"]
+    sources = [f["sources"] for f in result.get("llm_fields", [])]
+    assert sources == [["llm_explicit"], ["llm_inferred"]]
     assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
@@ -103,10 +105,10 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_dete
     mock_detector = MagicMock()
     mock_detector.return_value = {
         "detected_fields": [
-            {"field": "TIME", "value": "<<REDACTED:TIME>>", "source": "Explicit"},
-            {"field": "USERNAME", "value": "john_doe_2024", "source": "Explicit"},
-            {"field": "EMAIL", "value": "<<REDACTED:UNKNOWN>>", "source": "Explicit"},
-            {"field": "TIME", "value": "REDACTED:TIME", "source": "Explicit"},
+            {"field": "TIME", "value": "<<REDACTED:TIME>>", "sources": ["Explicit"]},
+            {"field": "USERNAME", "value": "john_doe_2024", "sources": ["Explicit"]},
+            {"field": "EMAIL", "value": "<<REDACTED:UNKNOWN>>", "sources": ["Explicit"]},
+            {"field": "TIME", "value": "REDACTED:TIME", "sources": ["Explicit"]},
         ]
     }
     mock_llm_detector.return_value = mock_detector
@@ -128,7 +130,10 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_dete
     assert values["USERNAME"] == "john_doe_2024"
     assert "EMAIL" not in values  # unknown anonymized token skipped
     assert list(values.values()).count("13:15") == 1  # dropped raw anonymized token
-    assert all(f["source"].startswith("llm_") for f in result.get("llm_fields", []))
+    assert all(
+        any(source.startswith("llm_") for source in f.get("sources", []))
+        for f in result.get("llm_fields", [])
+    )
 
 
 def test_run_dlp_detector_with_regex():
@@ -146,7 +151,7 @@ def test_run_dlp_detector_with_regex():
     assert len(dlp_fields) >= 1
     email_findings = [f for f in dlp_fields if f["field"] == "EMAIL"]
     assert len(email_findings) >= 1
-    assert email_findings[0]["source"] == "dlp_regex"
+    assert email_findings[0]["sources"] == ["dlp_regex"]
 
 
 def test_run_dlp_detector_with_keywords():
@@ -161,7 +166,9 @@ def test_run_dlp_detector_with_keywords():
     
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
-    keyword_findings = [f for f in dlp_fields if f["source"] == "dlp_keyword"]
+    keyword_findings = [
+        f for f in dlp_fields if "dlp_keyword" in f.get("sources", [])
+    ]
     assert len(keyword_findings) >= 1
 
 
@@ -177,7 +184,9 @@ def test_run_dlp_detector_with_checksums():
     
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
-    checksum_findings = [f for f in dlp_fields if f["source"] == "dlp_checksum"]
+    checksum_findings = [
+        f for f in dlp_fields if "dlp_checksum" in f.get("sources", [])
+    ]
     assert len(checksum_findings) >= 1
 
 

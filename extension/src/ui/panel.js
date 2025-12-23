@@ -340,12 +340,18 @@
         if (!group) {
           group = {
             field: fieldName,
-            source: detected.source || "Unknown",
+            sources: [],
             risk: sg.riskUtils.classifyField(detected),
             _seen: new Map(),
             minIdx: Number.POSITIVE_INFINITY,
           };
           groups.set(key, group);
+        }
+
+        const sources = Array.isArray(detected.sources) ? detected.sources : [];
+        for (const source of sources) {
+          if (!source || group.sources.includes(source)) continue;
+          group.sources.push(source);
         }
 
         const prev = group._seen.get(value);
@@ -398,7 +404,10 @@
         sourceLabel.style.fontWeight = "400";
         sourceLabel.style.fontSize = "13px";
         sourceLabel.style.marginLeft = "8px";
-        sourceLabel.textContent = `Source: ${group.source}`;
+        const sourceText = group.sources.length
+          ? group.sources.join(", ")
+          : "Unknown";
+        sourceLabel.textContent = `Sources: ${sourceText}`;
 
         head.appendChild(fieldName);
         head.appendChild(sourceLabel);

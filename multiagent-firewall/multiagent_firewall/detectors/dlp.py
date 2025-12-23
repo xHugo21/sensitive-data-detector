@@ -22,7 +22,7 @@ def detect_keywords(
                     {
                         "field": field_name,
                         "value": keyword,
-                        "source": "dlp_keyword",
+                        "sources": ["dlp_keyword"],
                     }
                 )
 
@@ -177,7 +177,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     {
                         "field": "CREDITCARDNUMBER",
                         "value": card,
-                        "source": "dlp_checksum",
+                        "sources": ["dlp_checksum"],
                     }
                 )
 
@@ -193,7 +193,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     {
                         "field": "IBAN",
                         "value": iban_str,
-                        "source": "dlp_checksum",
+                        "sources": ["dlp_checksum"],
                     }
                 )
 
@@ -207,7 +207,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     {
                         "field": "DNI",
                         "value": dni,
-                        "source": "dlp_checksum",
+                        "sources": ["dlp_checksum"],
                     }
                 )
 
@@ -221,7 +221,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     {
                         "field": "SOCIALSECURITYNUMBER",
                         "value": ssn,
-                        "source": "dlp_checksum",
+                        "sources": ["dlp_checksum"],
                     }
                 )
 
@@ -235,7 +235,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     {
                         "field": "VEHICLEVIN",
                         "value": vin,
-                        "source": "dlp_checksum",
+                        "sources": ["dlp_checksum"],
                     }
                 )
 
@@ -283,7 +283,7 @@ def detect_regex_patterns(
                 {
                     "field": rule["field"],
                     "value": cleaned,
-                    "source": "dlp_regex",
+                    "sources": ["dlp_regex"],
                 }
             )
 

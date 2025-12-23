@@ -36,7 +36,7 @@ def test_detect_keywords_custom():
 
     assert len(findings) == 2
     assert all(f["field"] == "CUSTOM_FIELD" for f in findings)
-    assert all(f["source"] == "dlp_keyword" for f in findings)
+    assert all(f["sources"] == ["dlp_keyword"] for f in findings)
 
 
 def test_detect_keywords_case_insensitive():
@@ -73,7 +73,7 @@ def test_detect_checksums_valid_card():
     assert len(findings) == 1
     assert findings[0]["field"] == "CREDITCARDNUMBER"
     assert findings[0]["value"] == "4532015112830366"
-    assert findings[0]["source"] == "dlp_checksum"
+    assert findings[0]["sources"] == ["dlp_checksum"]
 
 
 def test_detect_checksums_invalid_card():
@@ -120,7 +120,7 @@ def test_detect_regex_patterns_custom():
     assert len(findings) == 1
     assert findings[0]["field"] == "ORDER_ID"
     assert findings[0]["value"] == "ABC123"
-    assert findings[0]["source"] == "dlp_regex"
+    assert findings[0]["sources"] == ["dlp_regex"]
 
 
 def test_detect_regex_patterns_empty_text():
@@ -339,7 +339,7 @@ def test_detect_checksums_iban():
 
     iban_findings = [f for f in findings if f["field"] == "IBAN"]
     assert len(iban_findings) == 1
-    assert iban_findings[0]["source"] == "dlp_checksum"
+    assert iban_findings[0]["sources"] == ["dlp_checksum"]
 
 
 def test_detect_checksums_dni():
@@ -348,7 +348,7 @@ def test_detect_checksums_dni():
 
     dni_findings = [f for f in findings if f["field"] == "DNI"]
     assert len(dni_findings) == 1
-    assert dni_findings[0]["source"] == "dlp_checksum"
+    assert dni_findings[0]["sources"] == ["dlp_checksum"]
 
 
 def test_detect_checksums_ssn():
@@ -357,7 +357,7 @@ def test_detect_checksums_ssn():
 
     ssn_findings = [f for f in findings if f["field"] == "SOCIALSECURITYNUMBER"]
     assert len(ssn_findings) == 1
-    assert ssn_findings[0]["source"] == "dlp_checksum"
+    assert ssn_findings[0]["sources"] == ["dlp_checksum"]
 
 
 def test_detect_checksums_vin():
@@ -366,7 +366,7 @@ def test_detect_checksums_vin():
 
     vin_findings = [f for f in findings if f["field"] == "VEHICLEVIN"]
     assert len(vin_findings) == 1
-    assert vin_findings[0]["source"] == "dlp_checksum"
+    assert vin_findings[0]["sources"] == ["dlp_checksum"]
 
 
 def test_detect_checksums_mixed():

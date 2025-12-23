@@ -141,17 +141,17 @@ so some fields are optional depending on the input and routing:
             "field": str,         # Canonical field name (EMAIL, PASSWORD, OTHER, ...)
             "value": str,         # Detected value
             "risk": str,          # low/medium/high
-            "source": str         # dlp_regex/dlp_keyword/dlp_checksum/ner_gliner/llm_explicit/llm_inferred
+            "sources": [str]      # dlp_regex/dlp_keyword/dlp_checksum/ner_gliner/llm_explicit/llm_inferred
         }
     ],
     "dlp_fields": [               # Raw DLP findings (same shape as LLM minus risk)
-        {"field": str, "value": str, "source": str}
+        {"field": str, "value": str, "sources": [str]}
     ],
     "ner_fields": [               # Raw NER findings (same shape as LLM minus risk)
-        {"field": str, "value": str, "source": str, "score": float | None}
+        {"field": str, "value": str, "sources": [str], "score": float | None}
     ],
     "llm_fields": [               # Raw LLM findings (same shape as LLM minus risk)
-        {"field": str, "value": str, "source": str}
+        {"field": str, "value": str, "sources": [str]}
     ],
     "risk_level": str,            # none/low/medium/high
     "decision": str,              # allow/warn/block

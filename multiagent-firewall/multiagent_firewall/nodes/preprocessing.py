@@ -27,13 +27,12 @@ _ALLOWED_FIELDS_NORMALIZED = {
 def _canonicalize_field(item: dict) -> dict:
     """Canonicalize `field` names and relabel unknown LLM fields to OTHER."""
     raw_field = item.get("field") or item.get("type") or ""
-    raw_source = item.get("source")
-    source = raw_source if isinstance(raw_source, str) else ""
+    sources = _collect_sources(item)
 
     normalized = _normalize_field_name(str(raw_field))
     if normalized in _ALLOWED_FIELDS_NORMALIZED:
         return {**item, "field": normalized}
-    if source and source.lower().startswith("llm_"):
+    if any(source.lower().startswith("llm_") for source in sources):
         return {**item, "field": "OTHER"}
     return item
 
@@ -57,7 +56,7 @@ def normalize(state: GuardState) -> GuardState:
 def merge_detections(state: GuardState) -> GuardState:
     """Merge LLM + DLP + NER detections, de-duplicate, and compute per-field risk."""
     merged: FieldList = []
-    seen = set()
+    seen: dict[tuple[str, str], int] = {}
     for key in ("llm_fields", "dlp_fields", "ner_fields"):
         for item in state.get(key, []) or []:
             if not isinstance(item, dict):
@@ -66,12 +65,19 @@ def merge_detections(state: GuardState) -> GuardState:
             field = (item.get("field") or "").strip()
             value = (item.get("value") or "").strip()
             signature = (field.lower(), value.lower())
+            sources = _collect_sources(item)
             if signature in seen:
+                existing = merged[seen[signature]]
+                existing["sources"] = _merge_sources(
+                    existing.get("sources") or [], sources
+                )
                 continue
-            seen.add(signature)
             item = dict(item)
+            item.pop("source", None)
+            item["sources"] = sources
             item["risk"] = item.get("risk") or _field_risk(item)
             merged.append(item)
+            seen[signature] = len(merged) - 1
     state["detected_fields"] = merged
     return state
 
@@ -96,3 +102,40 @@ def _field_risk(item: dict) -> str:
     if field in LOW_RISK_FIELDS:
         return "low"
     return "medium"
+
+
+def _collect_sources(item: dict) -> list[str]:
+    """Collect sources from `sources` (list) or legacy `source` (string)."""
+    raw_sources = item.get("sources")
+    if raw_sources is None:
+        raw_sources = item.get("source")
+    if isinstance(raw_sources, list):
+        candidates = raw_sources
+    elif raw_sources is None:
+        candidates = []
+    else:
+        candidates = [raw_sources]
+    sources: list[str] = []
+    for candidate in candidates:
+        if not isinstance(candidate, str):
+            continue
+        cleaned = candidate.strip()
+        if not cleaned:
+            continue
+        if cleaned not in sources:
+            sources.append(cleaned)
+    return sources
+
+
+def _merge_sources(existing: list[str], incoming: list[str]) -> list[str]:
+    """Merge sources, preserving order and removing duplicates."""
+    combined: list[str] = []
+    for candidate in existing + incoming:
+        if not isinstance(candidate, str):
+            continue
+        cleaned = candidate.strip()
+        if not cleaned:
+            continue
+        if cleaned not in combined:
+            combined.append(cleaned)
+    return combined

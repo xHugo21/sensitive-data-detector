@@ -20,14 +20,10 @@ REGEX_PATTERNS = {
     "EMAIL": {
         "field": "EMAIL",
         "regex": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
-        "window": 0,
-        "keywords": [],
     },
     "PHONENUMBER": {
         "field": "PHONENUMBER",
         "regex": r"\b\+?\d[\d\s\-\(\)]{7,}\d\b",
-        "window": 0,
-        "keywords": [],
     },
     "CREDITCARDNUMBER": {
         "field": "CREDITCARDNUMBER",
@@ -46,14 +42,10 @@ REGEX_PATTERNS = {
     "IPV4": {
         "field": "IPV4",
         "regex": r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b",
-        "window": 0,
-        "keywords": [],
     },
     "IPV6": {
         "field": "IPV6",
         "regex": r"\b(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\b|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}\b",
-        "window": 0,
-        "keywords": [],
     },
     "MAC": {
         "field": "MAC",
@@ -76,8 +68,6 @@ REGEX_PATTERNS = {
     "URL": {
         "field": "URL",
         "regex": r"\b(?:https?|ftp)://[^\s/$.?#].[^\s]*\b",
-        "window": 0,
-        "keywords": [],
     },
     "DNI": {
         "field": "DNI",
@@ -94,20 +84,14 @@ REGEX_PATTERNS = {
     "BITCOINADDRESS": {
         "field": "BITCOINADDRESS",
         "regex": r"\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b|bc1[a-z0-9]{39,59}\b",
-        "window": 0,
-        "keywords": [],
     },
     "ETHEREUMADDRESS": {
         "field": "ETHEREUMADDRESS",
         "regex": r"\b0x[a-fA-F0-9]{40}\b",
-        "window": 0,
-        "keywords": [],
     },
     "LITECOINADDRESS": {
         "field": "LITECOINADDRESS",
         "regex": r"\b[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}\b",
-        "window": 0,
-        "keywords": [],
     },
     "ZIPCODE": {
         "field": "ZIPCODE",
@@ -118,14 +102,10 @@ REGEX_PATTERNS = {
     "DATE": {
         "field": "DATE",
         "regex": r"\b(?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\b",
-        "window": 0,
-        "keywords": [],
     },
     "TIME": {
         "field": "TIME",
         "regex": r"\b(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\b",
-        "window": 0,
-        "keywords": [],
     },
     "VEHICLEVIN": {
         "field": "VEHICLEVIN",

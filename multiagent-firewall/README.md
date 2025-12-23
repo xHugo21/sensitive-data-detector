@@ -242,6 +242,32 @@ MIN_BLOCK_RISK=medium        # Options: low, medium, high
 ```
 `MIN_BLOCK_RISK` is applied per invocation (pass `min_block_risk` to `GuardOrchestrator.run`); it defaults to `medium` if omitted.
 
+### Constants Configuration
+The firewall also supports editing local constants in `multiagent-firewall/multiagent_firewall/constants.py`:
+- `OCR_DETECTOR_PROMPT`: prompt used by ocr parser node
+- `LLM_DETECTOR_PROMPT`: prompt used by llm detector node
+- `REGEX_PATTERNS`: regex-based DLP patterns, with optional keyword windows. Detailed explanation below
+- `KEYWORDS`: keyword-based DLP phrases
+- `NER_LABELS`: NER label → field mapping
+- `RISK_SCORE`: scoring weights of each field level
+- `RISK_SCORE_THRESHOLDS`: threshold to calculate global risk value based on the sum of all detected fields.
+- `HIGH_RISK_FIELDS`, `MEDIUM_RISK_FIELDS` and `LOW_RISK_FIELDS`: Fields that should be detected by the multiagent firewall architecture.
+
+#### DLP Regex Configuration
+Regex-based DLP patterns live in `multiagent-firewall/multiagent_firewall/constants.py` as `REGEX_PATTERNS`.
+Each entry defines the field, regex, and optional keyword window. When `keywords` is non-empty, the regex match is only accepted if at least one keyword appears within `window` words of the match.
+
+```python
+REGEX_PATTERNS = {
+    "CREDITCARDNUMBER": {
+        "field": "CREDITCARDNUMBER",
+        "regex": r"\b(?:\d{4}[\s\-]?){3}\d{4}\b",
+        "window": 4,
+        "keywords": ["card", "credit card"],
+    },
+}
+```
+
 
 ## Testing
 

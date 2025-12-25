@@ -35,8 +35,6 @@ REGEX_PATTERNS = {
             "cc",
             "visa",
             "mastercard",
-            "amex",
-            "american express",
         ],
     },
     "IPV4": {
@@ -51,7 +49,7 @@ REGEX_PATTERNS = {
         "field": "MAC",
         "regex": r"\b(?:[0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}\b",
         "window": 4,
-        "keywords": ["mac", "mac address"],
+        "keywords": ["mac"],
     },
     "IBAN": {
         "field": "IBAN",
@@ -73,7 +71,7 @@ REGEX_PATTERNS = {
         "field": "NATIONALID",
         "regex": r"\b\d{8}[A-Z]\b",
         "window": 6,
-        "keywords": ["dni"],
+        "keywords": ["dni, identification number, id number, national id"],
     },
     "PASSPORTNUMBER": {
         "field": "PASSPORTNUMBER",

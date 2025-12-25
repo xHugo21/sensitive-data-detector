@@ -255,7 +255,7 @@ test_cases:
     prompt: "My car registration is ABC123 and VIN 1HGBH41JXMN109186."
     expected_sensitive: true
     expected_entities:
-      - "VEHICLEVRM"
+      - "LICENSEPLATE"
       - "VEHICLEVIN"
     description: "Vehicle registration (medium) + VIN (high) = high risk"
 

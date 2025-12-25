@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "manifest_version": 3,
   "icons": { "128": "icon128.png" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Sensitive Data Detector"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -12,6 +16,7 @@
       ],
       "js": [
         "src/config.js",
+        "src/state/settings.js",
         "src/state/alertStore.js",
         "src/services/detectorClient.js",
         "src/services/riskUtils.js",
@@ -31,7 +36,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage"],
+  "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "http://127.0.0.1:8000/*",
     "http://localhost:8000/*"

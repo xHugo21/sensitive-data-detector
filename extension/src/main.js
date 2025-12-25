@@ -5,6 +5,10 @@
    * Bootstrap the extension with platform detection
    */
   async function bootstrap() {
+    if (sg.settings?.whenReady) {
+      await sg.settings.whenReady();
+    }
+
     // Detect and activate the appropriate platform
     const platform = await sg.platformRegistry.detectAndActivate();
 

@@ -7,6 +7,13 @@
     return (root.performance || {}).now ? performance.now() : Date.now();
   }
 
+  function isDetectionEnabled() {
+    if (sg.settings?.isDetectionEnabled) {
+      return sg.settings.isDetectionEnabled();
+    }
+    return true;
+  }
+
   function attach() {
     if (attached) return;
     attached = true;
@@ -103,6 +110,10 @@
   async function handleFileChange(event) {
     const input = event.target;
     if (!input || input.type !== "file" || !input.files?.length) return;
+    if (!isDetectionEnabled()) {
+      consumeBypassFlag(input);
+      return;
+    }
 
     if (consumeBypassFlag(input)) return;
 

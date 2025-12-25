@@ -248,7 +248,7 @@ test_cases:
     prompt: "Meet near coordinates 40.7128° N, 74.0060° W, around Times Square area."
     expected_sensitive: true
     expected_entities:
-      - "NEARBYGPSCOORDINATE"
+      - "GPSCOORDINATE"
     description: "Nearby GPS coordinates - medium-risk location data"
 
   - id: "vehicle_registration"

@@ -265,6 +265,77 @@ class TestDLPOnlyRouting:
         assert "anonymize" in executed_nodes
         assert result.get("decision") == "block"
 
+    def test_dlp_block_runs_llm_detector_when_forced(self, guard_config):
+        """When FORCE_LLM_DETECTOR is enabled, always run llm_detector."""
+        executed_nodes = []
+        forced_config = GuardConfig(
+            llm=guard_config.llm,
+            ocr=guard_config.ocr,
+            force_llm_detector=True,
+        )
+
+        def fake_dlp(state):
+            executed_nodes.append("dlp_detector")
+            state["dlp_fields"] = [
+                {"type": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+            ]
+            state["detected_fields"] = state["dlp_fields"]
+            return state
+
+        def fake_merge(state):
+            return state
+
+        def fake_risk(state):
+            executed_nodes.append("risk")
+            state["risk_level"] = "high"
+            return state
+
+        def fake_policy(state):
+            executed_nodes.append("policy")
+            state["decision"] = "block"
+            return state
+
+        def fake_llm(state, **kwargs):
+            executed_nodes.append("llm_detector")
+            state["llm_fields"] = []
+            return state
+
+        def fake_remediation(state):
+            executed_nodes.append("remediation")
+            return state
+
+        def fake_anonymize(state, **kwargs):
+            executed_nodes.append("anonymize")
+            return state
+
+        with (
+            patch(
+                "multiagent_firewall.orchestrator.nodes.run_dlp_detector",
+                side_effect=fake_dlp,
+            ),
+            patch("multiagent_firewall.nodes.merge_detections", side_effect=fake_merge),
+            patch("multiagent_firewall.nodes.evaluate_risk", side_effect=fake_risk),
+            patch("multiagent_firewall.nodes.apply_policy", side_effect=fake_policy),
+            patch("multiagent_firewall.nodes.run_llm_detector", side_effect=fake_llm),
+            patch(
+                "multiagent_firewall.nodes.generate_remediation",
+                side_effect=fake_remediation,
+            ),
+            patch(
+                "multiagent_firewall.nodes.anonymize_text", side_effect=fake_anonymize
+            ),
+        ):
+            orchestrator = GuardOrchestrator(forced_config)
+            result = orchestrator.run(text="SOCIALSECURITYNUMBER: 123-45-6789")
+
+        assert "dlp_detector" in executed_nodes
+        assert "risk" in executed_nodes
+        assert "policy" in executed_nodes
+        assert "llm_detector" in executed_nodes
+        assert "remediation" in executed_nodes
+        assert "anonymize" in executed_nodes
+        assert result.get("decision") == "block"
+
 
 class TestLLMOnlyRouting:
     """Test routing when only LLM detects sensitive data."""

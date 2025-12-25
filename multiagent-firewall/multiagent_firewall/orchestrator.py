@@ -48,6 +48,7 @@ class GuardOrchestrator:
             "file_path": file_path,
             "min_block_risk": _normalize_risk(min_block_risk),
             "llm_provider": self._config.llm.provider,
+            "force_llm_detector": self._config.force_llm_detector,
             "metadata": {},
             "warnings": [],
             "errors": [],

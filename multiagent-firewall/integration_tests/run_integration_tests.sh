@@ -20,8 +20,52 @@ if [ ! -f "$SCRIPT_DIR/.env" ]; then
   exit 1
 fi
 
+if [ "$#" -ne 1 ]; then
+  echo "Usage: ./run_integration_tests.sh test_cases.yaml"
+  exit 1
+fi
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  echo "Usage: ./run_integration_tests.sh test_cases.yaml"
+  exit 0
+fi
+
+CASES_FILE="$1"
+
+if [[ "$CASES_FILE" = /* ]]; then
+  CASES_PATH="$CASES_FILE"
+else
+  CASES_PATH="$SCRIPT_DIR/$CASES_FILE"
+fi
+
+if [ ! -f "$CASES_PATH" ]; then
+  echo "ERROR: test cases file not found: $CASES_PATH"
+  exit 1
+fi
+
 echo "Loading environment variables from .env..."
-export $(cat "$SCRIPT_DIR/.env" | grep -v '^#' | xargs)
+while IFS= read -r line || [ -n "$line" ]; do
+  case "$line" in
+    ""|\#*) continue ;;
+  esac
+
+  key="${line%%=*}"
+  value="${line#*=}"
+
+  key="${key#"${key%%[![:space:]]*}"}"
+  key="${key%"${key##*[![:space:]]}"}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+
+  if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+    value="${value:1:-1}"
+  elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+    value="${value:1:-1}"
+  fi
+
+  export "$key=$value"
+done < "$SCRIPT_DIR/.env"
+export INTEGRATION_TESTS_FILE="$CASES_PATH"
 
 if [ -z "$LLM_API_KEY" ]; then
   echo "WARNING: LLM_API_KEY is not set in .env file"
@@ -32,16 +76,14 @@ fi
 echo "Configuration:"
 echo "  LLM_PROVIDER: ${LLM_PROVIDER:-not set}"
 echo "  LLM_MODEL: ${LLM_MODEL:-not set}"
+echo "  TEST_CASES_FILE: $CASES_PATH"
 echo ""
 
 cd "$PROJECT_ROOT"
 
 echo "Syncing test dependencies with uv..."
-uv sync --group test
-
-echo "Clearing cached test results..."
-rm -f "$SCRIPT_DIR/.test_results_cache.json"
+uv sync --extra ner --extra file-analysis --group test
 
 echo "Running integration tests..."
 echo ""
-uv run pytest integration_tests/ -v -m integration -s
+uv run pytest integration_tests/test_end_to_end_detection.py -v -m integration -s

@@ -55,6 +55,7 @@ class GuardConfig:
     ocr: OCRConfig = field(default_factory=OCRConfig)
     ner: NERConfig = field(default_factory=NERConfig)
     debug: bool = False
+    force_llm_detector: bool = False
 
     def llm_ocr_config(self) -> LLMConfig:
         """Return the OCR LLM config, falling back to the main LLM config."""
@@ -99,6 +100,10 @@ class GuardConfig:
         tesseract_cmd = os.getenv("TESSERACT_CMD")
 
         debug_mode = _str_to_bool(os.getenv("DEBUG_MODE"), False)
+        force_llm_detector = _str_to_bool(
+            os.getenv("FORCE_LLM_DETECTOR"),
+            False,
+        )
 
         ner_enabled = _str_to_bool(os.getenv("NER_ENABLED"), False)
         ner_model = (os.getenv("NER_MODEL") or "urchade/gliner_multi-v2.1").strip()
@@ -126,4 +131,5 @@ class GuardConfig:
                 min_score=ner_min_score,
             ),
             debug=debug_mode,
+            force_llm_detector=force_llm_detector,
         )

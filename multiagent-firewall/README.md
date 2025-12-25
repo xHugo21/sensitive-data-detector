@@ -29,8 +29,9 @@ flowchart TD
 
     RiskDLP --> PolicyDLP[policy_dlp_ner<br/>Policy check]
     PolicyDLP --> DecisionBlock{decision = block?}
-    DecisionBlock -->|Yes| Remediation[remediation<br/>Generate remediation message]
-    DecisionBlock -->|No| AnonymizeLLM[anonymize_dlp_ner<br/>Anonymize DLP/NER findings]
+    DecisionBlock -->|Yes + FORCE_LLM_DETECTOR=false| Remediation[remediation<br/>Generate remediation message]
+    DecisionBlock -->|Yes + FORCE_LLM_DETECTOR=true| AnonymizeLLM[anonymize_dlp_ner<br/>Anonymize DLP/NER findings]
+    DecisionBlock -->|No| AnonymizeLLM
 
     AnonymizeLLM --> LLM
 
@@ -307,9 +308,15 @@ LLM_API_KEY=sk-your-actual-api-key-here
 #### Running Integration Tests
 
 ```bash
-./run_integration_tests.sh
+./run_integration_tests.sh test_cases.yaml
 ```
 
 This will:
-- Run all test cases against the full pipeline
-- Calculate accuracy, precision, recall, and F1 metrics
+- Run the selected test cases file against the full pipeline
+
+Examples:
+
+```bash
+./run_integration_tests.sh prompts_test_cases.yaml
+./run_integration_tests.sh prompts_test_cases2.yaml
+```

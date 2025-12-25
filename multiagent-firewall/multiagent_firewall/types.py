@@ -18,6 +18,7 @@ class GuardState(TypedDict, total=False):
     raw_text: str
     min_block_risk: NotRequired[str | None]
     llm_provider: NotRequired[str]
+    force_llm_detector: NotRequired[bool]
 
     # PROCESSING
     anonymized_text: NotRequired[str]

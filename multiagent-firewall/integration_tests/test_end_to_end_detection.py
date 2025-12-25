@@ -70,7 +70,7 @@ TEST_CASES = load_test_cases()
     ids=[case[0] for case in TEST_CASES],
 )
 def test_sensitive_detection(
-    orchestrator, test_id, prompt, expected_entities
+    orchestrator, pytestconfig, test_id, prompt, expected_entities
 ):
     result = orchestrator.run(text=prompt)
 
@@ -78,13 +78,37 @@ def test_sensitive_detection(
 
     # Extract detected field types
     detected_types = [
-        field.get("type", field.get("field", "")).upper() for field in detected_fields
+        str(field.get("type", field.get("field", ""))).upper()
+        for field in detected_fields
     ]
+    expected_entities = [str(entity).upper() for entity in expected_entities]
+
+    matched_expected = sum(
+        1
+        for expected in expected_entities
+        if any(expected in detected for detected in detected_types)
+    )
+    unmatched_detected = {
+        detected
+        for detected in detected_types
+        if not any(expected in detected for expected in expected_entities)
+    }
+    case_pass = (not expected_entities and not detected_fields) or (
+        matched_expected == len(expected_entities)
+    )
+    pytestconfig._integration_metrics.append(
+        {
+            "tp": matched_expected,
+            "fp": len(unmatched_detected),
+            "fn": len(expected_entities) - matched_expected,
+            "case_pass": case_pass,
+        }
+    )
 
     # Check that all expected entities are detected
     if expected_entities:
         for expected_entity in expected_entities:
-            assert any(expected_entity.upper() in dt for dt in detected_types), (
+            assert any(expected_entity in dt for dt in detected_types), (
                 f"Test '{test_id}' failed.\n"
                 f"Expected entity '{expected_entity}' not found.\n"
                 f"Detected types: {detected_types}\n"

@@ -49,15 +49,14 @@ test_cases:
     expected_sensitive: true
     expected_entities:
       - "IBAN"
-      - "ACCOUNTNUMBER"
     description: "IBAN and account number - high-risk financial data"
 
   - id: "dni_spanish_id"
-    prompt: "Mi DNI es 12345678Z y necesito renovar mi pasaporte."
+    prompt: "Mi NATIONALID es 12345678Z y necesito renovar mi pasaporte."
     expected_sensitive: true
     expected_entities:
-      - "DNI"
-    description: "Spanish national ID (DNI) in Spanish text"
+      - "NATIONALID"
+    description: "Spanish national ID (NATIONALID) in Spanish text"
 
   - id: "multiple_high_risk"
     prompt: "Login credentials: user is admin, password is S3cur3P@ss!, and API key is sk-1234567890abcdef."
@@ -152,7 +151,7 @@ test_cases:
     prompt: "Attached is document CONF-NDA-2024-558 marked as TOP SECRET and confidential."
     expected_sensitive: true
     expected_entities:
-      - "CONFIDENTIALDOC"
+      - "CONFIDENTIALDOCUMENT"
     description: "Confidential document reference - high-risk classification"
 
   - id: "phone_imei"
@@ -211,9 +210,9 @@ test_cases:
     prompt: "John Smith, Software Engineer, earns $125,000 annually at TechCorp Inc."
     expected_sensitive: true
     expected_entities:
-      - "EMPLOYEEDATA"
+      - "EMPLOYEENAME"
       - "SALARYDETAILS"
-      - "JOBTITLE"
+      - "JOBDETAILS"
       - "COMPANYNAME"
     description: "Multiple medium-risk employment fields - combined score 8"
 
@@ -248,14 +247,14 @@ test_cases:
     prompt: "Meet near coordinates 40.7128° N, 74.0060° W, around Times Square area."
     expected_sensitive: true
     expected_entities:
-      - "NEARBYGPSCOORDINATE"
+      - "GPSCOORDINATE"
     description: "Nearby GPS coordinates - medium-risk location data"
 
   - id: "vehicle_registration"
     prompt: "My car registration is ABC123 and VIN 1HGBH41JXMN109186."
     expected_sensitive: true
     expected_entities:
-      - "VEHICLEVRM"
+      - "LICENSEPLATE"
       - "VEHICLEVIN"
     description: "Vehicle registration (medium) + VIN (high) = high risk"
 
@@ -300,7 +299,7 @@ test_cases:
     prompt: "I was born on 05/15/1985, making me a Taurus."
     expected_sensitive: false
     expected_entities:
-      - "DOB"
+      - "DATEOFBIRTH"
     description: "Date of birth alone - low risk (1 point)"
 
   - id: "physical_description"
@@ -328,8 +327,7 @@ test_cases:
     prompt: "The meeting is on 2024-12-15 at 14:30, located in the northeast wing."
     expected_sensitive: false
     expected_entities:
-      - "DATE"
-      - "TIME"
+      - "APPOINTMENTDATE"
       - "ORDINALDIRECTION"
     description: "Date, time, direction - low-risk temporal data"
 

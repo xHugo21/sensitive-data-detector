@@ -49,6 +49,9 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
                     or _is_redacted_token(value)
                     or _is_anonymized_token(value)
                     or value in anonymized_stripped
+                    or _contains_anonymized_token(
+                        value, anonymized_tokens, anonymized_stripped
+                    )
                 ):
                     # Skip unknown anonymized values to avoid surfacing obfuscated values
                     continue
@@ -100,6 +103,20 @@ def _is_anonymized_token(value: str) -> bool:
 def _is_redacted_token(value: str) -> bool:
     core = value.strip("<>")
     return core.startswith("REDACTED:")
+
+
+def _contains_anonymized_token(
+    value: str, tokens: set[str], stripped_tokens: set[str]
+) -> bool:
+    if not value:
+        return False
+    for token in tokens:
+        if token and token in value:
+            return True
+    for token in stripped_tokens:
+        if token and token in value:
+            return True
+    return False
 
 
 def run_dlp_detector(state: GuardState) -> GuardState:

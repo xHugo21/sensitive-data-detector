@@ -44,10 +44,27 @@ if [ ! -f "$CASES_PATH" ]; then
 fi
 
 echo "Loading environment variables from .env..."
-set +o braceexpand
-set -a
-source "$SCRIPT_DIR/.env"
-set +a
+while IFS= read -r line || [ -n "$line" ]; do
+  case "$line" in
+    ""|\#*) continue ;;
+  esac
+
+  key="${line%%=*}"
+  value="${line#*=}"
+
+  key="${key#"${key%%[![:space:]]*}"}"
+  key="${key%"${key##*[![:space:]]}"}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+
+  if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+    value="${value:1:-1}"
+  elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+    value="${value:1:-1}"
+  fi
+
+  export "$key=$value"
+done < "$SCRIPT_DIR/.env"
 export INTEGRATION_TESTS_FILE="$CASES_PATH"
 
 if [ -z "$LLM_API_KEY" ]; then

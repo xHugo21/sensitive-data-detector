@@ -300,7 +300,7 @@ test_cases:
     prompt: "I was born on 05/15/1985, making me a Taurus."
     expected_sensitive: false
     expected_entities:
-      - "DOB"
+      - "DATEOFBIRTH"
     description: "Date of birth alone - low risk (1 point)"
 
   - id: "physical_description"

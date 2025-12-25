@@ -226,7 +226,7 @@ LOW_RISK_FIELDS = {
     "MIDDLENAME",
     "LASTNAME",
     "AGE",
-    "DOB",
+    "DATEOFBIRTH",
     "GENDER",
     "HAIRCOLOR",
     "EYECOLOR",

@@ -31,7 +31,8 @@ class GlinerNERDetector:
         if not text:
             return []
         gliner = _load_gliner(self._model_name)
-        entities = gliner.predict_entities(text, self._labels)
+        labels = list(self._labels)
+        entities = gliner.predict_entities(text, labels)
         findings: FieldList = []
         for entity in entities or []:
             if not isinstance(entity, dict):

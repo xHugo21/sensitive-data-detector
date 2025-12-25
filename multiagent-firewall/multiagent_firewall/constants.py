@@ -127,9 +127,6 @@ NER_LABELS = {
     "city": "CITY",
     "state": "STATE",
     "zipcode": "ZIPCODE",
-    "email": "EMAIL",
-    "phone number": "PHONENUMBER",
-    "birth date": "DATEOFBIRTH",
 }
 
 # Defines the scoring value each detected field category sums

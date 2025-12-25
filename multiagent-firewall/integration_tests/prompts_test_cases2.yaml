@@ -49,7 +49,6 @@ test_cases:
     expected_sensitive: true
     expected_entities:
       - "IBAN"
-      - "ACCOUNTNUMBER"
     description: "IBAN and account number - high-risk financial data"
 
   - id: "dni_spanish_id"

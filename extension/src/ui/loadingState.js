@@ -6,6 +6,8 @@
   const DEFAULT_MESSAGE = "Analyzing message...";
   const DEFAULT_BG = "rgba(17, 24, 39, 0.92)";
   const SUCCESS_BG = "#16a34a";
+  const ERROR_BG = "#dc2626";
+  const DEFAULT_ERROR_MESSAGE = "Analysis failed - Backend Unreachable";
   let activeCount = 0;
   const trackedButtons = new Set();
   const buttonState = new WeakMap();
@@ -134,9 +136,7 @@
     }
     const btn = normalizeButton(target.button || target);
     const message =
-      typeof target === "string"
-        ? target
-        : target?.message || DEFAULT_MESSAGE;
+      typeof target === "string" ? target : target?.message || DEFAULT_MESSAGE;
 
     if (toast) {
       toast.style.background = DEFAULT_BG;
@@ -154,6 +154,22 @@
     activeCount += 1;
   }
 
+  function getErrorMessage(error) {
+    if (!error) return DEFAULT_ERROR_MESSAGE;
+    if (typeof error === "string") return error;
+    if (
+      typeof error.displayMessage === "string" &&
+      error.displayMessage.trim()
+    ) {
+      return error.displayMessage;
+    }
+    if (typeof error.message === "string" && error.message.trim()) {
+      const raw = error.message.trim();
+      return raw.startsWith("Analysis") ? raw : `Analysis failed - ${raw}`;
+    }
+    return DEFAULT_ERROR_MESSAGE;
+  }
+
   function hide(opts = {}) {
     if (activeCount === 0) return;
 
@@ -164,8 +180,9 @@
     trackedButtons.clear();
 
     if (toast) {
-      const { message, durationMs, panelShown } = opts || {};
+      const { message, durationMs, panelShown, error } = opts || {};
       const showCompletion = !panelShown;
+      const hasError = !!error;
 
       let finalMessage = message;
       if (
@@ -180,7 +197,18 @@
             : `Analysis completed in ${Math.round(durationMs)}ms`;
       }
 
-      if (showCompletion && finalMessage && textEl) {
+      if (hasError && textEl) {
+        textEl.textContent = getErrorMessage(error);
+        if (spinnerEl) spinnerEl.style.display = "none";
+        toast.style.background = ERROR_BG;
+        toast.dataset.sgVisible = "true";
+        const persistMs = opts.persistMs ?? 3000;
+        hideTimer = setTimeout(() => {
+          toast.dataset.sgVisible = "false";
+          toast.style.background = DEFAULT_BG;
+          if (spinnerEl) spinnerEl.style.display = "inline-block";
+        }, persistMs);
+      } else if (showCompletion && finalMessage && textEl) {
         textEl.textContent = finalMessage;
         if (spinnerEl) spinnerEl.style.display = "none";
         toast.style.background = SUCCESS_BG;

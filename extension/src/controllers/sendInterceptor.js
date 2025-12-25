@@ -79,6 +79,7 @@
   async function analyzeBeforeSend({ composer, button = null, text }) {
     const startedAt = now();
     let panelShown = false;
+    let backendError = null;
     lastSendIntent = null;
     const loadingTarget = {
       composer,
@@ -120,6 +121,7 @@
 
       allowSend(composer, button);
     } catch (err) {
+      backendError = err;
       console.error(
         "[SensitiveDataDetectorExtension] Backend error, allowing send:",
         err,
@@ -127,7 +129,7 @@
       allowSend(composer, button);
     } finally {
       const durationMs = now() - startedAt;
-      sg.loadingState.hide({ durationMs, panelShown });
+      sg.loadingState.hide({ durationMs, panelShown, error: backendError });
     }
   }
 

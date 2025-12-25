@@ -138,6 +138,7 @@
     let durationMs = 0;
     let panelShown = false;
     let loadingShown = false;
+    let backendError = null;
 
     try {
       const previewFile = supportedFiles[0];
@@ -224,6 +225,7 @@
 
       allowUpload(input, files);
     } catch (err) {
+      backendError = err;
       durationMs = now() - startedAt;
       const fallbackFile = supportedFiles[0] || files[0];
       const fileInfo = fallbackFile
@@ -265,7 +267,7 @@
     } finally {
       sg.alertStore.endInFlight(input);
       if (loadingShown) {
-        sg.loadingState.hide({ durationMs, panelShown });
+        sg.loadingState.hide({ durationMs, panelShown, error: backendError });
       }
     }
   }

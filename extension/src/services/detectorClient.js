@@ -1,25 +1,73 @@
 (function initDetectorClient(root) {
   const sg = (root.SG = root.SG || {});
 
+  const DEFAULT_ERROR_MESSAGE = "Analysis failed - backend unavailable.";
+
+  function createDetectorError(message, displayMessage) {
+    const err = new Error(message);
+    if (displayMessage) err.displayMessage = displayMessage;
+    return err;
+  }
+
+  function ensureValidResponse(payload) {
+    if (!payload || typeof payload !== "object") {
+      throw createDetectorError(
+        "Invalid detector response",
+        "Analysis failed - invalid response.",
+      );
+    }
+    if (payload.error) {
+      throw createDetectorError(
+        `Detector error: ${payload.error}`,
+        "Analysis failed - backend error.",
+      );
+    }
+    if (!("risk_level" in payload) || !Array.isArray(payload.detected_fields)) {
+      throw createDetectorError(
+        "Invalid detector response",
+        "Analysis failed - invalid response.",
+      );
+    }
+    return payload;
+  }
+
+  async function requestDetect(formData) {
+    let resp;
+    try {
+      resp = await fetch(`${sg.config.API_BASE}/detect`, {
+        method: "POST",
+        body: formData,
+      });
+    } catch (err) {
+      throw createDetectorError("Detector unreachable", DEFAULT_ERROR_MESSAGE);
+    }
+    if (!resp.ok) {
+      throw createDetectorError(
+        `Detector HTTP ${resp.status}`,
+        "Analysis failed - backend error.",
+      );
+    }
+    let payload;
+    try {
+      payload = await resp.json();
+    } catch (err) {
+      throw createDetectorError(
+        "Invalid detector response",
+        "Analysis failed - invalid response.",
+      );
+    }
+    return ensureValidResponse(payload);
+  }
+
   async function detectText(text) {
     const formData = new FormData();
     formData.append("text", text);
 
-    const resp = await fetch(`${sg.config.API_BASE}/detect`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!resp.ok) throw new Error(`Detector HTTP ${resp.status}`);
-    return resp.json();
+    return requestDetect(formData);
   }
 
   async function detectFile(formData) {
-    const resp = await fetch(`${sg.config.API_BASE}/detect`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!resp.ok) throw new Error(`Detector HTTP ${resp.status}`);
-    return resp.json();
+    return requestDetect(formData);
   }
 
   function waitForStableContent(node, idleMs = 800) {

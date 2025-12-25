@@ -121,6 +121,9 @@ NER_LABELS = {
     "city": "CITY",
     "state": "STATE",
     "zipcode": "ZIPCODE",
+    "email": "EMAIL",
+    "phone number": "PHONENUMBER",
+    "birth date": "DATEOFBIRTH",
 }
 
 # Defines the scoring value each detected field category sums
@@ -182,7 +185,6 @@ MEDIUM_RISK_FIELDS = {
     "EDUCATIONHISTORY",
     "CV",
     "SOCIALMEDIAHANDLE",
-    "SECONDARYADDRESS",
     "CITY",
     "STATE",
     "COUNTY",

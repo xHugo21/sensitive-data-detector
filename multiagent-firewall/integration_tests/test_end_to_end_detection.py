@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 from typing import List, Tuple
 
@@ -72,7 +73,9 @@ TEST_CASES = load_test_cases()
 def test_sensitive_detection(
     orchestrator, pytestconfig, test_id, prompt, expected_entities
 ):
+    start_time = time.perf_counter()
     result = orchestrator.run(text=prompt)
+    duration_s = time.perf_counter() - start_time
 
     detected_fields = result.get("detected_fields", [])
 
@@ -102,6 +105,7 @@ def test_sensitive_detection(
             "fp": len(unmatched_detected),
             "fn": len(expected_entities) - matched_expected,
             "case_pass": case_pass,
+            "duration_s": duration_s,
         }
     )
 

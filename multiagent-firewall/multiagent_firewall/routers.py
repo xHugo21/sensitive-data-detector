@@ -25,6 +25,8 @@ def should_run_llm_ocr(state: GuardState) -> str:
 
 def should_run_llm(state: GuardState) -> str:
     """Route to anonymize_dlp_ner unless policy already blocks."""
+    if state.get("force_llm_detector"):
+        return "anonymize_dlp_ner"
     decision = (state.get("decision") or "").lower()
     if decision == "block":
         return "remediation"

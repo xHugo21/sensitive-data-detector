@@ -29,8 +29,9 @@ flowchart TD
 
     RiskDLP --> PolicyDLP[policy_dlp_ner<br/>Policy check]
     PolicyDLP --> DecisionBlock{decision = block?}
-    DecisionBlock -->|Yes| Remediation[remediation<br/>Generate remediation message]
-    DecisionBlock -->|No| AnonymizeLLM[anonymize_dlp_ner<br/>Anonymize DLP/NER findings]
+    DecisionBlock -->|Yes + FORCE_LLM_DETECTOR=false| Remediation[remediation<br/>Generate remediation message]
+    DecisionBlock -->|Yes + FORCE_LLM_DETECTOR=true| AnonymizeLLM[anonymize_dlp_ner<br/>Anonymize DLP/NER findings]
+    DecisionBlock -->|No| AnonymizeLLM
 
     AnonymizeLLM --> LLM
 

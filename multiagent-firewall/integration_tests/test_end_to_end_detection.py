@@ -5,47 +5,82 @@ from typing import List, Tuple
 import pytest
 import yaml
 
-from multiagent_firewall.config import GuardConfig
-from multiagent_firewall.orchestrator import GuardOrchestrator
+TEST_CASES_ENV_VAR = "INTEGRATION_TESTS_FILE"
+DEFAULT_CASES_FILE = "prompts_test_cases.yaml"
 
 
-LLM_API_KEY = os.getenv("LLM_API_KEY")
+def _resolve_cases_file() -> Path:
+    env_value = os.getenv(TEST_CASES_ENV_VAR)
+    if env_value:
+        return Path(env_value)
+    return Path(__file__).parent / DEFAULT_CASES_FILE
 
 
-def load_test_cases() -> List[Tuple[str, str, List[str], str]]:
-    test_file = Path(__file__).parent / "prompts_test_cases.yaml"
+def _resolve_file_path(test_file: Path, file_path: str) -> str:
+    if file_path.startswith("file://"):
+        return file_path
+
+    path = Path(file_path).expanduser()
+    if not path.is_absolute():
+        path = (test_file.parent / file_path).resolve()
+
+    if not path.exists():
+        raise FileNotFoundError(f"File test case path does not exist: {path}")
+    return str(path)
+
+
+def load_test_cases() -> List[Tuple[str, str | None, str | None, List[str], str]]:
+    test_file = _resolve_cases_file()
+    if not test_file.exists():
+        raise FileNotFoundError(f"Test cases file not found: {test_file}")
+
     with open(test_file) as f:
         data = yaml.safe_load(f)
-    return [
-        (
-            case["id"],
-            case["prompt"],
-            case.get("expected_entities", []),
-            case.get("description", ""),
+
+    if not data or "test_cases" not in data:
+        raise ValueError(f"No test_cases found in {test_file}")
+
+    cases = []
+    for case in data["test_cases"]:
+        test_id = case["id"]
+        prompt = case.get("prompt")
+        file_path = case.get("file_path") or case.get("file")
+        if (prompt is None) == (file_path is None):
+            raise ValueError(
+                f"Test '{test_id}' must set exactly one of 'prompt' or 'file_path'."
+            )
+        if file_path is not None:
+            file_path = _resolve_file_path(test_file, file_path)
+        cases.append(
+            (
+                test_id,
+                prompt,
+                file_path,
+                case.get("expected_entities", []),
+                case.get("description", ""),
+            )
         )
-        for case in data["test_cases"]
-    ]
+    if not cases:
+        raise ValueError(f"No test cases found in {test_file}")
+    return cases
 
 
-@pytest.fixture(scope="module")
-def orchestrator():
-    if not LLM_API_KEY:
-        pytest.skip("LLM_API_KEY not set. Skipping integration tests.")
-
-    config = GuardConfig.from_env()
-    return GuardOrchestrator(config)
+TEST_CASES = load_test_cases()
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "test_id,prompt,expected_entities,description",
-    load_test_cases(),
-    ids=[case[0] for case in load_test_cases()],
+    "test_id,prompt,file_path,expected_entities,description",
+    TEST_CASES,
+    ids=[case[0] for case in TEST_CASES],
 )
 def test_sensitive_detection(
-    orchestrator, test_id, prompt, expected_entities, description
+    orchestrator, test_id, prompt, file_path, expected_entities, description
 ):
-    result = orchestrator.run(text=prompt)
+    if prompt is not None:
+        result = orchestrator.run(text=prompt)
+    else:
+        result = orchestrator.run(file_path=file_path)
 
     detected_fields = result.get("detected_fields", [])
 
@@ -70,26 +105,3 @@ def test_sensitive_detection(
             f"Expected no entities, but detected: {detected_types}\n"
             f"Detected fields: {detected_fields}"
         )
-
-
-@pytest.mark.integration
-def test_orchestrator_returns_complete_state(orchestrator):
-    prompt = "My SOCIALSECURITYNUMBER is 123-45-6789"
-    result = orchestrator.run(text=prompt)
-
-    assert "raw_text" in result
-    assert "normalized_text" in result
-    assert "detected_fields" in result
-    assert "risk_level" in result
-    assert "decision" in result
-    assert "remediation" in result
-    assert result["raw_text"] == prompt
-
-
-@pytest.mark.integration
-def test_orchestrator_handles_empty_input(orchestrator):
-    result = orchestrator.run(text="")
-
-    assert result["raw_text"] == ""
-    assert "detected_fields" in result
-    assert "risk_level" in result

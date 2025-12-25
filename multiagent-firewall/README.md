@@ -307,9 +307,15 @@ LLM_API_KEY=sk-your-actual-api-key-here
 #### Running Integration Tests
 
 ```bash
-./run_integration_tests.sh
+./run_integration_tests.sh test_cases.yaml
 ```
 
 This will:
-- Run all test cases against the full pipeline
-- Calculate accuracy, precision, recall, and F1 metrics
+- Run the selected test cases file against the full pipeline
+
+Examples:
+
+```bash
+./run_integration_tests.sh prompts_test_cases.yaml
+./run_integration_tests.sh prompts_test_cases2.yaml
+```

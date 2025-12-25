@@ -89,10 +89,6 @@ REGEX_PATTERNS = {
         "field": "ETHEREUMADDRESS",
         "regex": r"\b0x[a-fA-F0-9]{40}\b",
     },
-    "LITECOINADDRESS": {
-        "field": "LITECOINADDRESS",
-        "regex": r"\b[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}\b",
-    },
     "ZIPCODE": {
         "field": "ZIPCODE",
         "regex": r"\b\d{5}(?:[\-\s]\d{4})?\b",
@@ -164,7 +160,6 @@ HIGH_RISK_FIELDS = {
     "HEALTHDATA",
     "CRIMINALRECORD",
     "CONFIDENTIALDOCUMENT",
-    "LITECOINADDRESS",
     "BITCOINADDRESS",
     "ETHEREUMADDRESS",
     "PHONEIMEI",

@@ -99,6 +99,12 @@ REGEX_PATTERNS = {
         "window": 6,
         "keywords": ["vin", "vehicle"],
     },
+    "PIN": {
+        "field": "PIN",
+        "regex": r"\b\d{4,6}\b",
+        "window": 4,
+        "keywords": ["pin", "personal identification number"],
+    },
 }
 
 # Keyword lists for DLP detection agent

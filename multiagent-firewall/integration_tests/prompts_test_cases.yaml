@@ -42,7 +42,7 @@ test_cases:
     description: "Prompt explicitly mentioning a password"
 
   - id: "multiple_pii"
-    prompt: "Hi, I'm Jane Smith. My SOCIALSECURITYNUMBER is 987-65-4321, email is jane@example.com, and phone is 555-9876."
+    prompt: "Hi, I'm Jane Smith. My social security number is 987-65-4321, email is jane@example.com, and phone is 555-9876."
     expected_sensitive: true
     expected_entities:
       - "SOCIALSECURITYNUMBER"

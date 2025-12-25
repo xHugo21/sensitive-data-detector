@@ -99,14 +99,6 @@ REGEX_PATTERNS = {
         "window": 4,
         "keywords": ["zip", "zipcode", "postal"],
     },
-    "DATE": {
-        "field": "DATE",
-        "regex": r"\b(?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\b",
-    },
-    "TIME": {
-        "field": "TIME",
-        "regex": r"\b(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\b",
-    },
     "VEHICLEVIN": {
         "field": "VEHICLEVIN",
         "regex": r"\b[A-HJ-NPR-Z0-9]{17}\b",
@@ -215,6 +207,7 @@ MEDIUM_RISK_FIELDS = {
     "CREDITCARDISSUER",
     "USERNAME",
     "INFRASTRUCTURE",
+    "APPOINTMENTDATE",
 }
 
 LOW_RISK_FIELDS = {
@@ -236,8 +229,6 @@ LOW_RISK_FIELDS = {
     "POLITICALOPINION",
     "PHILOSOPHICALBELIEF",
     "TRADEUNION",
-    "DATE",
-    "TIME",
     "ORDINALDIRECTION",
     "SEXUALORIENTATION",
     "LEGALDISCLOSURE",

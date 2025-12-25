@@ -246,20 +246,20 @@ def test_detect_regex_ethereum_address():
     assert "ETHEREUMADDRESS" in field_names
 
 
-def test_detect_regex_date():
-    text = "Date: 2024-12-31 or 12/31/2024"
-    findings = detect_regex_patterns(text)
+def test_detect_regex_appointment_date():
+    text = "Appointment on 2024-05-12"
+    custom_patterns = {
+        "APPOINTMENTDATE": {
+            "field": "APPOINTMENTDATE",
+            "regex": r"\b(?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\b",
+            "window": 0,
+            "keywords": [],
+        },
+    }
+    findings = detect_regex_patterns(text, custom_patterns)
 
     field_names = [f["field"] for f in findings]
-    assert "DATE" in field_names
-
-
-def test_detect_regex_time():
-    text = "Meeting at 14:30:00 or 9:15"
-    findings = detect_regex_patterns(text)
-
-    field_names = [f["field"] for f in findings]
-    assert "TIME" in field_names
+    assert "APPOINTMENTDATE" in field_names
 
 
 # ============================================================================

@@ -328,8 +328,7 @@ test_cases:
     prompt: "The meeting is on 2024-12-15 at 14:30, located in the northeast wing."
     expected_sensitive: false
     expected_entities:
-      - "DATE"
-      - "TIME"
+      - "APPOINTMENTDATE"
       - "ORDINALDIRECTION"
     description: "Date, time, direction - low-risk temporal data"
 

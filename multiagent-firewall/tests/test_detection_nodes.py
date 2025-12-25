@@ -9,7 +9,7 @@ from multiagent_firewall.nodes.detection import (
 from multiagent_firewall.types import GuardState
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
 def test_run_llm_detector_success(mock_llm_detector, guard_config):
     """Test LLM detector with successful detection"""
     mock_detector = MagicMock()
@@ -20,15 +20,15 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
         ]
     }
     mock_llm_detector.return_value = mock_detector
-    
+
     state: GuardState = {
         "normalized_text": "Contact John Doe at test@example.com",
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_llm_detector(state, fw_config=guard_config)
-    
+
     assert "llm_fields" in result
     assert len(result.get("llm_fields", [])) == 2
     assert all(
@@ -37,44 +37,44 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
     assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
 def test_run_llm_detector_empty_text(mock_llm_detector, guard_config):
     """Test LLM detector with empty text"""
     mock_detector = MagicMock()
     mock_detector.return_value = {"detected_fields": []}
     mock_llm_detector.return_value = mock_detector
-    
+
     state: GuardState = {
         "normalized_text": "",
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_llm_detector(state, fw_config=guard_config)
-    
+
     assert result.get("llm_fields") == []
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
 def test_run_llm_detector_exception(mock_llm_detector, guard_config):
     """Test LLM detector handles exceptions gracefully"""
     mock_detector = MagicMock()
     mock_detector.side_effect = RuntimeError("LLM service unavailable")
     mock_llm_detector.return_value = mock_detector
-    
+
     state: GuardState = {
         "normalized_text": "Some text",
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_llm_detector(state, fw_config=guard_config)
-    
+
     assert result.get("llm_fields") == []
     assert any("LLM detector failed" in e for e in result.get("errors", []))
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
 def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_config):
     """LLM findings should be tagged as LLM-derived rather than Explicit/Inferred"""
     mock_detector = MagicMock()
@@ -99,25 +99,41 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
     assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
 
 
-@patch('multiagent_firewall.nodes.detection.LiteLLMDetector')
-def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_detector, guard_config):
+@patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
+def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(
+    mock_llm_detector, guard_config
+):
     """Anonymized values should be mapped back; anonymized tokens should be dropped"""
     mock_detector = MagicMock()
     mock_detector.return_value = {
         "detected_fields": [
-            {"field": "TIME", "value": "<<REDACTED:TIME>>", "sources": ["Explicit"]},
+            {
+                "field": "APPOINTMENTDATE",
+                "value": "<<REDACTED:APPOINTMENTDATE>>",
+                "sources": ["Explicit"],
+            },
             {"field": "USERNAME", "value": "john_doe_2024", "sources": ["Explicit"]},
-            {"field": "EMAIL", "value": "<<REDACTED:UNKNOWN>>", "sources": ["Explicit"]},
-            {"field": "TIME", "value": "REDACTED:TIME", "sources": ["Explicit"]},
+            {
+                "field": "EMAIL",
+                "value": "<<REDACTED:UNKNOWN>>",
+                "sources": ["Explicit"],
+            },
+            {
+                "field": "APPOINTMENTDATE",
+                "value": "REDACTED:APPOINTMENTDATE",
+                "sources": ["Explicit"],
+            },
         ]
     }
     mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
-        "normalized_text": "My username is john_doe_2024 and it is 13:15",
-        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:TIME>>",
+        "normalized_text": "My username is john_doe_2024 and it is 2024-05-12",
+        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:APPOINTMENTDATE>>",
         "metadata": {
-            "llm_anonymized_values": {"mapping": {"13:15": "<<REDACTED:TIME>>"}}
+            "llm_anonymized_values": {
+                "mapping": {"2024-05-12": "<<REDACTED:APPOINTMENTDATE>>"}
+            }
         },
         "warnings": [],
         "errors": [],
@@ -126,10 +142,12 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(mock_llm_dete
     result = run_llm_detector(state, fw_config=guard_config)
 
     values = {f["field"]: f["value"] for f in result.get("llm_fields", [])}
-    assert values["TIME"] == "13:15"
+    assert values["APPOINTMENTDATE"] == "2024-05-12"
     assert values["USERNAME"] == "john_doe_2024"
     assert "EMAIL" not in values  # unknown anonymized token skipped
-    assert list(values.values()).count("13:15") == 1  # dropped raw anonymized token
+    assert (
+        list(values.values()).count("2024-05-12") == 1
+    )  # dropped raw anonymized token
     assert all(
         any(source.startswith("llm_") for source in f.get("sources", []))
         for f in result.get("llm_fields", [])
@@ -143,9 +161,9 @@ def test_run_dlp_detector_with_regex():
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_dlp_detector(state)
-    
+
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
     assert len(dlp_fields) >= 1
@@ -161,14 +179,12 @@ def test_run_dlp_detector_with_keywords():
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_dlp_detector(state)
-    
+
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
-    keyword_findings = [
-        f for f in dlp_fields if "dlp_keyword" in f.get("sources", [])
-    ]
+    keyword_findings = [f for f in dlp_fields if "dlp_keyword" in f.get("sources", [])]
     assert len(keyword_findings) >= 1
 
 
@@ -179,9 +195,9 @@ def test_run_dlp_detector_with_checksums():
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_dlp_detector(state)
-    
+
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
     checksum_findings = [
@@ -197,7 +213,7 @@ def test_run_dlp_detector_empty_text():
         "warnings": [],
         "errors": [],
     }
-    
+
     result = run_dlp_detector(state)
-    
+
     assert result.get("dlp_fields") == []

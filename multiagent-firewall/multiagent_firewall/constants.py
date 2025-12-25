@@ -23,7 +23,7 @@ REGEX_PATTERNS = {
     },
     "PHONENUMBER": {
         "field": "PHONENUMBER",
-        "regex": r"\b\+?\d[\d\s\-\(\)]{7,}\d\b",
+        "regex": r"(?<!\w)\+?\d[\d\s\-\(\)]{7,}\d\b",
     },
     "CREDITCARDNUMBER": {
         "field": "CREDITCARDNUMBER",

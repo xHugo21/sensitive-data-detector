@@ -120,7 +120,7 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(
             },
             {
                 "field": "APPOINTMENTDATE",
-                "value": "REDACTED:APPOINTMENTDATE",
+                "value": "+REDACTED:APPOINTMENTDATE",
                 "sources": ["Explicit"],
             },
         ]

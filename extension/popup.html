@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sensitive Data Detector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="header">
+        <div class="brand">
+          <div class="brand-title">Sensitive Data Detector</div>
+          <div class="brand-subtitle" id="site-status">Checking site...</div>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="row">
+          <div class="copy">
+            <div class="label">Detection</div>
+            <div class="state" id="detection-state">Enabled</div>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              id="toggle-detection"
+              aria-label="Enable detection"
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+    </main>
+
+    <script src="src/platforms/base.js"></script>
+    <script src="src/platforms/registry.js"></script>
+    <script src="src/platforms/chatgpt.js"></script>
+    <script src="src/platforms/gemini.js"></script>
+    <script src="src/state/settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

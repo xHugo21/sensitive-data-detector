@@ -9,6 +9,13 @@
     return (root.performance || {}).now ? performance.now() : Date.now();
   }
 
+  function isDetectionEnabled() {
+    if (sg.settings?.isDetectionEnabled) {
+      return sg.settings.isDetectionEnabled();
+    }
+    return true;
+  }
+
   function attach() {
     if (attached) return;
     const composer = sg.chatSelectors.findComposer();
@@ -26,6 +33,7 @@
 
   function handleComposerKeydown(event) {
     if (event.key !== "Enter" || event.shiftKey) return;
+    if (!isDetectionEnabled()) return;
 
     // Allow send if override is active
     if (sg.alertStore.isOverrideActive()) return;
@@ -52,6 +60,7 @@
     // Use platform-specific button detection
     const platform = sg.platformRegistry?.getActive();
     if (!platform || !platform.isSendButton(clickedButton)) return;
+    if (!isDetectionEnabled()) return;
 
     // Allow send if override is active or bypass flag is set
     if (clickedButton.dataset.sgBypass === "true") return;

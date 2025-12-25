@@ -213,7 +213,7 @@ test_cases:
     expected_entities:
       - "EMPLOYEEDATA"
       - "SALARYDETAILS"
-      - "JOBTITLE"
+      - "JOBDETAILS"
       - "COMPANYNAME"
     description: "Multiple medium-risk employment fields - combined score 8"
 

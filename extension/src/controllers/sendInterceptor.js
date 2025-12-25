@@ -123,10 +123,9 @@
     } catch (err) {
       backendError = err;
       console.error(
-        "[SensitiveDataDetectorExtension] Backend error, allowing send:",
+        "[SensitiveDataDetectorExtension] Backend error, blocking send:",
         err,
       );
-      allowSend(composer, button);
     } finally {
       const durationMs = now() - startedAt;
       sg.loadingState.hide({ durationMs, panelShown, error: backendError });

@@ -1,7 +1,7 @@
 (function initDetectorClient(root) {
   const sg = (root.SG = root.SG || {});
 
-  const DEFAULT_ERROR_MESSAGE = "Analysis failed - backend unavailable.";
+  const DEFAULT_ERROR_MESSAGE = "Analysis failed - Backend Unreachable";
 
   function createDetectorError(message, displayMessage) {
     const err = new Error(message);

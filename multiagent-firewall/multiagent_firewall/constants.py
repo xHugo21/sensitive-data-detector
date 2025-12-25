@@ -228,7 +228,6 @@ LOW_RISK_FIELDS = {
     "AGE",
     "DOB",
     "GENDER",
-    "SEX",
     "HAIRCOLOR",
     "EYECOLOR",
     "HEIGHT",

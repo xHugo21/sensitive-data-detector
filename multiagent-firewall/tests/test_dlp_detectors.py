@@ -343,10 +343,10 @@ def test_detect_checksums_iban():
 
 
 def test_detect_checksums_dni():
-    text = "DNI number: 12345678Z"
+    text = "NATIONALID number: 12345678Z"
     findings = detect_checksums(text)
 
-    dni_findings = [f for f in findings if f["field"] == "DNI"]
+    dni_findings = [f for f in findings if f["field"] == "NATIONALID"]
     assert len(dni_findings) == 1
     assert dni_findings[0]["sources"] == ["dlp_checksum"]
 
@@ -373,7 +373,7 @@ def test_detect_checksums_mixed():
     text = """
     Card: 4532015112830366
     IBAN: GB82WEST12345698765432
-    DNI: 12345678Z
+    NATIONALID: 12345678Z
     """
     findings = detect_checksums(text)
 
@@ -381,14 +381,14 @@ def test_detect_checksums_mixed():
     field_names = [f["field"] for f in findings]
     assert "CREDITCARDNUMBER" in field_names
     assert "IBAN" in field_names
-    assert "DNI" in field_names
+    assert "NATIONALID" in field_names
 
 
 def test_detect_checksums_invalid_mixed():
     text = """
     Invalid card: 1234567890123456
     Invalid IBAN: GB82WEST12345698765433
-    Invalid DNI: 12345678A
+    Invalid NATIONALID: 12345678A
     """
     findings = detect_checksums(text)
 

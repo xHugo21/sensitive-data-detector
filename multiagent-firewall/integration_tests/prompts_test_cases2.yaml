@@ -52,11 +52,11 @@ test_cases:
     description: "IBAN and account number - high-risk financial data"
 
   - id: "dni_spanish_id"
-    prompt: "Mi DNI es 12345678Z y necesito renovar mi pasaporte."
+    prompt: "Mi NATIONALID es 12345678Z y necesito renovar mi pasaporte."
     expected_sensitive: true
     expected_entities:
-      - "DNI"
-    description: "Spanish national ID (DNI) in Spanish text"
+      - "NATIONALID"
+    description: "Spanish national ID (NATIONALID) in Spanish text"
 
   - id: "multiple_high_risk"
     prompt: "Login credentials: user is admin, password is S3cur3P@ss!, and API key is sk-1234567890abcdef."

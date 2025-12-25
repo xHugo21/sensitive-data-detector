@@ -69,7 +69,7 @@ def validate_iban(iban: str) -> bool:
 
 
 def validate_dni(dni: str) -> bool:
-    """Validate Spanish DNI using the check letter algorithm."""
+    """Validate Spanish NATIONALID using the check letter algorithm."""
     dni = dni.upper().strip()
 
     if len(dni) != 9 or not dni[:8].isdigit() or not dni[8].isalpha():
@@ -197,15 +197,15 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     }
                 )
 
-    # Spanish DNI detection (check letter algorithm)
-    dni_pattern = _extract_regex_pattern(REGEX_PATTERNS, "DNI")
+    # Spanish NATIONALID detection (check letter algorithm)
+    dni_pattern = _extract_regex_pattern(REGEX_PATTERNS, "NATIONALID")
     if dni_pattern:
         potential_dnis = re.findall(dni_pattern, text.upper())
         for dni in potential_dnis:
             if validate_dni(dni):
                 findings.append(
                     {
-                        "field": "DNI",
+                        "field": "NATIONALID",
                         "value": dni,
                         "sources": ["dlp_checksum"],
                     }

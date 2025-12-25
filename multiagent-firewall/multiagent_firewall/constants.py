@@ -69,8 +69,8 @@ REGEX_PATTERNS = {
         "field": "URL",
         "regex": r"\b(?:https?|ftp)://[^\s/$.?#].[^\s]*\b",
     },
-    "DNI": {
-        "field": "DNI",
+    "NATIONALID": {
+        "field": "NATIONALID",
         "regex": r"\b\d{8}[A-Z]\b",
         "window": 6,
         "keywords": ["dni"],
@@ -148,7 +148,7 @@ HIGH_RISK_FIELDS = {
     "PASSWORD",
     "CREDENTIALS",
     "SOCIALSECURITYNUMBER",
-    "DNI",
+    "NATIONALID",
     "PASSPORTNUMBER",
     "CREDITCARDNUMBER",
     "IPV4",
@@ -173,6 +173,7 @@ HIGH_RISK_FIELDS = {
     "TOKEN",
     "CHILDRENDATA",
     "GPSCOORDINATE",
+    "HEALTHINSURANCEID",
 }
 
 MEDIUM_RISK_FIELDS = {

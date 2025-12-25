@@ -16,20 +16,7 @@ def _resolve_cases_file() -> Path:
     return Path(__file__).parent / DEFAULT_CASES_FILE
 
 
-def _resolve_file_path(test_file: Path, file_path: str) -> str:
-    if file_path.startswith("file://"):
-        return file_path
-
-    path = Path(file_path).expanduser()
-    if not path.is_absolute():
-        path = (test_file.parent / file_path).resolve()
-
-    if not path.exists():
-        raise FileNotFoundError(f"File test case path does not exist: {path}")
-    return str(path)
-
-
-def load_test_cases() -> List[Tuple[str, str | None, str | None, List[str], str]]:
+def load_test_cases() -> List[Tuple[str, str, List[str]]]:
     test_file = _resolve_cases_file()
     if not test_file.exists():
         raise FileNotFoundError(f"Test cases file not found: {test_file}")
@@ -41,25 +28,33 @@ def load_test_cases() -> List[Tuple[str, str | None, str | None, List[str], str]
         raise ValueError(f"No test_cases found in {test_file}")
 
     cases = []
-    for case in data["test_cases"]:
-        test_id = case["id"]
-        prompt = case.get("prompt")
-        file_path = case.get("file_path") or case.get("file")
-        if (prompt is None) == (file_path is None):
+    for index, case in enumerate(data["test_cases"], start=1):
+        if not isinstance(case, dict):
+            raise ValueError(f"Test case {index} must be a mapping.")
+
+        allowed_keys = {"prompt", "expected_entities"}
+        extra_keys = set(case.keys()) - allowed_keys
+        if extra_keys:
+            extra_keys_list = ", ".join(sorted(extra_keys))
             raise ValueError(
-                f"Test '{test_id}' must set exactly one of 'prompt' or 'file_path'."
+                f"Test case {index} has unsupported keys: {extra_keys_list}"
             )
-        if file_path is not None:
-            file_path = _resolve_file_path(test_file, file_path)
-        cases.append(
-            (
-                test_id,
-                prompt,
-                file_path,
-                case.get("expected_entities", []),
-                case.get("description", ""),
+
+        if "prompt" not in case:
+            raise ValueError(f"Test case {index} must include 'prompt'.")
+
+        prompt = case["prompt"]
+        if prompt is None:
+            raise ValueError(f"Test case {index} has null prompt.")
+
+        expected_entities = case.get("expected_entities") or []
+        if not isinstance(expected_entities, list):
+            raise ValueError(
+                f"Test case {index} expected_entities must be a list."
             )
-        )
+
+        test_id = f"case_{index:03d}"
+        cases.append((test_id, prompt, expected_entities))
     if not cases:
         raise ValueError(f"No test cases found in {test_file}")
     return cases
@@ -70,17 +65,14 @@ TEST_CASES = load_test_cases()
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "test_id,prompt,file_path,expected_entities,description",
+    "test_id,prompt,expected_entities",
     TEST_CASES,
     ids=[case[0] for case in TEST_CASES],
 )
 def test_sensitive_detection(
-    orchestrator, test_id, prompt, file_path, expected_entities, description
+    orchestrator, test_id, prompt, expected_entities
 ):
-    if prompt is not None:
-        result = orchestrator.run(text=prompt)
-    else:
-        result = orchestrator.run(file_path=file_path)
+    result = orchestrator.run(text=prompt)
 
     detected_fields = result.get("detected_fields", [])
 
@@ -93,7 +85,7 @@ def test_sensitive_detection(
     if expected_entities:
         for expected_entity in expected_entities:
             assert any(expected_entity.upper() in dt for dt in detected_types), (
-                f"Test '{test_id}' failed: {description}\n"
+                f"Test '{test_id}' failed.\n"
                 f"Expected entity '{expected_entity}' not found.\n"
                 f"Detected types: {detected_types}\n"
                 f"Detected fields: {detected_fields}"
@@ -101,7 +93,7 @@ def test_sensitive_detection(
     else:
         # If no expected entities, verify that no fields were detected
         assert len(detected_fields) == 0, (
-            f"Test '{test_id}' failed: {description}\n"
+            f"Test '{test_id}' failed.\n"
             f"Expected no entities, but detected: {detected_types}\n"
             f"Detected fields: {detected_fields}"
         )

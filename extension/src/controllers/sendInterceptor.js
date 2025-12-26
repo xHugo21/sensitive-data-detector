@@ -88,27 +88,7 @@
     };
     sg.loadingState.show(loadingTarget);
     try {
-      const result = sg.detectorClient.detectTextStream
-        ? await sg.detectorClient.detectTextStream(
-            text,
-            (message, event) => {
-              if (!message) return;
-              const detectedCount =
-                typeof event?.detected_count === "number"
-                  ? event.detected_count
-                  : null;
-              let suffix = "";
-              if (detectedCount === 0) {
-                suffix = " - No detections yet";
-              } else if (detectedCount !== null) {
-                suffix = ` - Detected ${detectedCount}`;
-              }
-              sg.loadingState.update(
-                `Analyzing message - Running ${message}${suffix}`,
-              );
-            },
-          )
-        : await sg.detectorClient.detectText(text);
+      const result = await sg.detectorClient.detectText(text);
       sg.highlights.applyHighlights(
         composer,
         result?.detected_fields || [],

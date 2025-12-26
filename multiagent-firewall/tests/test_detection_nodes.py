@@ -100,16 +100,19 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
 
 
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(
-    mock_llm_detector, guard_config
-):
-    """Anonymized values should be mapped back; anonymized tokens should be dropped"""
+def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_config):
+    """Anonymized tokens and mapped originals should be dropped"""
     mock_detector = MagicMock()
     mock_detector.return_value = {
         "detected_fields": [
             {
                 "field": "APPOINTMENTDATE",
                 "value": "<<REDACTED:APPOINTMENTDATE>>",
+                "sources": ["Explicit"],
+            },
+            {
+                "field": "APPOINTMENTDATE",
+                "value": "2024-05-12",
                 "sources": ["Explicit"],
             },
             {"field": "USERNAME", "value": "john_doe_2024", "sources": ["Explicit"]},
@@ -142,12 +145,9 @@ def test_run_llm_detector_deanonymizes_and_skips_anonymized_tokens(
     result = run_llm_detector(state, fw_config=guard_config)
 
     values = {f["field"]: f["value"] for f in result.get("llm_fields", [])}
-    assert values["APPOINTMENTDATE"] == "2024-05-12"
     assert values["USERNAME"] == "john_doe_2024"
+    assert "APPOINTMENTDATE" not in values
     assert "EMAIL" not in values  # unknown anonymized token skipped
-    assert (
-        list(values.values()).count("2024-05-12") == 1
-    )  # dropped raw anonymized token
     assert all(
         any(source.startswith("llm_") for source in f.get("sources", []))
         for f in result.get("llm_fields", [])

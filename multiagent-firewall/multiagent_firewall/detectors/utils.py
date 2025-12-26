@@ -70,6 +70,7 @@ def load_litellm_env(
     prefix: str,
     fallback_prefix: str | None = None,
     require_api_key: bool = True,
+    fallback_extra_params: bool = True,
 ) -> tuple[str, str, Dict[str, Any]]:
     """Load LiteLLM env configuration for a prefix with optional fallback prefix."""
     provider = (
@@ -92,10 +93,13 @@ def load_litellm_env(
         f"{prefix}_API_VERSION", f"{fallback_prefix}_API_VERSION"
     )
 
-    extra_params = json_env_with_fallback(
-        f"{prefix}_EXTRA_PARAMS",
-        f"{fallback_prefix}_EXTRA_PARAMS" if fallback_prefix else None,
-    )
+    if fallback_extra_params:
+        extra_params = json_env_with_fallback(
+            f"{prefix}_EXTRA_PARAMS",
+            f"{fallback_prefix}_EXTRA_PARAMS" if fallback_prefix else None,
+        )
+    else:
+        extra_params = json_env(f"{prefix}_EXTRA_PARAMS")
 
     if require_api_key and not api_key:
         raise RuntimeError(f"Missing API key for provider '{provider}'.")

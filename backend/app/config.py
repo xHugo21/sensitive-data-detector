@@ -21,6 +21,9 @@ def _str_to_bool(value: str | None, default: bool) -> bool:
 
 
 DEBUG_MODE = _str_to_bool(os.getenv("DEBUG_MODE"), False)
+USE_TOOL_CALLING_ORCHESTRATOR = _str_to_bool(
+    os.getenv("USE_TOOL_CALLING_ORCHESTRATOR"), False
+)
 
 
 GUARD_CONFIG = GuardConfig.from_env()

@@ -6,10 +6,16 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, StreamingResponse
 from typing import Optional
 from app.utils import debug_log
-from multiagent_firewall import GuardOrchestrator
-from app.config import GUARD_CONFIG, MIN_BLOCK_RISK
+from multiagent_firewall import GuardOrchestrator, ToolCallingGuardOrchestrator
+from app.config import GUARD_CONFIG, MIN_BLOCK_RISK, USE_TOOL_CALLING_ORCHESTRATOR
 
 router = APIRouter()
+
+
+def _get_orchestrator():
+    if USE_TOOL_CALLING_ORCHESTRATOR:
+        return ToolCallingGuardOrchestrator(GUARD_CONFIG)
+    return GuardOrchestrator(GUARD_CONFIG)
 
 
 @router.post("/detect")
@@ -47,7 +53,7 @@ async def detect(
             debug_log(f"[SensitiveDataDetectorBackend] Saved file to {tmp_path}")
 
             # Use orchestrator with file_path
-            result = GuardOrchestrator(GUARD_CONFIG).run(
+            result = _get_orchestrator().run(
                 file_path=tmp_path,
                 min_block_risk=MIN_BLOCK_RISK,
             )
@@ -66,7 +72,7 @@ async def detect(
 
         # Handle text input
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
-        result = GuardOrchestrator(GUARD_CONFIG).run(
+        result = _get_orchestrator().run(
             text=text,
             min_block_risk=MIN_BLOCK_RISK,
         )
@@ -111,7 +117,7 @@ async def detect_stream(
 
         debug_log(f"[SensitiveDataDetectorBackend] Saved file to {tmp_path}")
 
-    orchestrator = GuardOrchestrator(GUARD_CONFIG)
+    orchestrator = _get_orchestrator()
     initial_state, updates = orchestrator.stream_updates(
         text=text,
         file_path=tmp_path,

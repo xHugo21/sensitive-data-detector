@@ -197,6 +197,22 @@ LLM_API_KEY=sk-xxx           # API key for the provider
 LLM_BASE_URL=https://...     # Optional: custom API base URL
 ```
 
+#### LLM Extra Params (Optional)
+`LLM_EXTRA_PARAMS` is a JSON object passed to LiteLLM. For deterministic DLP-style detection, the following greedy configuration is a good default.
+
+```bash
+LLM_EXTRA_PARAMS='{
+  "temperature": 0,                 # Deterministic output for classification
+  "top_p": 1.0,                      # Full nucleus to match greedy decode
+  "frequency_penalty": 0,           # Neutral for OpenAI-style APIs
+  "presence_penalty": 0,            # Neutral for OpenAI-style APIs
+  "repeat_penalty": 1.0,            # Neutral for Ollama/Llama
+  "top_k": 1,                       # Greedy decode for Ollama/Llama
+  "drop_params": true,              # Strip unsupported params per provider
+  "response_format": {"type":"json_object"} # Ask for JSON mode when supported
+}'
+```
+
 #### OCR Configuration (Optional)
 ```bash
 OCR_LANG=eng                 # Tesseract language code (default: eng, more languages: install specific language for tesseract and add it (e.g: eng+esp))

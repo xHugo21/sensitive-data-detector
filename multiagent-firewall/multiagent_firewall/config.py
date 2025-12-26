@@ -82,6 +82,7 @@ class GuardConfig:
             prefix="LLM_OCR",
             fallback_prefix="LLM",
             require_api_key=True,
+            fallback_extra_params=False,
         )
         llm_ocr_config = LLMConfig(
             provider=ocr_provider,

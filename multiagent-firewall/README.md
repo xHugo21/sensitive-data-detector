@@ -218,7 +218,13 @@ LLM_EXTRA_PARAMS='{
 OCR_LANG=eng                 # Tesseract language code (default: eng, more languages: install specific language for tesseract and add it (e.g: eng+esp))
 OCR_CONFIDENCE_THRESHOLD=60  # Minimum confidence 0-100 (default: 0)
 TESSERACT_CMD=/usr/bin/tesseract  # Custom Tesseract path
+LLM_OCR_PROVIDER=groq
+LLM_OCR_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+LLM_OCR_API_KEY=your-provider-api-key
+LLM_OCR_BASE_URL=https://api.groq.com/openai/v1
 ```
+
+Note: `LLM_OCR_*` falls back to `LLM_*` values for provider/model/keys, but `LLM_OCR_EXTRA_PARAMS` does not fall back and must be set explicitly if needed.
 
 #### File Analysis Dependencies (Optional)
 PDF parsing and Tesseract OCR are shipped as a separate extra to keep the base install light.

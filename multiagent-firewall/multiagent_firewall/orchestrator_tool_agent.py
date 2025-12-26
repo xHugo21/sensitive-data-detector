@@ -63,6 +63,8 @@ class ToolCallingGuardOrchestrator:
             file_path=file_path,
             min_block_risk=min_block_risk,
         )
+        if self._config.debug:
+            return self.debug_invoke(initial_state)
         return self._run_agent(initial_state)
 
     def build_initial_state(
@@ -84,6 +86,37 @@ class ToolCallingGuardOrchestrator:
             "decision": "allow",
             "risk_level": "none",
         }
+
+    def debug_invoke(self, state: GuardState) -> GuardState:
+        tool_calls = 0
+        history: list[str] = []
+        for _ in range(self._max_steps):
+            allowed = self._allowed_tools(state, history)
+            if not allowed:
+                if self._can_finish(state, history):
+                    break
+                append_warning(state, "Tool agent had no valid next steps.")
+                break
+
+            tool_name = self._select_tool(state, history, allowed)
+            tool = self._tool_lookup.get(tool_name)
+            if not tool:
+                append_warning(state, f"Unknown tool requested: {tool_name}")
+                tool_name = allowed[0]
+                tool = self._tool_lookup.get(tool_name)
+                if not tool:
+                    append_error(state, f"Fallback tool missing: {tool_name}")
+                    break
+
+            tool_calls += 1
+            print(f"Calling tool: {tool.name}")
+            self._apply_tool(state, tool)
+            history.append(tool.name)
+        else:
+            append_warning(state, "Tool agent stopped after max_steps without finishing.")
+
+        print(f"Total tools called: {tool_calls}")
+        return state
 
     def stream_updates(
         self,

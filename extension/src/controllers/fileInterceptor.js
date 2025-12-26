@@ -160,7 +160,12 @@
       let warned = null;
 
       for (const file of supportedFiles) {
-        const result = await sg.fileAnalyzer.analyzeFile(file);
+        const result = await sg.fileAnalyzer.analyzeFile(file, {
+          onProgress: (message) => {
+            if (!message) return;
+            sg.loadingState.flashProgress(`${file.name}: ${message}`);
+          },
+        });
         if (result?.extracted_snippet) {
           console.log(
             `[SensitiveDataDetectorExtension] Extracted snippet from ${file.name}:`,

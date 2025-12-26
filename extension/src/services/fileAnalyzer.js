@@ -65,7 +65,7 @@
   /**
    * Analyze any supported file by sending to backend
    */
-  async function analyzeFile(file) {
+  async function analyzeFile(file, options = {}) {
     if (!file) {
       throw new Error("No file provided");
     }
@@ -82,7 +82,13 @@
     formData.append("file", file);
 
     try {
-      const result = await sg.detectorClient.detectFile(formData);
+      const onProgress =
+        options && typeof options.onProgress === "function"
+          ? options.onProgress
+          : null;
+      const result = sg.detectorClient.detectFileStream
+        ? await sg.detectorClient.detectFileStream(formData, onProgress)
+        : await sg.detectorClient.detectFile(formData);
 
       // Add file metadata to result
       result.fileInfo = {

@@ -88,7 +88,12 @@
     };
     sg.loadingState.show(loadingTarget);
     try {
-      const result = await sg.detectorClient.detectText(text);
+      const result = sg.detectorClient.detectTextStream
+        ? await sg.detectorClient.detectTextStream(
+            text,
+            sg.loadingState.flashProgress,
+          )
+        : await sg.detectorClient.detectText(text);
       sg.highlights.applyHighlights(
         composer,
         result?.detected_fields || [],

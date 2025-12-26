@@ -24,6 +24,14 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
 
     anonymized_tokens = set(reverse_map.keys())
     anonymized_stripped = {token.strip("<>") for token in anonymized_tokens}
+    anonymized_originals = {
+        value for value in anonymized_map.keys() if isinstance(value, str)
+    }
+    anonymized_originals_normalized = {
+        value.strip().lower()
+        for value in anonymized_originals
+        if isinstance(value, str) and value.strip()
+    }
 
     if not text:
         state["llm_fields"] = []
@@ -42,9 +50,8 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
                 continue
             value = item.get("value")
             if isinstance(value, str):
-                if value in reverse_map and len(reverse_map[value]) == 1:
-                    item = {**item, "value": next(iter(reverse_map[value]))}
-                elif (
+                value_normalized = value.strip().lower()
+                if (
                     value in anonymized_tokens
                     or _is_redacted_token(value)
                     or _is_anonymized_token(value)
@@ -52,8 +59,10 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
                     or _contains_anonymized_token(
                         value, anonymized_tokens, anonymized_stripped
                     )
+                    or value in anonymized_originals
+                    or value_normalized in anonymized_originals_normalized
                 ):
-                    # Skip unknown anonymized values to avoid surfacing obfuscated values
+                    # Skip anonymized tokens and any mapped originals to avoid reintroducing redacted data
                     continue
             raw_sources = item.get("sources")
             if raw_sources is None:

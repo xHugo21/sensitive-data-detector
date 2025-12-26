@@ -43,23 +43,7 @@ class GuardOrchestrator:
         Returns:
             GuardState with detection results
         """
-        initial_state = self.build_initial_state(
-            text=text,
-            file_path=file_path,
-            min_block_risk=min_block_risk,
-        )
-        if self._config.debug:
-            return debug_invoke(self._graph, initial_state)
-        return cast(GuardState, self._graph.invoke(initial_state))
-
-    def build_initial_state(
-        self,
-        *,
-        text: str | None = None,
-        file_path: str | None = None,
-        min_block_risk: str | None = None,
-    ) -> GuardState:
-        return {
+        initial_state: GuardState = {
             "raw_text": text or "",
             "file_path": file_path,
             "min_block_risk": _normalize_risk(min_block_risk),
@@ -71,24 +55,9 @@ class GuardOrchestrator:
             "decision": "allow",
             "risk_level": "none",
         }
-
-    def stream_updates(
-        self,
-        *,
-        text: str | None = None,
-        file_path: str | None = None,
-        min_block_risk: str | None = None,
-        stream_mode: str | list[str] = "updates",
-    ):
-        initial_state = self.build_initial_state(
-            text=text,
-            file_path=file_path,
-            min_block_risk=min_block_risk,
-        )
-        return initial_state, self._graph.stream(
-            initial_state,
-            stream_mode=stream_mode,
-        )
+        if self._config.debug:
+            return debug_invoke(self._graph, initial_state)
+        return cast(GuardState, self._graph.invoke(initial_state))
 
     def _build_graph(self):
         graph = StateGraph(GuardState)

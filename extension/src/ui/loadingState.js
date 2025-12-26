@@ -154,24 +154,6 @@
     activeCount += 1;
   }
 
-  function update(message) {
-    if (!message || activeCount === 0) return;
-    ensureStyles();
-    ensureToast();
-    if (hideTimer) {
-      clearTimeout(hideTimer);
-      hideTimer = null;
-    }
-    if (toast) {
-      toast.style.background = DEFAULT_BG;
-      toast.dataset.sgVisible = "true";
-    }
-    if (spinnerEl) {
-      spinnerEl.style.display = "inline-block";
-    }
-    if (textEl) textEl.textContent = message;
-  }
-
   function getErrorMessage(error) {
     if (!error) return DEFAULT_ERROR_MESSAGE;
     if (typeof error === "string") return error;
@@ -247,7 +229,6 @@
 
   sg.loadingState = {
     show,
-    update,
     hide,
   };
 })(typeof window !== "undefined" ? window : globalThis);

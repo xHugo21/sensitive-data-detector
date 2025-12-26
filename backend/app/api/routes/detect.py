@@ -116,20 +116,51 @@ async def detect_stream(
         text=text,
         file_path=tmp_path,
         min_block_risk=MIN_BLOCK_RISK,
+        stream_mode=["tasks", "updates"],
     )
 
     def iter_events():
         state = dict(initial_state)
         try:
             for chunk in updates:
-                for node, update in chunk.items():
-                    state.update(update)
-                    payload = {
-                        "type": "node",
-                        "node": node,
-                        "status": "completed",
-                    }
-                    yield json.dumps(jsonable_encoder(payload)) + "\n"
+                mode = "updates"
+                payload = chunk
+                if isinstance(chunk, tuple) and len(chunk) == 2:
+                    mode, payload = chunk
+
+                if mode == "tasks":
+                    if isinstance(payload, dict):
+                        node = payload.get("name")
+                        if not node or str(node).startswith("__"):
+                            continue
+                        status = (
+                            "completed"
+                            if "result" in payload or payload.get("error")
+                            else "running"
+                        )
+                        detected_fields = state.get("detected_fields", [])
+                        detected_count = (
+                            len(detected_fields)
+                            if isinstance(detected_fields, list)
+                            else 0
+                        )
+                        yield json.dumps(
+                            jsonable_encoder(
+                                {
+                                    "type": "node",
+                                    "node": node,
+                                    "status": status,
+                                    "detected_count": detected_count,
+                                }
+                            )
+                        ) + "\n"
+                    continue
+
+                if mode == "updates" and isinstance(payload, dict):
+                    for node, update in payload.items():
+                        if not isinstance(update, dict):
+                            continue
+                        state.update(update)
             if state.get("raw_text"):
                 state["extracted_snippet"] = state["raw_text"][:400]
             yield json.dumps(

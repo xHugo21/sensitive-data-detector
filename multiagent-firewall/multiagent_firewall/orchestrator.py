@@ -78,6 +78,7 @@ class GuardOrchestrator:
         text: str | None = None,
         file_path: str | None = None,
         min_block_risk: str | None = None,
+        stream_mode: str | list[str] = "updates",
     ):
         initial_state = self.build_initial_state(
             text=text,
@@ -86,7 +87,7 @@ class GuardOrchestrator:
         )
         return initial_state, self._graph.stream(
             initial_state,
-            stream_mode="updates",
+            stream_mode=stream_mode,
         )
 
     def _build_graph(self):

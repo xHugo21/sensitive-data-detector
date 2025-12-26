@@ -31,7 +31,7 @@
   }
 
   function formatNodeMessage(node, status) {
-    if (!node) return null;
+    if (!node || status !== "running") return null;
     const label = String(node).replace(/_/g, " ").trim();
     if (!label) return null;
     return label;

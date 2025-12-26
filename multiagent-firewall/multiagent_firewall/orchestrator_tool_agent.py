@@ -12,13 +12,7 @@ from langgraph.graph import END
 from . import nodes
 from .config import GuardConfig
 from .detectors.utils import build_chat_litellm, coerce_litellm_content_to_text
-from .routers import (
-    route_after_dlp_ner,
-    route_after_merge_final,
-    should_read_document,
-    should_run_llm,
-    should_run_llm_ocr,
-)
+from .routers import route_after_merge_final
 from .types import GuardState
 from .utils import append_error, append_warning
 
@@ -335,76 +329,115 @@ class ToolCallingGuardOrchestrator:
         def has_run(name: str) -> bool:
             return name in history
 
-        allowed: list[str] = []
+        def last_run(name: str) -> int:
+            for index in range(len(history) - 1, -1, -1):
+                if history[index] == name:
+                    return index
+            return -1
 
-        file_path_set = bool(state.get("file_path"))
-        wants_read = should_read_document(state) == "read_document"
-        if file_path_set and wants_read and not has_run("read_document"):
+        def ran_after(dependencies: Iterable[str], tool: str) -> bool:
+            tool_index = last_run(tool)
+            if tool_index < 0:
+                return True
+            for dependency in dependencies:
+                if last_run(dependency) > tool_index:
+                    return True
+            return False
+
+        def allow(
+            name: str,
+            ready: bool,
+            *,
+            refresh_sources: Iterable[str] | None = None,
+        ) -> None:
+            if not ready:
+                return
+            if not has_run(name):
+                allowed.append(name)
+                return
+            if refresh_sources and ran_after(refresh_sources, name):
+                allowed.append(name)
+
+        file_path = state.get("file_path")
+        raw_text = (state.get("raw_text") or "").strip()
+        metadata = state.get("metadata") or {}
+
+        if file_path and not raw_text and not has_run("read_document"):
             return ["read_document"]
 
-        if has_run("read_document") and should_run_llm_ocr(state) == "llm_ocr":
-            if not has_run("llm_ocr"):
-                return ["llm_ocr"]
-
-        if not has_run("normalize"):
-            if not file_path_set or has_run("read_document"):
-                if should_run_llm_ocr(state) != "llm_ocr" or has_run("llm_ocr"):
-                    return ["normalize"]
-
-        if has_run("normalize") and not has_run("dlp_detector"):
-            allowed.append("dlp_detector")
-        if has_run("normalize") and not has_run("ner_detector"):
-            allowed.append("ner_detector")
-        if allowed:
-            return allowed
-
         if (
-            has_run("dlp_detector")
-            and has_run("ner_detector")
-            and not has_run("merge_dlp_ner")
+            has_run("read_document")
+            and metadata.get("file_type") == "image"
+            and not raw_text
+            and not has_run("llm_ocr")
         ):
-            return ["merge_dlp_ner"]
+            return ["llm_ocr"]
 
-        if has_run("merge_dlp_ner"):
-            post_dlp = route_after_dlp_ner(state)
-            if post_dlp == "risk_dlp_ner" and not has_run("risk_dlp_ner"):
-                return ["risk_dlp_ner"]
-            if post_dlp == "llm_detector" and not has_run("llm_detector"):
-                return ["llm_detector"]
+        allowed: list[str] = []
+        raw_text_ready = "raw_text" in state
+        normalized_ready = isinstance(state.get("normalized_text"), str)
+        detected_ready = "detected_fields" in state
 
-        if has_run("risk_dlp_ner") and not has_run("policy_dlp_ner"):
-            return ["policy_dlp_ner"]
-
-        if has_run("policy_dlp_ner"):
-            next_step = should_run_llm(state)
-            if next_step == "remediation" and not has_run("remediation"):
-                return ["remediation"]
-            if next_step == "anonymize_dlp_ner" and not has_run("anonymize_dlp_ner"):
-                return ["anonymize_dlp_ner"]
-
-        if has_run("anonymize_dlp_ner") and not has_run("llm_detector"):
-            return ["llm_detector"]
-
-        if has_run("llm_detector") and not has_run("merge_final"):
-            return ["merge_final"]
-
-        if has_run("merge_final"):
-            post_merge = route_after_merge_final(state)
-            if post_merge == "risk_final" and not has_run("risk_final"):
-                return ["risk_final"]
-            if post_merge == "remediation" and not has_run("remediation"):
-                return ["remediation"]
-
-        if has_run("risk_final") and not has_run("policy_final"):
-            return ["policy_final"]
-
-        if has_run("policy_final") and not has_run("remediation"):
-            return ["remediation"]
-
-        if has_run("remediation") and not has_run("final_anonymize"):
-            return ["final_anonymize"]
-
-        return []
+        allow("normalize", raw_text_ready, refresh_sources=["read_document", "llm_ocr"])
+        allow("dlp_detector", normalized_ready, refresh_sources=["normalize"])
+        allow("ner_detector", normalized_ready, refresh_sources=["normalize"])
+        allow("llm_detector", normalized_ready, refresh_sources=["normalize", "anonymize_dlp_ner"])
+        allow(
+            "merge_dlp_ner",
+            has_run("dlp_detector")
+            or has_run("ner_detector")
+            or "dlp_fields" in state
+            or "ner_fields" in state,
+            refresh_sources=["dlp_detector", "ner_detector"],
+        )
+        allow(
+            "anonymize_dlp_ner",
+            normalized_ready
+            and detected_ready
+            and (has_run("merge_dlp_ner") or has_run("merge_final")),
+            refresh_sources=["merge_dlp_ner", "merge_final", "normalize"],
+        )
+        allow(
+            "risk_dlp_ner",
+            has_run("merge_dlp_ner"),
+            refresh_sources=["merge_dlp_ner"],
+        )
+        allow(
+            "policy_dlp_ner",
+            has_run("risk_dlp_ner"),
+            refresh_sources=["risk_dlp_ner"],
+        )
+        allow(
+            "merge_final",
+            has_run("llm_detector")
+            or has_run("dlp_detector")
+            or has_run("ner_detector")
+            or "llm_fields" in state
+            or "dlp_fields" in state
+            or "ner_fields" in state,
+            refresh_sources=["llm_detector", "dlp_detector", "ner_detector"],
+        )
+        allow(
+            "risk_final",
+            has_run("merge_final"),
+            refresh_sources=["merge_final"],
+        )
+        allow(
+            "policy_final",
+            has_run("risk_final"),
+            refresh_sources=["risk_final"],
+        )
+        allow(
+            "remediation",
+            has_run("policy_dlp_ner") or has_run("policy_final"),
+            refresh_sources=["policy_dlp_ner", "policy_final"],
+        )
+        allow(
+            "final_anonymize",
+            normalized_ready and has_run("remediation"),
+            refresh_sources=["remediation", "merge_final"],
+        )
+        return allowed
 
     def _can_finish(self, state: GuardState, history: list[str]) -> bool:
         if "final_anonymize" in history:

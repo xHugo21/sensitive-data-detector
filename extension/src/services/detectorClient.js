@@ -33,10 +33,8 @@
   function formatNodeMessage(node, status) {
     if (!node) return null;
     const label = String(node).replace(/_/g, " ").trim();
-    if (status === "completed") {
-      return `${label} finished`;
-    }
-    return `${label} running`;
+    if (!label) return null;
+    return label;
   }
 
   async function requestDetect(formData) {

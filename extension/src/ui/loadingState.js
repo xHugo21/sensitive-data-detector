@@ -3,12 +3,10 @@
 
   const STYLE_ID = "sg-global-loading-style";
   const TOAST_ID = "sg-global-loading-chip";
-  const PROGRESS_TOAST_ID = "sg-global-progress-chip";
   const DEFAULT_MESSAGE = "Analyzing message...";
   const DEFAULT_BG = "rgba(17, 24, 39, 0.92)";
   const SUCCESS_BG = "#16a34a";
   const ERROR_BG = "#dc2626";
-  const PROGRESS_BG = "rgba(30, 41, 59, 0.92)";
   const DEFAULT_ERROR_MESSAGE = "Analysis failed - Backend Unreachable";
   let activeCount = 0;
   const trackedButtons = new Set();
@@ -17,9 +15,6 @@
   let textEl = null;
   let spinnerEl = null;
   let hideTimer = null;
-  let progressToast = null;
-  let progressTextEl = null;
-  let progressTimer = null;
 
   function ensureStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -61,39 +56,6 @@
         0%   { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
-
-      #${PROGRESS_TOAST_ID} {
-        position: fixed;
-        right: 16px;
-        bottom: 56px;
-        display: none;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 12px;
-        background: ${PROGRESS_BG};
-        color: #f8fafc;
-        border-radius: 999px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-        z-index: 2147483646;
-        font-size: 12px;
-        line-height: 1.3;
-        letter-spacing: 0.01em;
-        opacity: 0;
-        transform: translateY(6px);
-      }
-      #${PROGRESS_TOAST_ID}[data-sg-visible="true"] {
-        display: inline-flex;
-      }
-      #${PROGRESS_TOAST_ID}.sg-progress-animate {
-        animation: sg-progress-toast 1.6s ease forwards;
-      }
-      @keyframes sg-progress-toast {
-        0%   { opacity: 0; transform: translateY(6px); }
-        18%  { opacity: 1; transform: translateY(0); }
-        80%  { opacity: 1; transform: translateY(0); }
-        100% { opacity: 0; transform: translateY(-6px); }
-      }
     `;
     document.head.appendChild(style);
   }
@@ -120,23 +82,6 @@
     toast = el;
     spinnerEl = spinner;
     return toast;
-  }
-
-  function ensureProgressToast() {
-    if (progressToast) return progressToast;
-    const el = document.createElement("div");
-    el.id = PROGRESS_TOAST_ID;
-    el.setAttribute("role", "status");
-    el.setAttribute("aria-live", "polite");
-
-    progressTextEl = document.createElement("span");
-    progressTextEl.className = "sg-progress-text";
-    progressTextEl.textContent = "Step finished";
-
-    el.appendChild(progressTextEl);
-    document.body.appendChild(el);
-    progressToast = el;
-    return progressToast;
   }
 
   function normalizeButton(button) {
@@ -227,32 +172,6 @@
     if (textEl) textEl.textContent = message;
   }
 
-  function flashProgress(message, opts = {}) {
-    if (!message || activeCount === 0) return;
-    ensureStyles();
-    ensureProgressToast();
-    if (progressTimer) {
-      clearTimeout(progressTimer);
-      progressTimer = null;
-    }
-    if (progressToast) {
-      progressToast.dataset.sgVisible = "true";
-      progressToast.classList.remove("sg-progress-animate");
-      void progressToast.offsetHeight;
-      progressToast.classList.add("sg-progress-animate");
-    }
-    if (progressTextEl) progressTextEl.textContent = message;
-    const durationMs =
-      typeof opts.durationMs === "number" && isFinite(opts.durationMs)
-        ? opts.durationMs
-        : 1600;
-    progressTimer = setTimeout(() => {
-      if (progressToast) {
-        progressToast.dataset.sgVisible = "false";
-      }
-    }, durationMs);
-  }
-
   function getErrorMessage(error) {
     if (!error) return DEFAULT_ERROR_MESSAGE;
     if (typeof error === "string") return error;
@@ -329,7 +248,6 @@
   sg.loadingState = {
     show,
     update,
-    flashProgress,
     hide,
   };
 })(typeof window !== "undefined" ? window : globalThis);

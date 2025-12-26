@@ -91,7 +91,12 @@
       const result = sg.detectorClient.detectTextStream
         ? await sg.detectorClient.detectTextStream(
             text,
-            sg.loadingState.flashProgress,
+            (message) => {
+              if (!message) return;
+              sg.loadingState.update(
+                `Analyzing message - Completed ${message}`,
+              );
+            },
           )
         : await sg.detectorClient.detectText(text);
       sg.highlights.applyHighlights(

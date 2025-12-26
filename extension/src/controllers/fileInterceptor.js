@@ -163,7 +163,7 @@
         const result = await sg.fileAnalyzer.analyzeFile(file, {
           onProgress: (message) => {
             if (!message) return;
-            sg.loadingState.flashProgress(`${file.name}: ${message}`);
+            sg.loadingState.update(`Analyzing file - Completed ${message}`);
           },
         });
         if (result?.extracted_snippet) {

@@ -160,24 +160,7 @@
       let warned = null;
 
       for (const file of supportedFiles) {
-        const result = await sg.fileAnalyzer.analyzeFile(file, {
-          onProgress: (message, event) => {
-            if (!message) return;
-            const detectedCount =
-              typeof event?.detected_count === "number"
-                ? event.detected_count
-                : null;
-            let suffix = "";
-            if (detectedCount === 0) {
-              suffix = " - No detections yet";
-            } else if (detectedCount !== null) {
-              suffix = ` - Detected ${detectedCount}`;
-            }
-            sg.loadingState.update(
-              `Analyzing file - Running ${message}${suffix}`,
-            );
-          },
-        });
+        const result = await sg.fileAnalyzer.analyzeFile(file);
         if (result?.extracted_snippet) {
           console.log(
             `[SensitiveDataDetectorExtension] Extracted snippet from ${file.name}:`,

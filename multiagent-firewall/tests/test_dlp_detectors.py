@@ -14,7 +14,10 @@ from multiagent_firewall.detectors.dlp import (
 
 def test_detect_keywords_default():
     text = """
-    My password is SuperSecret123!
+    Here is my key:
+    -----BEGIN PRIVATE KEY-----
+    super-secret-material
+    -----END PRIVATE KEY-----
     """
     findings = detect_keywords(text)
 
@@ -36,7 +39,7 @@ def test_detect_keywords_custom():
 
 
 def test_detect_keywords_case_insensitive():
-    text = "PASSWORD should be detected regardless of case"
+    text = "ssh key header -----begin private key----- content"
     findings = detect_keywords(text)
 
     field_names = [f["field"] for f in findings]
@@ -371,7 +374,9 @@ def test_detect_checksums_invalid_mixed():
 
 def test_integration_high_risk_data():
     text = """
-    Password: SuperSecret123!
+    -----BEGIN PRIVATE KEY-----
+    mySecret123
+    -----END PRIVATE KEY-----
     Credit Card: 4532-0151-1283-0366
     SSN: 123-45-6789
     """

@@ -165,10 +165,14 @@ REGEX_PATTERNS = {
 
 # Keyword lists for DLP detection agent
 KEYWORDS = {
-    "PASSWORD": ["password", "passcode", "pwd"],
-    "USERNAME": ["username", "user name", "user id", "userid"],
-    "ACCOUNTNAME": ["account name", "account holder", "beneficiary"],
-    "ACCOUNTNUMBER": ["account number", "acct number", "account #", "iban"],
+    "PASSWORD": [
+        "-----BEGIN PRIVATE KEY-----",
+        "-----BEGIN OPENSSH PRIVATE KEY-----",
+        "-----BEGIN RSA PRIVATE KEY-----",
+        "-----BEGIN EC PRIVATE KEY-----",
+        "-----BEGIN ENCRYPTED PRIVATE KEY-----",
+        "-----BEGIN DSA PRIVATE KEY-----",
+    ],
 }
 
 # Labels for NER detection and their mapping to application sensitive fields.

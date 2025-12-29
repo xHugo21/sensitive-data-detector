@@ -28,6 +28,7 @@ ner = [
 test = [
     "pytest>=9.0.1",
     "pyyaml>=6.0",
+    "datasets>=2.19.0",
 ]
 
 [tool.setuptools.package-data]

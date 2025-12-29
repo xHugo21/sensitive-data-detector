@@ -193,7 +193,7 @@ def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config)
     mock_llm_detector.return_value = mock_detector
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="Please use secret123 to login")
+    result = orchestrator.run(text="Please use secret123 to proceed")
 
     masked = result.get("anonymized_text") or ""
     mapping = (

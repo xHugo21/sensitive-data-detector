@@ -1,5 +1,6 @@
 import ast
 import os
+import random
 import time
 from typing import List, Tuple
 
@@ -68,7 +69,12 @@ def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
         max_cases = DEFAULT_DATASET_MAX_CASES
     else:
         max_cases = int(max_cases_raw)
-    seed = int(os.getenv(DATASET_SEED_ENV_VAR, DEFAULT_DATASET_SEED))
+    seed_raw = os.getenv(DATASET_SEED_ENV_VAR)
+    if seed_raw is None or not seed_raw.strip():
+        seed = random.randint(0, 2**32 - 1)
+        os.environ[DATASET_SEED_ENV_VAR] = str(seed)
+    else:
+        seed = int(seed_raw)
 
     dataset = load_dataset(DATASET_NAME, split=DATASET_SPLIT)
 

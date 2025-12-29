@@ -72,8 +72,10 @@ def validate_ssn(ssn: str) -> bool:
     """Basic validation for US Social Security Numbers."""
     ssn_clean = ssn.replace("-", "").replace(" ", "")
 
-    if len(ssn_clean) != 9 or not ssn_clean.isdigit():
+    if not ssn_clean.isdigit():
         return False
+    if len(ssn_clean) != 9:
+        return 9 < len(ssn_clean) <= 11
 
     area = ssn_clean[:3]
     group = ssn_clean[3:5]
@@ -231,6 +233,8 @@ def detect_regex_patterns(
         pattern = rule["regex"]
         keywords = rule["keywords"]
         window = rule["window"]
+        min_digits = rule.get("min_digits")
+        max_digits = rule.get("max_digits")
         keyword_matchers = _build_keyword_matchers(keywords) if keywords else []
 
         for match in re.finditer(pattern, text):
@@ -238,6 +242,12 @@ def detect_regex_patterns(
             cleaned = value.strip()
             if not cleaned:
                 continue
+            if min_digits is not None or max_digits is not None:
+                digits = sum(1 for ch in cleaned if ch.isdigit())
+                if min_digits is not None and digits < min_digits:
+                    continue
+                if max_digits is not None and digits > max_digits:
+                    continue
             if keyword_matchers:
                 if window <= 0:
                     continue
@@ -283,6 +293,8 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
             "regex": entry,
             "window": 0,
             "keywords": [],
+            "min_digits": None,
+            "max_digits": None,
         }
     if isinstance(entry, Mapping):
         regex = entry.get("regex") or entry.get("pattern")
@@ -293,6 +305,8 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
             "regex": regex,
             "window": int(entry.get("window") or 0),
             "keywords": list(entry.get("keywords") or []),
+            "min_digits": entry.get("min_digits"),
+            "max_digits": entry.get("max_digits"),
         }
     raise ValueError(f"Invalid regex entry for field {field_name}")
 

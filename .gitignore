@@ -29,6 +29,7 @@ htmlcov/
 .pytest_cache/
 nosetests.xml
 coverage.xml
+multiagent-firewall/integration_tests/run_logs/
 
 # Logs and profiling data
 *.log

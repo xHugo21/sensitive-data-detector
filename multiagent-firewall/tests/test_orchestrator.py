@@ -247,14 +247,14 @@ def test_orchestrator_run_with_file_path(mock_llm_detector, tmp_path, guard_conf
     # Create a test file
     test_file = tmp_path / "test.txt"
     test_file.write_text(
-        "File content with SOCIALSECURITYNUMBER 123-45-6789", encoding="utf-8"
+        "File content with SSN 123-45-6789", encoding="utf-8"
     )
 
     orchestrator = GuardOrchestrator(guard_config)
     result = orchestrator.run(file_path=str(test_file))
 
     assert "raw_text" in result
-    assert "File content with SOCIALSECURITYNUMBER" in result["raw_text"]
+    assert "File content with SSN" in result["raw_text"]
     assert "detected_fields" in result
 
 

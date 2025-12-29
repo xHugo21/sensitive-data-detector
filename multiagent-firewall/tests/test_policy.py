@@ -12,7 +12,7 @@ class TestApplyPolicy:
             "risk_level": "high",
             "min_block_risk": "medium",
             "detected_fields": [
-                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+                {"field": "SSN", "value": "123-45-6789"}
             ],
         }
         result = apply_policy(state)
@@ -43,7 +43,7 @@ class TestApplyPolicy:
         state = {
             "risk_level": "medium",
             "min_block_risk": "high",
-            "detected_fields": [{"field": "PHONE", "value": "123-456-7890"}],
+            "detected_fields": [{"field": "PHONENUMBER", "value": "123-456-7890"}],
         }
         result = apply_policy(state)
         assert result["decision"] == "warn"
@@ -84,7 +84,7 @@ class TestApplyPolicy:
             "risk_level": "high",
             "min_block_risk": "high",
             "detected_fields": [
-                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+                {"field": "SSN", "value": "123-45-6789"}
             ],
         }
         result = apply_policy(state)
@@ -99,7 +99,7 @@ class TestGenerateRemediation:
         state = {
             "decision": "block",
             "detected_fields": [
-                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"},
+                {"field": "SSN", "value": "123-45-6789"},
                 {"field": "PASSWORD", "value": "secret123"},
             ],
         }
@@ -108,7 +108,7 @@ class TestGenerateRemediation:
         assert "remediation" in result
         remediation = result["remediation"]
         assert "Sensitive data detected" in remediation
-        assert "SOCIALSECURITYNUMBER" in remediation
+        assert "SSN" in remediation
         assert "PASSWORD" in remediation
         assert (
             "Redact or remove the flagged content before resubmitting." in remediation
@@ -120,7 +120,7 @@ class TestGenerateRemediation:
             "decision": "warn",
             "detected_fields": [
                 {"field": "EMAIL", "value": "test@example.com"},
-                {"field": "PHONE", "value": "123-456-7890"},
+                {"field": "PHONENUMBER", "value": "123-456-7890"},
             ],
         }
         result = generate_remediation(state)
@@ -129,7 +129,7 @@ class TestGenerateRemediation:
         remediation = result["remediation"]
         assert "Sensitive data detected" in remediation
         assert "EMAIL" in remediation
-        assert "PHONE" in remediation
+        assert "PHONENUMBER" in remediation
         assert (
             "Consider redacting or removing sensitive information before interacting with remote LLMs."
             in remediation
@@ -188,11 +188,11 @@ class TestGenerateRemediation:
         state = {
             "decision": "block",
             "detected_fields": [
-                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"},
+                {"field": "SSN", "value": "123-45-6789"},
                 {"field": "EMAIL", "value": "test@example.com"},
-                {"field": "PHONE", "value": "123-456-7890"},
+                {"field": "PHONENUMBER", "value": "123-456-7890"},
                 {
-                    "field": "SOCIALSECURITYNUMBER",
+                    "field": "SSN",
                     "value": "987-65-4321",
                 },  # Duplicate field type
             ],
@@ -201,11 +201,11 @@ class TestGenerateRemediation:
 
         remediation = result["remediation"]
         # Should list unique field types
-        assert "SOCIALSECURITYNUMBER" in remediation
+        assert "SSN" in remediation
         assert "EMAIL" in remediation
-        assert "PHONE" in remediation
-        # Should only appear once despite two SOCIALSECURITYNUMBER values
-        assert remediation.count("SOCIALSECURITYNUMBER") == 1
+        assert "PHONENUMBER" in remediation
+        # Should only appear once despite two SSN values
+        assert remediation.count("SSN") == 1
 
     def test_remediation_with_unknown_field(self):
         """Test remediation handles fields without explicit field key."""
@@ -250,7 +250,7 @@ class TestGenerateRemediation:
         """Test that warn message specifically mentions remote LLMs."""
         state = {
             "decision": "warn",
-            "detected_fields": [{"field": "API_KEY", "value": "sk-1234"}],
+            "detected_fields": [{"field": "PASSWORD", "value": "sk-1234"}],
         }
         result = generate_remediation(state)
 
@@ -261,7 +261,7 @@ class TestGenerateRemediation:
         state = {
             "decision": "block",
             "detected_fields": [
-                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+                {"field": "SSN", "value": "123-45-6789"}
             ],
         }
         result = generate_remediation(state)
@@ -279,7 +279,7 @@ class TestPolicyIntegration:
             "risk_level": "high",
             "min_block_risk": "medium",
             "detected_fields": [
-                {"field": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+                {"field": "SSN", "value": "123-45-6789"}
             ],
         }
 
@@ -290,7 +290,7 @@ class TestPolicyIntegration:
         # Generate remediation
         state = generate_remediation(state)
         assert state["remediation"] != ""
-        assert "SOCIALSECURITYNUMBER" in state["remediation"]
+        assert "SSN" in state["remediation"]
         assert "Redact or remove" in state["remediation"]
 
     def test_full_warn_flow(self):

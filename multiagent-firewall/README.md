@@ -330,15 +330,13 @@ LLM_API_KEY=sk-your-actual-api-key-here
 #### Running Integration Tests
 
 ```bash
-./run_integration_tests.sh test_cases.yaml
+./run_integration_tests.sh
 ```
 
 This will:
-- Run the selected test cases file against the full pipeline
-
-Examples:
-
-```bash
-./run_integration_tests.sh prompts_test_cases.yaml
-./run_integration_tests.sh prompts_test_cases2.yaml
-```
+- Run the full pipeline against `ai4privacy/pii-masking-200k`
+- Filter/sampler behavior controlled via env vars:
+  - `INTEGRATION_DATASET_LANGUAGES` (comma-separated, default: `en`)
+  - `INTEGRATION_DATASET_MAX_CASES` (default: `200`)
+  - `INTEGRATION_DATASET_SEED` (optional; random seed is chosen when unset)
+- Write a run summary log to `integration_tests/run_logs/`

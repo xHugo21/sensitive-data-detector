@@ -1,67 +1,112 @@
+import ast
 import os
+import random
 import time
-from pathlib import Path
 from typing import List, Tuple
 
 import pytest
-import yaml
+from datasets import load_dataset
 
-TEST_CASES_ENV_VAR = "INTEGRATION_TESTS_FILE"
-DEFAULT_CASES_FILE = "prompts_test_cases.yaml"
+DATASET_LANGUAGES_ENV_VAR = "INTEGRATION_DATASET_LANGUAGES"
+DATASET_MAX_CASES_ENV_VAR = "INTEGRATION_DATASET_MAX_CASES"
+DATASET_SEED_ENV_VAR = "INTEGRATION_DATASET_SEED"
+
+DATASET_NAME = "ai4privacy/pii-masking-200k"
+DATASET_SPLIT = "train"
+DATASET_TEXT_FIELD = "source_text"
+
+DEFAULT_DATASET_LANGUAGES = "en"
+DEFAULT_DATASET_MAX_CASES = 200
+DEFAULT_DATASET_SEED = 1337
 
 
-def _resolve_cases_file() -> Path:
-    env_value = os.getenv(TEST_CASES_ENV_VAR)
-    if env_value:
-        return Path(env_value)
-    return Path(__file__).parent / DEFAULT_CASES_FILE
+def _parse_languages(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    languages = [lang.strip() for lang in value.split(",") if lang.strip()]
+    return languages or None
 
 
-def load_test_cases() -> List[Tuple[str, str, List[str]]]:
-    test_file = _resolve_cases_file()
-    if not test_file.exists():
-        raise FileNotFoundError(f"Test cases file not found: {test_file}")
+def _parse_span_labels(span_labels: object, row_index: int) -> list[str]:
+    if span_labels is None or span_labels == "":
+        return []
+    if isinstance(span_labels, str):
+        try:
+            spans = ast.literal_eval(span_labels)
+        except (SyntaxError, ValueError) as exc:
+            raise ValueError(
+                f"Row {row_index} has invalid span_labels: {exc}"
+            ) from exc
+    elif isinstance(span_labels, list):
+        spans = span_labels
+    else:
+        raise ValueError(
+            f"Row {row_index} has unsupported span_labels type: "
+            f"{type(span_labels).__name__}"
+        )
 
-    with open(test_file) as f:
-        data = yaml.safe_load(f)
+    labels: list[str] = []
+    seen: set[str] = set()
+    for span in spans:
+        if not isinstance(span, (list, tuple)) or len(span) < 3:
+            continue
+        label = str(span[2]).strip()
+        if not label or label.upper() == "O":
+            continue
+        if label not in seen:
+            labels.append(label)
+            seen.add(label)
+    return labels
 
-    if not data or "test_cases" not in data:
-        raise ValueError(f"No test_cases found in {test_file}")
+
+def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
+    languages = _parse_languages(
+        os.getenv(DATASET_LANGUAGES_ENV_VAR, DEFAULT_DATASET_LANGUAGES)
+    )
+
+    max_cases_raw = os.getenv(DATASET_MAX_CASES_ENV_VAR)
+    if max_cases_raw is None or not max_cases_raw.strip():
+        max_cases = DEFAULT_DATASET_MAX_CASES
+    else:
+        max_cases = int(max_cases_raw)
+    seed_raw = os.getenv(DATASET_SEED_ENV_VAR)
+    if seed_raw is None or not seed_raw.strip():
+        seed = random.randint(0, 2**32 - 1)
+        os.environ[DATASET_SEED_ENV_VAR] = str(seed)
+    else:
+        seed = int(seed_raw)
+
+    dataset = load_dataset(DATASET_NAME, split=DATASET_SPLIT)
+
+    if languages:
+        dataset = dataset.filter(lambda row: row.get("language") in languages)
+
+    if max_cases and max_cases > 0 and len(dataset) > max_cases:
+        dataset = dataset.shuffle(seed=seed).select(range(max_cases))
 
     cases = []
-    for index, case in enumerate(data["test_cases"], start=1):
-        if not isinstance(case, dict):
-            raise ValueError(f"Test case {index} must be a mapping.")
-
-        allowed_keys = {"prompt", "expected_entities"}
-        extra_keys = set(case.keys()) - allowed_keys
-        if extra_keys:
-            extra_keys_list = ", ".join(sorted(extra_keys))
-            raise ValueError(
-                f"Test case {index} has unsupported keys: {extra_keys_list}"
-            )
-
-        if "prompt" not in case:
-            raise ValueError(f"Test case {index} must include 'prompt'.")
-
-        prompt = case["prompt"]
+    for index, row in enumerate(dataset):
+        prompt = row.get(DATASET_TEXT_FIELD)
         if prompt is None:
-            raise ValueError(f"Test case {index} has null prompt.")
-
-        expected_entities = case.get("expected_entities") or []
-        if not isinstance(expected_entities, list):
             raise ValueError(
-                f"Test case {index} expected_entities must be a list."
+                f"Row {index} is missing '{DATASET_TEXT_FIELD}'."
             )
-
-        test_id = f"case_{index:03d}"
+        expected_entities = _parse_span_labels(
+            row.get("span_labels"), index
+        )
+        row_id = row.get("id")
+        if row_id is None:
+            test_id = f"row_{index:06d}"
+        else:
+            test_id = f"row_{int(row_id):06d}"
         cases.append((test_id, prompt, expected_entities))
+
     if not cases:
-        raise ValueError(f"No test cases found in {test_file}")
+        raise ValueError("No test cases loaded from dataset.")
     return cases
 
 
-TEST_CASES = load_test_cases()
+TEST_CASES = _load_dataset_cases()
 
 
 @pytest.mark.integration

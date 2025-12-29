@@ -68,27 +68,14 @@ def validate_iban(iban: str) -> bool:
     return int(numeric_string) % 97 == 1
 
 
-def validate_dni(dni: str) -> bool:
-    """Validate Spanish NATIONALID using the check letter algorithm."""
-    dni = dni.upper().strip()
-
-    if len(dni) != 9 or not dni[:8].isdigit() or not dni[8].isalpha():
-        return False
-
-    letters = "TRWAGMYFPDXBNJZSQVHLCKE"
-
-    number = int(dni[:8])
-    expected_letter = letters[number % 23]
-
-    return dni[8] == expected_letter
-
-
 def validate_ssn(ssn: str) -> bool:
     """Basic validation for US Social Security Numbers."""
     ssn_clean = ssn.replace("-", "").replace(" ", "")
 
-    if len(ssn_clean) != 9 or not ssn_clean.isdigit():
+    if not ssn_clean.isdigit():
         return False
+    if len(ssn_clean) != 9:
+        return 9 < len(ssn_clean) <= 11
 
     area = ssn_clean[:3]
     group = ssn_clean[3:5]
@@ -197,29 +184,15 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                     }
                 )
 
-    # Spanish NATIONALID detection (check letter algorithm)
-    dni_pattern = _extract_regex_pattern(REGEX_PATTERNS, "NATIONALID")
-    if dni_pattern:
-        potential_dnis = re.findall(dni_pattern, text.upper())
-        for dni in potential_dnis:
-            if validate_dni(dni):
-                findings.append(
-                    {
-                        "field": "NATIONALID",
-                        "value": dni,
-                        "sources": ["dlp_checksum"],
-                    }
-                )
-
-    # SOCIALSECURITYNUMBER detection (validation rules)
-    ssn_pattern = _extract_regex_pattern(REGEX_PATTERNS, "SOCIALSECURITYNUMBER")
+    # SSN detection (validation rules)
+    ssn_pattern = _extract_regex_pattern(REGEX_PATTERNS, "SSN")
     if ssn_pattern:
         potential_ssns = re.findall(ssn_pattern, text)
         for ssn in potential_ssns:
             if validate_ssn(ssn):
                 findings.append(
                     {
-                        "field": "SOCIALSECURITYNUMBER",
+                        "field": "SSN",
                         "value": ssn,
                         "sources": ["dlp_checksum"],
                     }
@@ -260,6 +233,8 @@ def detect_regex_patterns(
         pattern = rule["regex"]
         keywords = rule["keywords"]
         window = rule["window"]
+        min_digits = rule.get("min_digits")
+        max_digits = rule.get("max_digits")
         keyword_matchers = _build_keyword_matchers(keywords) if keywords else []
 
         for match in re.finditer(pattern, text):
@@ -267,6 +242,12 @@ def detect_regex_patterns(
             cleaned = value.strip()
             if not cleaned:
                 continue
+            if min_digits is not None or max_digits is not None:
+                digits = sum(1 for ch in cleaned if ch.isdigit())
+                if min_digits is not None and digits < min_digits:
+                    continue
+                if max_digits is not None and digits > max_digits:
+                    continue
             if keyword_matchers:
                 if window <= 0:
                     continue
@@ -312,6 +293,8 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
             "regex": entry,
             "window": 0,
             "keywords": [],
+            "min_digits": None,
+            "max_digits": None,
         }
     if isinstance(entry, Mapping):
         regex = entry.get("regex") or entry.get("pattern")
@@ -322,6 +305,8 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
             "regex": regex,
             "window": int(entry.get("window") or 0),
             "keywords": list(entry.get("keywords") or []),
+            "min_digits": entry.get("min_digits"),
+            "max_digits": entry.get("max_digits"),
         }
     raise ValueError(f"Invalid regex entry for field {field_name}")
 

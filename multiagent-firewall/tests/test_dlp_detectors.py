@@ -7,7 +7,6 @@ from multiagent_firewall.detectors.dlp import (
     detect_regex_patterns,
     luhn_checksum,
     validate_iban,
-    validate_dni,
     validate_ssn,
     validate_vin,
 )
@@ -24,7 +23,7 @@ def test_detect_keywords_default():
 
     assert len(findings) >= 1
     field_names = [f["field"] for f in findings]
-    assert "SECRET" in field_names
+    assert "PASSWORD" in field_names
 
 
 def test_detect_keywords_custom():
@@ -44,7 +43,7 @@ def test_detect_keywords_case_insensitive():
     findings = detect_keywords(text)
 
     field_names = [f["field"] for f in findings]
-    assert "SECRET" in field_names
+    assert "PASSWORD" in field_names
 
 
 def test_detect_keywords_empty_text():
@@ -153,8 +152,8 @@ def test_detect_regex_patterns_tuple_match():
 def test_detect_regex_patterns_keyword_window_allows_match():
     text = "SSN: 123-45-6789"
     custom_patterns = {
-        "SOCIALSECURITYNUMBER": {
-            "field": "SOCIALSECURITYNUMBER",
+        "SSN": {
+            "field": "SSN",
             "regex": r"\b\d{3}-\d{2}-\d{4}\b",
             "window": 1,
             "keywords": ["ssn"],
@@ -163,14 +162,14 @@ def test_detect_regex_patterns_keyword_window_allows_match():
     findings = detect_regex_patterns(text, custom_patterns)
 
     assert len(findings) == 1
-    assert findings[0]["field"] == "SOCIALSECURITYNUMBER"
+    assert findings[0]["field"] == "SSN"
 
 
 def test_detect_regex_patterns_keyword_window_blocks_match():
     text = "SSN data for records 123-45-6789"
     custom_patterns = {
-        "SOCIALSECURITYNUMBER": {
-            "field": "SOCIALSECURITYNUMBER",
+        "SSN": {
+            "field": "SSN",
             "regex": r"\b\d{3}-\d{2}-\d{4}\b",
             "window": 2,
             "keywords": ["ssn"],
@@ -246,20 +245,12 @@ def test_detect_regex_ethereum_address():
     assert "ETHEREUMADDRESS" in field_names
 
 
-def test_detect_regex_appointment_date():
-    text = "Appointment on 2024-05-12"
-    custom_patterns = {
-        "APPOINTMENTDATE": {
-            "field": "APPOINTMENTDATE",
-            "regex": r"\b(?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\b",
-            "window": 0,
-            "keywords": [],
-        },
-    }
-    findings = detect_regex_patterns(text, custom_patterns)
+def test_detect_regex_date():
+    text = "Date: 2024-05-12"
+    findings = detect_regex_patterns(text)
 
     field_names = [f["field"] for f in findings]
-    assert "APPOINTMENTDATE" in field_names
+    assert "DATE" in field_names
 
 
 # ============================================================================
@@ -268,7 +259,7 @@ def test_detect_regex_appointment_date():
 
 
 def test_detect_keywords_ignores_generic_terms():
-    text = "Enter your credentials to login with fingerprint and medical info"
+    text = "Enter your credentials to sign in with fingerprint and medical info"
     findings = detect_keywords(text)
 
     assert findings == []
@@ -289,17 +280,6 @@ def test_validate_iban_invalid():
     assert validate_iban("GB82WEST12345698765433") is False  # Wrong check digits
     assert validate_iban("XX123456789") is False  # Too short
     assert validate_iban("1234567890") is False  # Wrong format
-
-
-def test_validate_dni_valid():
-    assert validate_dni("12345678Z") is True
-    assert validate_dni("87654321X") is True
-
-
-def test_validate_dni_invalid():
-    assert validate_dni("12345678A") is False  # Wrong letter
-    assert validate_dni("1234567Z") is False  # Too short
-    assert validate_dni("123456789") is False  # No letter
 
 
 def test_validate_ssn_valid():
@@ -342,20 +322,11 @@ def test_detect_checksums_iban():
     assert iban_findings[0]["sources"] == ["dlp_checksum"]
 
 
-def test_detect_checksums_dni():
-    text = "NATIONALID number: 12345678Z"
-    findings = detect_checksums(text)
-
-    dni_findings = [f for f in findings if f["field"] == "NATIONALID"]
-    assert len(dni_findings) == 1
-    assert dni_findings[0]["sources"] == ["dlp_checksum"]
-
-
 def test_detect_checksums_ssn():
-    text = "SOCIALSECURITYNUMBER: 123-45-6789"
+    text = "SSN: 123-45-6789"
     findings = detect_checksums(text)
 
-    ssn_findings = [f for f in findings if f["field"] == "SOCIALSECURITYNUMBER"]
+    ssn_findings = [f for f in findings if f["field"] == "SSN"]
     assert len(ssn_findings) == 1
     assert ssn_findings[0]["sources"] == ["dlp_checksum"]
 
@@ -373,7 +344,7 @@ def test_detect_checksums_mixed():
     text = """
     Card: 4532015112830366
     IBAN: GB82WEST12345698765432
-    NATIONALID: 12345678Z
+    SSN: 123-45-6789
     """
     findings = detect_checksums(text)
 
@@ -381,14 +352,14 @@ def test_detect_checksums_mixed():
     field_names = [f["field"] for f in findings]
     assert "CREDITCARDNUMBER" in field_names
     assert "IBAN" in field_names
-    assert "NATIONALID" in field_names
+    assert "SSN" in field_names
 
 
 def test_detect_checksums_invalid_mixed():
     text = """
     Invalid card: 1234567890123456
     Invalid IBAN: GB82WEST12345698765433
-    Invalid NATIONALID: 12345678A
+    Invalid SSN: 000-45-6789
     """
     findings = detect_checksums(text)
 
@@ -403,12 +374,11 @@ def test_detect_checksums_invalid_mixed():
 
 def test_integration_high_risk_data():
     text = """
-    User credentials:
     -----BEGIN PRIVATE KEY-----
     mySecret123
     -----END PRIVATE KEY-----
     Credit Card: 4532-0151-1283-0366
-    SOCIALSECURITYNUMBER: 123-45-6789
+    SSN: 123-45-6789
     """
 
     keyword_findings = detect_keywords(text)
@@ -419,10 +389,10 @@ def test_integration_high_risk_data():
     all_findings = keyword_findings + regex_findings + checksum_findings
     field_names = [f["field"] for f in all_findings]
 
-    assert "SECRET" in field_names
-    # Credit card and SOCIALSECURITYNUMBER should be detected by both regex and checksum
+    assert "PASSWORD" in field_names
+    # Credit card and SSN should be detected by both regex and checksum
     assert "CREDITCARDNUMBER" in field_names
-    assert "SOCIALSECURITYNUMBER" in field_names
+    assert "SSN" in field_names
 
 
 def test_integration_medium_risk_data():
@@ -441,4 +411,4 @@ def test_integration_medium_risk_data():
 
     assert "EMAIL" in field_names
     assert "PHONENUMBER" in field_names
-    assert "SECRET" not in field_names
+    assert "PASSWORD" not in field_names

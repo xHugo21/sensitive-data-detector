@@ -2,6 +2,9 @@ import os
 
 import math
 import statistics
+from datetime import datetime
+from pathlib import Path
+
 import pytest
 
 from multiagent_firewall.config import GuardConfig
@@ -64,6 +67,47 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         "Latency (mean/median/p95): "
         f"{_format_ms(mean_time)} / {_format_ms(median_time)} / {_format_ms(p95_time)}"
     )
+
+    # Keep in sync with integration_tests/test_end_to_end_detection.py constants.
+    dataset_name = "ai4privacy/pii-masking-200k"
+    dataset_split = "train"
+    dataset_text_field = "source_text"
+    dataset_languages = os.getenv("INTEGRATION_DATASET_LANGUAGES", "en")
+    dataset_max_cases = os.getenv("INTEGRATION_DATASET_MAX_CASES", "200")
+    dataset_seed = os.getenv("INTEGRATION_DATASET_SEED", "1337")
+    llm_provider = os.getenv("LLM_PROVIDER", "unknown")
+    llm_model = os.getenv("LLM_MODEL", "unknown")
+    force_llm_detector = os.getenv("FORCE_LLM_DETECTOR", "false")
+    ner_enabled = os.getenv("NER_ENABLED", "false")
+    ner_min_score = os.getenv("NER_MIN_SCORE", "0.5")
+
+    summary_lines = [
+        "Integration metrics",
+        f"Cases: {total_cases}  Pass: {case_passes}",
+        f"Fields detected: TP: {tp}  FP: {fp}  FN: {fn}",
+        f"Precision: {precision}  Recall: {recall}  F1: {f1}",
+        f"Case pass rate: {case_pass_rate}",
+        "Latency (mean/median/p95): "
+        f"{_format_ms(mean_time)} / {_format_ms(median_time)} / {_format_ms(p95_time)}",
+        "",
+        "Run parameters",
+        f"LLM_PROVIDER: {llm_provider}",
+        f"LLM_MODEL: {llm_model}",
+        f"FORCE_LLM_DETECTOR: {force_llm_detector}",
+        f"NER_ENABLED: {ner_enabled}",
+        f"NER_MIN_SCORE: {ner_min_score}",
+        f"DATASET: {dataset_name} ({dataset_split}/{dataset_text_field})",
+        f"INTEGRATION_DATASET_LANGUAGES: {dataset_languages}",
+        f"INTEGRATION_DATASET_MAX_CASES: {dataset_max_cases}",
+        f"INTEGRATION_DATASET_SEED: {dataset_seed}",
+        f"EXIT_STATUS: {exitstatus}",
+    ]
+
+    logs_dir = Path(__file__).parent / "run_logs"
+    logs_dir.mkdir(exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_path = logs_dir / f"integration-summary-{timestamp}.txt"
+    log_path.write_text("\n".join(summary_lines) + "\n")
 
 
 @pytest.fixture(scope="module")

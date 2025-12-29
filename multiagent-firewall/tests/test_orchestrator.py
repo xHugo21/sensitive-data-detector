@@ -193,7 +193,7 @@ def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config)
     mock_llm_detector.return_value = mock_detector
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="Please use secret123 to login")
+    result = orchestrator.run(text="Please use secret123 to proceed")
 
     masked = result.get("anonymized_text") or ""
     mapping = (
@@ -247,14 +247,14 @@ def test_orchestrator_run_with_file_path(mock_llm_detector, tmp_path, guard_conf
     # Create a test file
     test_file = tmp_path / "test.txt"
     test_file.write_text(
-        "File content with SOCIALSECURITYNUMBER 123-45-6789", encoding="utf-8"
+        "File content with SSN 123-45-6789", encoding="utf-8"
     )
 
     orchestrator = GuardOrchestrator(guard_config)
     result = orchestrator.run(file_path=str(test_file))
 
     assert "raw_text" in result
-    assert "File content with SOCIALSECURITYNUMBER" in result["raw_text"]
+    assert "File content with SSN" in result["raw_text"]
     assert "detected_fields" in result
 
 

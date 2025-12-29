@@ -17,14 +17,14 @@ def test_merge_detections_accumulates_sources_for_duplicates():
     state = {
         "dlp_fields": [
             {
-                "field": "APPOINTMENTDATE",
+                "field": "DATE",
                 "value": "2024-05-12",
                 "sources": ["dlp_regex"],
             }
         ],
         "ner_fields": [
             {
-                "field": "APPOINTMENTDATE",
+                "field": "DATE",
                 "value": "2024-05-12",
                 "sources": ["ner_gliner"],
             }

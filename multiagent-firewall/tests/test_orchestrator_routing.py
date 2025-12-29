@@ -209,7 +209,7 @@ class TestDLPOnlyRouting:
         def fake_dlp(state):
             executed_nodes.append("dlp_detector")
             state["dlp_fields"] = [
-                {"type": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+                {"type": "SSN", "value": "123-45-6789"}
             ]
             state["detected_fields"] = state["dlp_fields"]
             return state
@@ -254,7 +254,7 @@ class TestDLPOnlyRouting:
             ),
         ):
             orchestrator = GuardOrchestrator(guard_config)
-            result = orchestrator.run(text="SOCIALSECURITYNUMBER: 123-45-6789")
+            result = orchestrator.run(text="SSN: 123-45-6789")
 
         # Should skip llm_detector when blocked
         assert "dlp_detector" in executed_nodes
@@ -277,7 +277,7 @@ class TestDLPOnlyRouting:
         def fake_dlp(state):
             executed_nodes.append("dlp_detector")
             state["dlp_fields"] = [
-                {"type": "SOCIALSECURITYNUMBER", "value": "123-45-6789"}
+                {"type": "SSN", "value": "123-45-6789"}
             ]
             state["detected_fields"] = state["dlp_fields"]
             return state
@@ -326,7 +326,7 @@ class TestDLPOnlyRouting:
             ),
         ):
             orchestrator = GuardOrchestrator(forced_config)
-            result = orchestrator.run(text="SOCIALSECURITYNUMBER: 123-45-6789")
+            result = orchestrator.run(text="SSN: 123-45-6789")
 
         assert "dlp_detector" in executed_nodes
         assert "risk" in executed_nodes

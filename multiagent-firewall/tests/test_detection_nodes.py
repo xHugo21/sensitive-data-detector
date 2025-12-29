@@ -16,7 +16,7 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
     mock_detector.return_value = {
         "detected_fields": [
             {"field": "EMAIL", "value": "test@example.com"},
-            {"field": "NAME", "value": "John Doe"},
+            {"field": "FIRSTNAME", "value": "John"},
         ]
     }
     mock_llm_detector.return_value = mock_detector
@@ -34,7 +34,10 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
     assert all(
         f.get("sources") == ["llm_explicit"] for f in result.get("llm_fields", [])
     )
-    assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
+    assert [f["field"] for f in result.get("llm_fields", [])] == [
+        "EMAIL",
+        "FIRSTNAME",
+    ]
 
 
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
@@ -81,7 +84,7 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
     mock_detector.return_value = {
         "detected_fields": [
             {"field": "EMAIL", "value": "test@example.com", "sources": ["Explicit"]},
-            {"field": "NAME", "value": "John Doe", "sources": ["Inferred"]},
+            {"field": "LASTNAME", "value": "Doe", "sources": ["Inferred"]},
         ]
     }
     mock_llm_detector.return_value = mock_detector
@@ -96,7 +99,10 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
 
     sources = [f["sources"] for f in result.get("llm_fields", [])]
     assert sources == [["llm_explicit"], ["llm_inferred"]]
-    assert [f["field"] for f in result.get("llm_fields", [])] == ["EMAIL", "NAME"]
+    assert [f["field"] for f in result.get("llm_fields", [])] == [
+        "EMAIL",
+        "LASTNAME",
+    ]
 
 
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
@@ -106,12 +112,12 @@ def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_confi
     mock_detector.return_value = {
         "detected_fields": [
             {
-                "field": "APPOINTMENTDATE",
-                "value": "<<REDACTED:APPOINTMENTDATE>>",
+                "field": "DATE",
+                "value": "<<REDACTED:DATE>>",
                 "sources": ["Explicit"],
             },
             {
-                "field": "APPOINTMENTDATE",
+                "field": "DATE",
                 "value": "2024-05-12",
                 "sources": ["Explicit"],
             },
@@ -122,8 +128,8 @@ def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_confi
                 "sources": ["Explicit"],
             },
             {
-                "field": "APPOINTMENTDATE",
-                "value": "+REDACTED:APPOINTMENTDATE",
+                "field": "DATE",
+                "value": "+REDACTED:DATE",
                 "sources": ["Explicit"],
             },
         ]
@@ -132,10 +138,10 @@ def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_confi
 
     state: GuardState = {
         "normalized_text": "My username is john_doe_2024 and it is 2024-05-12",
-        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:APPOINTMENTDATE>>",
+        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:DATE>>",
         "metadata": {
             "llm_anonymized_values": {
-                "mapping": {"2024-05-12": "<<REDACTED:APPOINTMENTDATE>>"}
+                "mapping": {"2024-05-12": "<<REDACTED:DATE>>"}
             }
         },
         "warnings": [],
@@ -146,7 +152,7 @@ def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_confi
 
     values = {f["field"]: f["value"] for f in result.get("llm_fields", [])}
     assert values["USERNAME"] == "john_doe_2024"
-    assert "APPOINTMENTDATE" not in values
+    assert "DATE" not in values
     assert "EMAIL" not in values  # unknown anonymized token skipped
     assert all(
         any(source.startswith("llm_") for source in f.get("sources", []))
@@ -175,7 +181,7 @@ def test_run_dlp_detector_with_regex():
 def test_run_dlp_detector_with_keywords():
     """Test DLP detector with keywords (uses constants by default)"""
     state: GuardState = {
-        "normalized_text": "key header -----BEGIN PRIVATE KEY----- data",
+        "normalized_text": "-----BEGIN PRIVATE KEY----- data",
         "warnings": [],
         "errors": [],
     }

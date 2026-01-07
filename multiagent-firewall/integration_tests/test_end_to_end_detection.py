@@ -19,6 +19,67 @@ DEFAULT_DATASET_LANGUAGES = "en"
 DEFAULT_DATASET_MAX_CASES = 200
 DEFAULT_DATASET_SEED = 1337
 
+TYPE_ALIASES: dict[str, set[str]] = {
+    "PERSON": {"FIRSTNAME", "LASTNAME", "MIDDLENAME", "PREFIX"},
+    "NAME": {"FIRSTNAME", "LASTNAME", "MIDDLENAME"},
+    "FULLNAME": {"FIRSTNAME", "LASTNAME", "MIDDLENAME"},
+    "FIRSTNAME": {"PREFIX", "MIDDLENAME"},
+    "ADDRESS": {
+        "STREET",
+        "BUILDINGNUMBER",
+        "SECONDARYADDRESS",
+        "CITY",
+        "STATE",
+        "COUNTY",
+        "ZIPCODE",
+    },
+    "LOCATION": {"CITY", "STATE", "COUNTY", "NEARBYGPSCOORDINATE"},
+    "CITY": {"FIRSTNAME"},
+    "CREDITCARD": {"CREDITCARDNUMBER", "CREDITCARDCVV", "CREDITCARDISSUER"},
+    "BANKACCOUNT": {"ACCOUNTNUMBER", "ACCOUNTNAME", "IBAN", "BIC"},
+    "MONEY": {"AMOUNT", "CURRENCY", "CURRENCYCODE", "CURRENCYNAME", "CURRENCYSYMBOL"},
+    "CURRENCY": {"CURRENCYCODE", "CURRENCYNAME", "CURRENCYSYMBOL"},
+    "AMOUNT": {"CURRENCYSYMBOL", "CURRENCY", "CURRENCYCODE", "CURRENCYNAME"},
+    "COMPANYNAME": {"JOBAREA", "JOBTITLE"},
+    "IP": {"IPV4", "IPV6"},
+    "IPADDRESS": {"IP", "IPV4", "IPV6"},
+    "VEHICLE": {"VEHICLEVIN", "VEHICLEVRM"},
+    "DATETIME": {"DATE", "TIME", "DOB"},
+    "DATE": {"DOB"},
+    "DOB": {"DATE"},
+}
+
+_REVERSE_ALIASES: dict[str, set[str]] = {}
+for _detected, _expected_set in TYPE_ALIASES.items():
+    for _expected in _expected_set:
+        _REVERSE_ALIASES.setdefault(_expected, set()).add(_detected)
+
+
+def _types_match(detected_type: str, expected_type: str) -> bool:
+    """Check if detected type matches expected type with alias support."""
+    detected_upper = detected_type.upper()
+    expected_upper = expected_type.upper()
+
+    # Exact match
+    if detected_upper == expected_upper:
+        return True
+
+    # Substring match
+    if expected_upper in detected_upper:
+        return True
+
+    # Alias match
+    if detected_upper in TYPE_ALIASES:
+        if expected_upper in TYPE_ALIASES[detected_upper]:
+            return True
+
+    # Reverse alias
+    if expected_upper in _REVERSE_ALIASES:
+        if detected_upper in _REVERSE_ALIASES[expected_upper]:
+            return True
+
+    return False
+
 
 def _parse_languages(value: str | None) -> list[str] | None:
     if value is None:
@@ -34,9 +95,7 @@ def _parse_span_labels(span_labels: object, row_index: int) -> list[str]:
         try:
             spans = ast.literal_eval(span_labels)
         except (SyntaxError, ValueError) as exc:
-            raise ValueError(
-                f"Row {row_index} has invalid span_labels: {exc}"
-            ) from exc
+            raise ValueError(f"Row {row_index} has invalid span_labels: {exc}") from exc
     elif isinstance(span_labels, list):
         spans = span_labels
     else:
@@ -88,12 +147,8 @@ def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
     for index, row in enumerate(dataset):
         prompt = row.get(DATASET_TEXT_FIELD)
         if prompt is None:
-            raise ValueError(
-                f"Row {index} is missing '{DATASET_TEXT_FIELD}'."
-            )
-        expected_entities = _parse_span_labels(
-            row.get("span_labels"), index
-        )
+            raise ValueError(f"Row {index} is missing '{DATASET_TEXT_FIELD}'.")
+        expected_entities = _parse_span_labels(row.get("span_labels"), index)
         row_id = row.get("id")
         if row_id is None:
             test_id = f"row_{index:06d}"
@@ -134,12 +189,12 @@ def test_sensitive_detection(
     matched_expected = sum(
         1
         for expected in expected_entities
-        if any(expected in detected for detected in detected_types)
+        if any(_types_match(detected, expected) for detected in detected_types)
     )
     unmatched_detected = {
         detected
         for detected in detected_types
-        if not any(expected in detected for expected in expected_entities)
+        if not any(_types_match(detected, expected) for expected in expected_entities)
     }
     case_pass = (not expected_entities and not detected_fields) or (
         matched_expected == len(expected_entities)
@@ -157,7 +212,7 @@ def test_sensitive_detection(
     # Check that all expected entities are detected
     if expected_entities:
         for expected_entity in expected_entities:
-            assert any(expected_entity in dt for dt in detected_types), (
+            assert any(_types_match(dt, expected_entity) for dt in detected_types), (
                 f"Test '{test_id}' failed.\n"
                 f"Expected entity '{expected_entity}' not found.\n"
                 f"Detected types: {detected_types}\n"

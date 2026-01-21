@@ -76,19 +76,24 @@ async def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
 
 
 @pytest.mark.asyncio
-@patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector")
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
 async def test_orchestrator_short_circuits_on_empty_text(
-    mock_llm_detector, mock_dlp_detector, guard_config
+    mock_llm_detector, guard_config
 ):
     """Empty text should still run DLP and allow."""
     mock_llm_detector.return_value = MagicMock()
-    mock_dlp_detector.side_effect = lambda state: state
-    orchestrator = GuardOrchestrator(guard_config)
 
-    result = await orchestrator.run(text="")
+    calls = []
 
-    mock_dlp_detector.assert_called_once()
+    async def fake_dlp(state):
+        calls.append("dlp")
+        return state
+
+    with patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector", new=fake_dlp):
+        orchestrator = GuardOrchestrator(guard_config)
+        result = await orchestrator.run(text="")
+
+    assert "dlp" in calls
     mock_llm_detector.assert_not_called()
     assert result.get("decision") == "allow"
     assert result.get("risk_level") == "none"
@@ -125,33 +130,37 @@ async def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
 
 
 @pytest.mark.asyncio
-@patch("multiagent_firewall.nodes.run_llm_detector")
-@patch("multiagent_firewall.nodes.apply_policy")
-@patch("multiagent_firewall.nodes.evaluate_risk")
-@patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector")
-async def test_orchestrator_skips_llm_when_policy_blocks(
-    mock_dlp, mock_evaluate_risk, mock_apply_policy, mock_run_llm, guard_config
-):
+async def test_orchestrator_skips_llm_when_policy_blocks(guard_config):
     """If policy decides to block, LLM detector should be skipped."""
 
-    def fake_dlp(state: GuardState):
+    async def fake_dlp(state):
         state["dlp_fields"] = [{"type": "EMAIL", "value": "x@example.com"}]
         state["detected_fields"] = state["dlp_fields"]
         return state
 
-    mock_dlp.side_effect = fake_dlp
-    mock_evaluate_risk.side_effect = lambda state: state | {"risk_level": "high"}
+    async def fake_risk(state):
+        return state | {"risk_level": "high"}
 
-    def block_policy(state: GuardState):
+    async def fake_policy(state):
         state["decision"] = "block"
         return state
 
-    mock_apply_policy.side_effect = block_policy
+    calls = []
 
-    orchestrator = GuardOrchestrator(guard_config)
-    result = await orchestrator.run(text="x@example.com")
+    async def fake_llm(state, **kwargs):
+        calls.append("llm")
+        return state
 
-    mock_run_llm.assert_not_called()
+    with (
+        patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector", new=fake_dlp),
+        patch("multiagent_firewall.nodes.evaluate_risk", new=fake_risk),
+        patch("multiagent_firewall.nodes.apply_policy", new=fake_policy),
+        patch("multiagent_firewall.nodes.run_llm_detector", new=fake_llm),
+    ):
+        orchestrator = GuardOrchestrator(guard_config)
+        result = await orchestrator.run(text="x@example.com")
+
+    assert "llm" not in calls
     assert result.get("decision") == "block"
 
 

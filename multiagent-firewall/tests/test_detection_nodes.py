@@ -131,7 +131,7 @@ async def test_run_llm_detector_skips_anonymized_tokens(
             "detected_fields": [
                 {
                     "field": "DATE",
-                    "value": "<<REDACTED:DATE>>",
+                    "value": "<<REDACTED:DATE_1>>",
                     "sources": ["Explicit"],
                 },
                 {
@@ -146,12 +146,12 @@ async def test_run_llm_detector_skips_anonymized_tokens(
                 },
                 {
                     "field": "EMAIL",
-                    "value": "<<REDACTED:UNKNOWN>>",
+                    "value": "<<REDACTED:UNKNOWN_1>>",
                     "sources": ["Explicit"],
                 },
                 {
                     "field": "DATE",
-                    "value": "+REDACTED:DATE",
+                    "value": "+REDACTED:DATE_1",
                     "sources": ["Explicit"],
                 },
             ]
@@ -161,9 +161,9 @@ async def test_run_llm_detector_skips_anonymized_tokens(
 
     state: GuardState = {
         "normalized_text": "My username is john_doe_2024 and it is 2024-05-12",
-        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:DATE>>",
+        "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:DATE_1>>",
         "metadata": {
-            "llm_anonymized_values": {"mapping": {"2024-05-12": "<<REDACTED:DATE>>"}}
+            "llm_anonymized_values": {"mapping": {"2024-05-12": "<<REDACTED:DATE_1>>"}}
         },
         "warnings": [],
         "errors": [],

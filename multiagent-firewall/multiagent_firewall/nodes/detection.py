@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from ..detectors import GlinerNERDetector, LiteLLMDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
-from ..constants import KEYWORDS, REGEX_PATTERNS
+from ..config.detection import KEYWORDS, REGEX_PATTERNS
 from ..types import FieldList, GuardState
 from ..utils import append_error
 

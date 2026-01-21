@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 from typing_extensions import NotRequired, TypedDict
 
 if TYPE_CHECKING:
-    from .config import GuardConfig
+    from .config.env import GuardConfig
 else:
     GuardConfig = Any
 

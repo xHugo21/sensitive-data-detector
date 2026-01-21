@@ -293,7 +293,7 @@ REGEX_PATTERNS = {
 
 ## Custom Pipeline Configuration
 
-The pipeline architecture is defined in `multiagent_firewall/pipeline.json`. You can modify this JSON to:
+The pipeline architecture is defined in `multiagent_firewall/config/pipeline.json`. You can modify this JSON to:
 - Remove specific detectors
 - Reorder the workflow
 - Add custom nodes via dynamic imports
@@ -304,7 +304,7 @@ The pipeline architecture is defined in `multiagent_firewall/pipeline.json`. You
   "nodes": [ // Add node
     {
       "id": "custom_detector",
-      "action": "custom.custom_nodes.my_custom_detector", // Method invoked on call. Either a full python path or the id of an already defined node in registry.py
+      "action": "custom.custom_nodes.my_custom_detector", // Method invoked on call. Either a full python path or the id of an already defined node in config/registry.py
       "inject_config": true, // Optional. Whether to pass the GuardConfig object with parameters such as LLM API keys or model providers.
       "params": { // Optional. A dictionary of static keys to be passed to the invoked method
         "parameter_name": "parameter_value",

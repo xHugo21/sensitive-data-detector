@@ -4,7 +4,7 @@ import re
 from typing import Any
 
 from ..types import FieldList, GuardState
-from ..constants import HIGH_RISK_FIELDS, MEDIUM_RISK_FIELDS, LOW_RISK_FIELDS
+from ..config.detection import HIGH_RISK_FIELDS, MEDIUM_RISK_FIELDS, LOW_RISK_FIELDS
 
 _whitespace_re = re.compile(r"\s+")
 _system_reminder_re = re.compile(

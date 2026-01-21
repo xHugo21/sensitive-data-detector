@@ -4,8 +4,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
-from .constants import NER_LABELS
-from .detectors.utils import load_litellm_env
+from .detection import NER_LABELS
+from ..detectors.utils import load_litellm_env
 
 
 def _str_to_bool(value: str | None, default: bool) -> bool:

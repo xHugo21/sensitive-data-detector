@@ -46,7 +46,7 @@ class TestNoDetectionsRouting:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": track_node("dlp_detector"),
                     "merge_detections": track_node("merge"),
@@ -102,7 +102,7 @@ class TestNoDetectionsRouting:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": track_dlp,
                     "merge_detections": track_merge_dlp_ner,
@@ -162,7 +162,7 @@ class TestDLPOnlyRouting:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": fake_dlp,
                     "merge_detections": fake_merge,
@@ -231,7 +231,7 @@ class TestDLPOnlyRouting:
             return state
 
         with patch.dict(
-            "multiagent_firewall.registry.NODE_REGISTRY",
+            "multiagent_firewall.config.registry.NODE_REGISTRY",
             {
                 "run_dlp_detector": fake_dlp,
                 "merge_detections": fake_merge,
@@ -298,7 +298,7 @@ class TestLLMOnlyRouting:
             return state
 
         with patch.dict(
-            "multiagent_firewall.registry.NODE_REGISTRY",
+            "multiagent_firewall.config.registry.NODE_REGISTRY",
             {
                 "run_dlp_detector": fake_dlp,
                 "merge_detections": fake_merge,
@@ -365,7 +365,7 @@ class TestBothDetectorsRouting:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": fake_dlp,
                     "merge_detections": fake_merge,
@@ -425,7 +425,7 @@ class TestRemediationAnonymizationSequence:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": fake_dlp,
                     "generate_remediation": track_remediation,
@@ -474,7 +474,7 @@ class TestRemediationAnonymizationSequence:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "generate_remediation": track_remediation,
                     "anonymize_text": track_anonymize,
@@ -528,7 +528,7 @@ class TestAnonymizeLLMConditional:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": fake_dlp_with_findings,
                     "anonymize_text": track_anonymize,
@@ -566,7 +566,7 @@ class TestAnonymizeLLMConditional:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": fake_dlp_no_findings,
                     "anonymize_text": track_anonymize,
@@ -632,7 +632,7 @@ class TestDefaultValuesPresent:
 
         with (
             patch.dict(
-                "multiagent_firewall.registry.NODE_REGISTRY",
+                "multiagent_firewall.config.registry.NODE_REGISTRY",
                 {
                     "run_dlp_detector": fake_dlp,
                     "evaluate_risk": fake_risk,

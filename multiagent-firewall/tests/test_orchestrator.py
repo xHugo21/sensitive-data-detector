@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from multiagent_firewall.orchestrator import GuardOrchestrator
 from multiagent_firewall.nodes import policy, risk
-from multiagent_firewall.registry import NODE_REGISTRY
+from multiagent_firewall.config.registry import NODE_REGISTRY
 from multiagent_firewall.types import GuardState
 
 
@@ -58,7 +58,7 @@ async def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
             "multiagent_firewall.nodes.detection.LiteLLMDetector"
         ) as mock_llm_detector,
         patch.dict(
-            "multiagent_firewall.registry.NODE_REGISTRY",
+            "multiagent_firewall.config.registry.NODE_REGISTRY",
             {
                 "evaluate_risk": MagicMock(wraps=risk.evaluate_risk),
                 "apply_policy": MagicMock(wraps=policy.apply_policy),
@@ -95,7 +95,8 @@ async def test_orchestrator_short_circuits_on_empty_text(
         return state
 
     with patch.dict(
-        "multiagent_firewall.registry.NODE_REGISTRY", {"run_dlp_detector": fake_dlp}
+        "multiagent_firewall.config.registry.NODE_REGISTRY",
+        {"run_dlp_detector": fake_dlp},
     ):
         orchestrator = GuardOrchestrator(guard_config)
         result = await orchestrator.run(text="")
@@ -118,7 +119,7 @@ async def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
     mock_llm_detector.return_value = mock_detector
 
     with patch.dict(
-        "multiagent_firewall.registry.NODE_REGISTRY",
+        "multiagent_firewall.config.registry.NODE_REGISTRY",
         {
             "evaluate_risk": MagicMock(wraps=risk.evaluate_risk),
             "apply_policy": MagicMock(wraps=policy.apply_policy),
@@ -161,7 +162,7 @@ async def test_orchestrator_skips_llm_when_policy_blocks(guard_config):
         return state
 
     with patch.dict(
-        "multiagent_firewall.registry.NODE_REGISTRY",
+        "multiagent_firewall.config.registry.NODE_REGISTRY",
         {
             "run_dlp_detector": fake_dlp,
             "evaluate_risk": fake_risk,
@@ -257,7 +258,7 @@ async def test_orchestrator_skips_final_anonymizer_without_llm(
         )
 
     with patch.dict(
-        "multiagent_firewall.registry.NODE_REGISTRY",
+        "multiagent_firewall.config.registry.NODE_REGISTRY",
         {"anonymize_text": counting_anonymize},
     ):
         orchestrator = GuardOrchestrator(guard_config)

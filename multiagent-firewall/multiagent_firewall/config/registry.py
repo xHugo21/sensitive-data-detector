@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from . import nodes
-from . import routers
+from .. import nodes
+from .. import routers
 
 NODE_REGISTRY = {
     "read_document": nodes.read_document,

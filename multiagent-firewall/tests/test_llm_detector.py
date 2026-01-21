@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from multiagent_firewall.detectors import llm
-from multiagent_firewall.constants import LLM_DETECTOR_PROMPT
+from multiagent_firewall.config import LLM_DETECTOR_PROMPT
 from multiagent_firewall.detectors.utils import build_litellm_model_string
 from multiagent_firewall.detectors.utils import json_env
 from multiagent_firewall.config import GuardConfig

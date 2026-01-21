@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
-from ..constants import REGEX_PATTERNS, KEYWORDS
+from ..config.detection import REGEX_PATTERNS, KEYWORDS
 
 
 def detect_keywords(

@@ -1,0 +1,356 @@
+{
+  "prompts": {
+    "llm_detector": "sensitive-data-llm-prompt.txt",
+    "ocr_detector": "ocr-llm-prompt.txt"
+  },
+  "regex_patterns": {
+    "SSN": {
+      "field": "SSN",
+      "regex": "\\b\\d{3}[\\s\\-]?\\d{2}[\\s\\-]?\\d{4}\\b|\\b\\d{9,11}\\b",
+      "min_digits": 9,
+      "max_digits": 11,
+      "window": 4,
+      "keywords": ["ssn", "social security", "social security number"]
+    },
+    "EMAIL": {
+      "field": "EMAIL",
+      "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"
+    },
+    "PHONENUMBER": {
+      "field": "PHONENUMBER",
+      "regex": "(?<!\\w)(?<!\\d\\.)(?<!\\.\\d)\\+?(?:\\d[\\d\\s\\-\\(\\)]{5,}\\d|\\(\\d{3}\\)\\s*\\d{3}[\\-\\s]?\\d{4})\\b(?!\\.\\d)",
+      "min_digits": 7,
+      "max_digits": 15
+    },
+    "USERNAME": {
+      "field": "USERNAME",
+      "regex": "\\b(?:[A-Za-z]{2,}[._-][A-Za-z0-9]{2,}(?:[._-][A-Za-z0-9]{2,})*|[A-Za-z]{2,}\\d{2,})\\b",
+      "window": 4,
+      "keywords": ["username", "handle", "login", "user id", "userid"]
+    },
+    "CREDITCARDNUMBER": {
+      "field": "CREDITCARDNUMBER",
+      "regex": "\\b(?:\\d{4}[\\s\\-]?){3}\\d{4}\\b",
+      "window": 4,
+      "keywords": ["card", "credit card", "cc", "visa", "mastercard"]
+    },
+    "CREDITCARDCVV": {
+      "field": "CREDITCARDCVV",
+      "regex": "\\b\\d{3,4}\\b",
+      "window": 4,
+      "keywords": ["cvv", "cvc", "cvv2", "security code"]
+    },
+    "IPV4": {
+      "field": "IPV4",
+      "regex": "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
+    },
+    "IPV6": {
+      "field": "IPV6",
+      "regex": "\\b(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\\b|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}\\b"
+    },
+    "IP": {
+      "field": "IP",
+      "regex": "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b|\\b(?:[A-Fa-f0-9]{1,4}:){1,7}[A-Fa-f0-9]{1,4}\\b"
+    },
+    "MAC": {
+      "field": "MAC",
+      "regex": "\\b(?:[0-9A-Fa-f]{2}[:\\-]){5}[0-9A-Fa-f]{2}\\b",
+      "window": 4,
+      "keywords": ["mac address", "mac"]
+    },
+    "IBAN": {
+      "field": "IBAN",
+      "regex": "\\b[A-Z]{2}\\d{2}[A-Z0-9]{4}\\d{7}(?:[A-Z0-9]?){0,16}\\b",
+      "window": 6,
+      "keywords": ["iban", "account", "bank"]
+    },
+    "BIC": {
+      "field": "BIC",
+      "regex": "\\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\\b",
+      "window": 6,
+      "keywords": ["bic", "swift"]
+    },
+    "URL": {
+      "field": "URL",
+      "regex": "\\b(?:https?|ftp)://[^\\s/$.?#].[^\\s]*\\b"
+    },
+    "BITCOINADDRESS": {
+      "field": "BITCOINADDRESS",
+      "regex": "\\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\\b|bc1[a-z0-9]{39,59}\\b"
+    },
+    "ETHEREUMADDRESS": {
+      "field": "ETHEREUMADDRESS",
+      "regex": "\\b0x[a-fA-F0-9]{40}\\b"
+    },
+    "LITECOINADDRESS": {
+      "field": "LITECOINADDRESS",
+      "regex": "\\b(?:[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}|ltc1[0-9a-z]{39,59})\\b"
+    },
+    "ZIPCODE": {
+      "field": "ZIPCODE",
+      "regex": "\\b\\d{5}(?:[\\-\\s]\\d{4})?\\b",
+      "min_digits": 5,
+      "max_digits": 9,
+      "window": 4,
+      "keywords": ["zip", "zipcode", "zip code", "postal", "postcode"]
+    },
+    "SECONDARYADDRESS": {
+      "field": "SECONDARYADDRESS",
+      "regex": "\\b(?:Apt\\.?|Apartment|Suite|Ste\\.?|Unit|Flat|#)\\s*\\d+[A-Za-z]?\\b"
+    },
+    "VEHICLEVIN": {
+      "field": "VEHICLEVIN",
+      "regex": "\\b[A-HJ-NPR-Z0-9]{17}\\b",
+      "window": 6,
+      "keywords": ["vin", "vehicle"]
+    },
+    "PIN": {
+      "field": "PIN",
+      "regex": "\\b\\d{4,6}\\b",
+      "window": 4,
+      "keywords": ["pin", "personal identification number"]
+    },
+    "PHONEIMEI": {
+      "field": "PHONEIMEI",
+      "regex": "\\b\\d{2}-\\d{6}-\\d{6}-\\d\\b|\\b\\d{15}\\b",
+      "window": 4,
+      "keywords": ["imei"]
+    },
+    "NEARBYGPSCOORDINATE": {
+      "field": "NEARBYGPSCOORDINATE",
+      "regex": "\\[\\s*-?\\d{1,3}\\.\\d+\\s*,\\s*-?\\d{1,3}\\.\\d+\\s*\\]"
+    },
+    "NEARBYGPSCOORDINATE_KEYWORD": {
+      "field": "NEARBYGPSCOORDINATE",
+      "regex": "-?\\d{1,2}\\.\\d+\\s*,\\s*-?\\d{1,3}\\.\\d+",
+      "window": 6,
+      "keywords": [
+        "gps",
+        "coordinate",
+        "coordinates",
+        "coords",
+        "latitude",
+        "longitude",
+        "lat",
+        "long",
+        "location"
+      ]
+    },
+    "DOB": {
+      "field": "DOB",
+      "regex": "\\b(?:\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}|\\d{4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{1,2})\\b",
+      "window": 6,
+      "keywords": ["dob", "date of birth", "birth", "born"]
+    },
+    "DATE": {
+      "field": "DATE",
+      "regex": "\\b(?:\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}|\\d{4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{1,2})\\b",
+      "window": 4,
+      "keywords": ["date", "dated"]
+    },
+    "TIME": {
+      "field": "TIME",
+      "regex": "\\b(?:[01]?\\d|2[0-3]):\\d{2}(?::\\d{2})?\\b|\\b(?:[01]?\\d|2[0-3])\\s?(?:AM|PM|am|pm)\\b",
+      "window": 4,
+      "keywords": ["time"]
+    },
+    "DATE_TEXT": {
+      "field": "DATE",
+      "regex": "\\b(?:(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s*\\d{2,4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December),?\\s*\\d{2,4})\\b"
+    },
+    "DATE_ISO": {
+      "field": "DATE",
+      "regex": "\\b\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?)?\\b"
+    },
+    "USERAGENT": {
+      "field": "USERAGENT",
+      "regex": "Mozilla/5\\.0\\s*\\([^)]+\\)[^\\n]{10,}"
+    },
+    "ACCOUNTNUMBER": {
+      "field": "ACCOUNTNUMBER",
+      "regex": "\\b\\d{8,12}\\b",
+      "min_digits": 8,
+      "max_digits": 12,
+      "window": 4,
+      "keywords": ["account", "acct", "account number", "acct number"]
+    },
+    "MASKEDNUMBER": {
+      "field": "MASKEDNUMBER",
+      "regex": "\\b\\d{12,19}\\b",
+      "min_digits": 12,
+      "max_digits": 19,
+      "window": 4,
+      "keywords": [
+        "account",
+        "card",
+        "reference",
+        "ref",
+        "invoice",
+        "order",
+        "transaction"
+      ]
+    },
+    "AMOUNT": {
+      "field": "AMOUNT",
+      "regex": "\\b\\d{1,3}(?:[,\\d]{0,15})(?:\\.\\d+)?(?:[kKmMbB])?\\b",
+      "min_digits": 1,
+      "max_digits": 9,
+      "window": 4,
+      "keywords": [
+        "amount",
+        "total",
+        "price",
+        "cost",
+        "charge",
+        "payment",
+        "balance",
+        "fee"
+      ]
+    }
+  },
+  "keywords": {
+    "PASSWORD": [
+      "-----BEGIN PRIVATE KEY-----",
+      "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "-----BEGIN RSA PRIVATE KEY-----",
+      "-----BEGIN EC PRIVATE KEY-----",
+      "-----BEGIN ENCRYPTED PRIVATE KEY-----",
+      "-----BEGIN DSA PRIVATE KEY-----"
+    ]
+  },
+  "ner_labels": {
+    "person": "FIRSTNAME",
+    "first name": "FIRSTNAME",
+    "middle name": "MIDDLENAME",
+    "last name": "LASTNAME",
+    "name": "FIRSTNAME",
+    "full name": "FIRSTNAME",
+    "given name": "FIRSTNAME",
+    "surname": "LASTNAME",
+    "family name": "LASTNAME",
+    "company": "COMPANYNAME",
+    "organization": "COMPANYNAME",
+    "employer": "COMPANYNAME",
+    "business": "COMPANYNAME",
+    "corporation": "COMPANYNAME",
+    "job title": "JOBTITLE",
+    "job area": "JOBAREA",
+    "job type": "JOBTYPE",
+    "occupation": "JOBTITLE",
+    "profession": "JOBTITLE",
+    "position": "JOBTITLE",
+    "street": "STREET",
+    "street address": "STREET",
+    "building number": "BUILDINGNUMBER",
+    "secondary address": "SECONDARYADDRESS",
+    "city": "CITY",
+    "state": "STATE",
+    "county": "COUNTY",
+    "zipcode": "ZIPCODE",
+    "postal code": "ZIPCODE",
+    "address": "STREET",
+    "location": "CITY",
+    "place": "CITY",
+    "country": "STATE",
+    "region": "STATE",
+    "province": "STATE",
+    "territory": "STATE",
+    "district": "COUNTY",
+    "date": "DATE",
+    "birth date": "DOB",
+    "birthday": "DOB",
+    "date of birth": "DOB",
+    "email": "EMAIL",
+    "email address": "EMAIL",
+    "phone": "PHONENUMBER",
+    "phone number": "PHONENUMBER",
+    "telephone": "PHONENUMBER",
+    "mobile": "PHONENUMBER",
+    "money": "AMOUNT",
+    "price": "AMOUNT",
+    "cost": "AMOUNT",
+    "currency": "CURRENCY",
+    "account": "ACCOUNTNUMBER",
+    "bank account": "ACCOUNTNUMBER",
+    "card number": "CREDITCARDNUMBER",
+    "url": "URL",
+    "website": "URL",
+    "link": "URL"
+  },
+  "risk": {
+    "scores": {
+      "high": 6,
+      "medium": 2,
+      "low": 1
+    },
+    "thresholds": {
+      "high": 6,
+      "medium": [4, 5],
+      "low": [1, 3]
+    }
+  },
+  "risk_fields": {
+    "high": [
+      "ACCOUNTNUMBER",
+      "BITCOINADDRESS",
+      "CREDITCARDCVV",
+      "CREDITCARDNUMBER",
+      "DOB",
+      "ETHEREUMADDRESS",
+      "IBAN",
+      "LITECOINADDRESS",
+      "NEARBYGPSCOORDINATE",
+      "PASSWORD",
+      "PHONEIMEI",
+      "PIN",
+      "SSN",
+      "VEHICLEVIN"
+    ],
+    "medium": [
+      "ACCOUNTNAME",
+      "AMOUNT",
+      "BIC",
+      "BUILDINGNUMBER",
+      "CITY",
+      "COMPANYNAME",
+      "COUNTY",
+      "CREDITCARDISSUER",
+      "CURRENCY",
+      "CURRENCYCODE",
+      "CURRENCYNAME",
+      "CURRENCYSYMBOL",
+      "EMAIL",
+      "IP",
+      "IPV4",
+      "IPV6",
+      "JOBAREA",
+      "JOBTITLE",
+      "JOBTYPE",
+      "MAC",
+      "MASKEDNUMBER",
+      "PHONENUMBER",
+      "SECONDARYADDRESS",
+      "STATE",
+      "STREET",
+      "USERAGENT",
+      "USERNAME",
+      "VEHICLEVRM",
+      "ZIPCODE"
+    ],
+    "low": [
+      "AGE",
+      "DATE",
+      "EYECOLOR",
+      "FIRSTNAME",
+      "GENDER",
+      "HEIGHT",
+      "LASTNAME",
+      "MIDDLENAME",
+      "ORDINALDIRECTION",
+      "PREFIX",
+      "SEX",
+      "TIME",
+      "URL"
+    ]
+  }
+}

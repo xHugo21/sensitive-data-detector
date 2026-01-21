@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from typing import cast
+import json
+import importlib
+import logging
+from typing import cast, Any, Callable
 from functools import partial
+from pathlib import Path
 
 from langgraph.graph import END, StateGraph
 
-from . import nodes
 from .config import GuardConfig
-from .routers import (
-    route_after_dlp_ner,
-    route_after_merge_final,
-    should_read_document,
-    should_run_llm,
-    should_run_llm_ocr,
-)
+from .registry import NODE_REGISTRY, ROUTER_REGISTRY
 from .types import GuardState
 from .utils import debug_ainvoke
+
+logger = logging.getLogger(__name__)
 
 
 class GuardOrchestrator:
@@ -61,84 +60,71 @@ class GuardOrchestrator:
 
     def _build_graph(self):
         graph = StateGraph(GuardState)
+        config_data = self._load_pipeline_config()
 
-        graph.add_node(
-            "read_document",
-            partial(nodes.read_document, fw_config=self._config),
-        )
-        graph.add_node(
-            "llm_ocr",
-            partial(nodes.llm_ocr_document, fw_config=self._config),
-        )
-        graph.add_node("normalize", nodes.normalize)
-        graph.add_node("dlp_detector", nodes.run_dlp_detector)
-        graph.add_node(
-            "ner_detector",
-            partial(nodes.run_ner_detector, fw_config=self._config),
-        )
-        graph.add_node("merge_dlp_ner", nodes.merge_detections)
-        graph.add_node(
-            "anonymize_dlp_ner",
-            partial(
-                nodes.anonymize_text,
-                fw_config=self._config,
-                findings_key="detected_fields",
-                text_keys=("normalized_text",),
-            ),
-        )
-        graph.add_node("risk_dlp_ner", nodes.evaluate_risk)
-        graph.add_node("policy_dlp_ner", nodes.apply_policy)
-        graph.add_node(
-            "llm_detector",
-            partial(nodes.run_llm_detector, fw_config=self._config),
-        )
-        graph.add_node("merge_final", nodes.merge_detections)
-        graph.add_node("risk_final", nodes.evaluate_risk)
-        graph.add_node("policy_final", nodes.apply_policy)
-        graph.add_node("remediation", nodes.generate_remediation)
-        graph.add_node(
-            "final_anonymize",
-            partial(
-                nodes.anonymize_text,
-                fw_config=self._config,
-                findings_key="detected_fields",
-                text_keys=("anonymized_text", "normalized_text"),
-            ),
-        )
+        # Add Nodes
+        for node in config_data.get("nodes", []):
+            node_id = node["id"]
+            action_name = node["action"]
+            inject_config = node.get("inject_config", False)
+            params = node.get("params", {})
 
-        graph.set_conditional_entry_point(
-            should_read_document,
-        )
-        graph.add_conditional_edges(
-            "read_document",
-            should_run_llm_ocr,
-        )
-        graph.add_edge("llm_ocr", "normalize")
-        graph.add_edge("normalize", "dlp_detector")
-        graph.add_edge("normalize", "ner_detector")
-        graph.add_edge("dlp_detector", "merge_dlp_ner")
-        graph.add_edge("ner_detector", "merge_dlp_ner")
-        graph.add_conditional_edges(
-            "merge_dlp_ner",
-            route_after_dlp_ner,
-        )
-        graph.add_edge("risk_dlp_ner", "policy_dlp_ner")
-        graph.add_conditional_edges(
-            "policy_dlp_ner",
-            should_run_llm,
-        )
-        graph.add_edge("anonymize_dlp_ner", "llm_detector")
-        graph.add_edge("llm_detector", "merge_final")
-        graph.add_conditional_edges(
-            "merge_final",
-            route_after_merge_final,
-        )
-        graph.add_edge("risk_final", "policy_final")
-        graph.add_edge("policy_final", "remediation")
-        graph.add_edge("remediation", "final_anonymize")
-        graph.add_edge("final_anonymize", END)
+            func = self._resolve_action(action_name, NODE_REGISTRY)
+
+            if inject_config:
+                func = partial(func, fw_config=self._config)
+
+            if params:
+                func = partial(func, **params)
+
+            graph.add_node(node_id, func)
+
+        # Add Edges
+        for edge in config_data.get("edges", []):
+            target = edge["target"]
+            if target == "__end__":
+                target = END
+            graph.add_edge(edge["source"], target)
+
+        # Add Conditional Edges
+        for edge in config_data.get("conditional_edges", []):
+            router_name = edge["router"]
+            router_func = self._resolve_action(router_name, ROUTER_REGISTRY)
+            graph.add_conditional_edges(edge["source"], router_func)
+
+        # Set Entry Point
+        entry_point = config_data.get("entry_point")
+        if entry_point:
+            if (
+                isinstance(entry_point, dict)
+                and entry_point.get("type") == "conditional"
+            ):
+                router_name = entry_point["router"]
+                router_func = self._resolve_action(router_name, ROUTER_REGISTRY)
+                graph.set_conditional_entry_point(router_func)
+            elif isinstance(entry_point, str):
+                graph.set_entry_point(entry_point)
 
         return graph.compile()
+
+    def _load_pipeline_config(self) -> dict[str, Any]:
+        p = Path(__file__).parent / "pipeline.json"
+        if not p.exists():
+            raise FileNotFoundError(f"Pipeline config not found at {p}")
+        with open(p, "r") as f:
+            return json.load(f)
+
+    def _resolve_action(self, name: str, registry: dict[str, Callable]) -> Callable:
+        if name in registry:
+            return registry[name]
+
+        # Dynamic import attempt
+        try:
+            module_path, func_name = name.rsplit(".", 1)
+            mod = importlib.import_module(module_path)
+            return getattr(mod, func_name)
+        except (ValueError, ImportError, AttributeError) as e:
+            raise ValueError(f"Could not resolve action '{name}': {e}")
 
 
 def _normalize_risk(value: str | None) -> str:

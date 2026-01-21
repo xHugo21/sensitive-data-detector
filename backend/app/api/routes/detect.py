@@ -44,7 +44,7 @@ async def detect(
             debug_log(f"[SensitiveDataDetectorBackend] Saved file to {tmp_path}")
 
             # Use orchestrator with file_path
-            result = GuardOrchestrator(GUARD_CONFIG).run(
+            result = await GuardOrchestrator(GUARD_CONFIG).run(
                 file_path=tmp_path,
                 min_block_risk=MIN_BLOCK_RISK,
             )
@@ -63,7 +63,7 @@ async def detect(
 
         # Handle text input
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
-        result = GuardOrchestrator(GUARD_CONFIG).run(
+        result = await GuardOrchestrator(GUARD_CONFIG).run(
             text=text,
             min_block_risk=MIN_BLOCK_RISK,
         )

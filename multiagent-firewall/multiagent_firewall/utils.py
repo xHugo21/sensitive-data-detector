@@ -5,15 +5,15 @@ if TYPE_CHECKING:
     from .types import GuardState
 
 
-def debug_invoke(app: Any, inputs: "GuardState") -> "GuardState":
-    """Prints modified state fields on each node hop"""
+async def debug_ainvoke(app: Any, inputs: "GuardState") -> "GuardState":
+    """Prints modified state fields on each node hop (async)"""
     final_state: dict[str, Any] = {}
     previous_state: dict[str, Any] = dict(inputs)
-    print("\n--- Starting Execution ---\n")
+    print("\n--- Starting Execution (Async) ---\n")
 
     print(f"Initial state: {inputs}\n")
 
-    for chunk in app.stream(inputs, stream_mode="updates"):
+    async for chunk in app.astream(inputs, stream_mode="updates"):
         for node, update in chunk.items():
             print(f"Node '{node}' finished.")
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from multiagent_firewall.nodes.detection import (
     run_dlp_detector,
     run_llm_detector,
@@ -9,16 +9,19 @@ from multiagent_firewall.nodes.detection import (
 from multiagent_firewall.types import GuardState
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_run_llm_detector_success(mock_llm_detector, guard_config):
+async def test_run_llm_detector_success(mock_llm_detector, guard_config):
     """Test LLM detector with successful detection"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {
-        "detected_fields": [
-            {"field": "EMAIL", "value": "test@example.com"},
-            {"field": "FIRSTNAME", "value": "John"},
-        ]
-    }
+    mock_detector.acall = AsyncMock(
+        return_value={
+            "detected_fields": [
+                {"field": "EMAIL", "value": "test@example.com"},
+                {"field": "FIRSTNAME", "value": "John"},
+            ]
+        }
+    )
     mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
@@ -27,7 +30,7 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
         "errors": [],
     }
 
-    result = run_llm_detector(state, fw_config=guard_config)
+    result = await run_llm_detector(state, fw_config=guard_config)
 
     assert "llm_fields" in result
     assert len(result.get("llm_fields", [])) == 2
@@ -40,11 +43,12 @@ def test_run_llm_detector_success(mock_llm_detector, guard_config):
     ]
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_run_llm_detector_empty_text(mock_llm_detector, guard_config):
+async def test_run_llm_detector_empty_text(mock_llm_detector, guard_config):
     """Test LLM detector with empty text"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
@@ -53,16 +57,17 @@ def test_run_llm_detector_empty_text(mock_llm_detector, guard_config):
         "errors": [],
     }
 
-    result = run_llm_detector(state, fw_config=guard_config)
+    result = await run_llm_detector(state, fw_config=guard_config)
 
     assert result.get("llm_fields") == []
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_run_llm_detector_exception(mock_llm_detector, guard_config):
+async def test_run_llm_detector_exception(mock_llm_detector, guard_config):
     """Test LLM detector handles exceptions gracefully"""
     mock_detector = MagicMock()
-    mock_detector.side_effect = RuntimeError("LLM service unavailable")
+    mock_detector.acall = AsyncMock(side_effect=RuntimeError("LLM service unavailable"))
     mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
@@ -71,22 +76,31 @@ def test_run_llm_detector_exception(mock_llm_detector, guard_config):
         "errors": [],
     }
 
-    result = run_llm_detector(state, fw_config=guard_config)
+    result = await run_llm_detector(state, fw_config=guard_config)
 
     assert result.get("llm_fields") == []
     assert any("LLM detector failed" in e for e in result.get("errors", []))
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_config):
+async def test_run_llm_detector_normalizes_source_labels(
+    mock_llm_detector, guard_config
+):
     """LLM findings should be tagged as LLM-derived rather than Explicit/Inferred"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {
-        "detected_fields": [
-            {"field": "EMAIL", "value": "test@example.com", "sources": ["Explicit"]},
-            {"field": "LASTNAME", "value": "Doe", "sources": ["Inferred"]},
-        ]
-    }
+    mock_detector.acall = AsyncMock(
+        return_value={
+            "detected_fields": [
+                {
+                    "field": "EMAIL",
+                    "value": "test@example.com",
+                    "sources": ["Explicit"],
+                },
+                {"field": "LASTNAME", "value": "Doe", "sources": ["Inferred"]},
+            ]
+        }
+    )
     mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
@@ -95,7 +109,7 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
         "errors": [],
     }
 
-    result = run_llm_detector(state, fw_config=guard_config)
+    result = await run_llm_detector(state, fw_config=guard_config)
 
     sources = [f["sources"] for f in result.get("llm_fields", [])]
     assert sources == [["llm_explicit"], ["llm_inferred"]]
@@ -105,50 +119,57 @@ def test_run_llm_detector_normalizes_source_labels(mock_llm_detector, guard_conf
     ]
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_config):
+async def test_run_llm_detector_skips_anonymized_tokens(
+    mock_llm_detector, guard_config
+):
     """Anonymized tokens and mapped originals should be dropped"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {
-        "detected_fields": [
-            {
-                "field": "DATE",
-                "value": "<<REDACTED:DATE>>",
-                "sources": ["Explicit"],
-            },
-            {
-                "field": "DATE",
-                "value": "2024-05-12",
-                "sources": ["Explicit"],
-            },
-            {"field": "USERNAME", "value": "john_doe_2024", "sources": ["Explicit"]},
-            {
-                "field": "EMAIL",
-                "value": "<<REDACTED:UNKNOWN>>",
-                "sources": ["Explicit"],
-            },
-            {
-                "field": "DATE",
-                "value": "+REDACTED:DATE",
-                "sources": ["Explicit"],
-            },
-        ]
-    }
+    mock_detector.acall = AsyncMock(
+        return_value={
+            "detected_fields": [
+                {
+                    "field": "DATE",
+                    "value": "<<REDACTED:DATE>>",
+                    "sources": ["Explicit"],
+                },
+                {
+                    "field": "DATE",
+                    "value": "2024-05-12",
+                    "sources": ["Explicit"],
+                },
+                {
+                    "field": "USERNAME",
+                    "value": "john_doe_2024",
+                    "sources": ["Explicit"],
+                },
+                {
+                    "field": "EMAIL",
+                    "value": "<<REDACTED:UNKNOWN>>",
+                    "sources": ["Explicit"],
+                },
+                {
+                    "field": "DATE",
+                    "value": "+REDACTED:DATE",
+                    "sources": ["Explicit"],
+                },
+            ]
+        }
+    )
     mock_llm_detector.return_value = mock_detector
 
     state: GuardState = {
         "normalized_text": "My username is john_doe_2024 and it is 2024-05-12",
         "anonymized_text": "My username is john_doe_2024 and it is <<REDACTED:DATE>>",
         "metadata": {
-            "llm_anonymized_values": {
-                "mapping": {"2024-05-12": "<<REDACTED:DATE>>"}
-            }
+            "llm_anonymized_values": {"mapping": {"2024-05-12": "<<REDACTED:DATE>>"}}
         },
         "warnings": [],
         "errors": [],
     }
 
-    result = run_llm_detector(state, fw_config=guard_config)
+    result = await run_llm_detector(state, fw_config=guard_config)
 
     values = {f["field"]: f["value"] for f in result.get("llm_fields", [])}
     assert values["USERNAME"] == "john_doe_2024"
@@ -160,7 +181,8 @@ def test_run_llm_detector_skips_anonymized_tokens(mock_llm_detector, guard_confi
     )
 
 
-def test_run_dlp_detector_with_regex():
+@pytest.mark.asyncio
+async def test_run_dlp_detector_with_regex():
     """Test DLP detector with regex patterns (uses constants by default)"""
     state: GuardState = {
         "normalized_text": "Contact us at support@example.com",
@@ -168,7 +190,7 @@ def test_run_dlp_detector_with_regex():
         "errors": [],
     }
 
-    result = run_dlp_detector(state)
+    result = await run_dlp_detector(state)
 
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
@@ -178,7 +200,8 @@ def test_run_dlp_detector_with_regex():
     assert email_findings[0]["sources"] == ["dlp_regex"]
 
 
-def test_run_dlp_detector_with_keywords():
+@pytest.mark.asyncio
+async def test_run_dlp_detector_with_keywords():
     """Test DLP detector with keywords (uses constants by default)"""
     state: GuardState = {
         "normalized_text": "-----BEGIN PRIVATE KEY----- data",
@@ -186,7 +209,7 @@ def test_run_dlp_detector_with_keywords():
         "errors": [],
     }
 
-    result = run_dlp_detector(state)
+    result = await run_dlp_detector(state)
 
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
@@ -194,7 +217,8 @@ def test_run_dlp_detector_with_keywords():
     assert len(keyword_findings) >= 1
 
 
-def test_run_dlp_detector_with_checksums():
+@pytest.mark.asyncio
+async def test_run_dlp_detector_with_checksums():
     """Test DLP detector with checksum validation"""
     state: GuardState = {
         "normalized_text": "Card number: 4532015112830366",
@@ -202,7 +226,7 @@ def test_run_dlp_detector_with_checksums():
         "errors": [],
     }
 
-    result = run_dlp_detector(state)
+    result = await run_dlp_detector(state)
 
     assert "dlp_fields" in result
     dlp_fields = result.get("dlp_fields", [])
@@ -212,7 +236,8 @@ def test_run_dlp_detector_with_checksums():
     assert len(checksum_findings) >= 1
 
 
-def test_run_dlp_detector_empty_text():
+@pytest.mark.asyncio
+async def test_run_dlp_detector_empty_text():
     """Test DLP detector with empty text"""
     state: GuardState = {
         "normalized_text": "",
@@ -220,6 +245,6 @@ def test_run_dlp_detector_empty_text():
         "errors": [],
     }
 
-    result = run_dlp_detector(state)
+    result = await run_dlp_detector(state)
 
     assert result.get("dlp_fields") == []

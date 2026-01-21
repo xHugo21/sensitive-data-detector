@@ -105,6 +105,30 @@ class LiteLLMDetector:
         except Exception as exc:
             return {"detected_fields": [], "risk_level": "unknown", "_error": str(exc)}
 
+    async def acall(self, text: str):
+        try:
+            system_prompt, user_prompt, prompt_info = self._build_prompt(text)
+            try:
+                content = await self._ainvoke(
+                    system_prompt, user_prompt, json_mode=True
+                )
+            except Exception:
+                content = await self._ainvoke(
+                    system_prompt, user_prompt, json_mode=False
+                )
+
+            result = safe_json_from_text(content) or {"detected_fields": []}
+            if "detected_fields" not in result or not isinstance(
+                result["detected_fields"], list
+            ):
+                result["detected_fields"] = []
+            result["_prompt_source"] = prompt_info
+            result["_model_used"] = self._model
+            result["_provider"] = self._provider
+            return result
+        except Exception as exc:
+            return {"detected_fields": [], "risk_level": "unknown", "_error": str(exc)}
+
     def _build_prompt(
         self,
         text: str,
@@ -137,4 +161,15 @@ class LiteLLMDetector:
             HumanMessage(content=user_prompt),
         ]
         response = model.invoke(messages)
+        return coerce_litellm_content_to_text(response)
+
+    async def _ainvoke(
+        self, system_prompt: str, user_prompt: str, *, json_mode: bool
+    ) -> str:
+        model = self._json_llm if json_mode and self._json_llm else self._llm
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+        response = await model.ainvoke(messages)
         return coerce_litellm_content_to_text(response)

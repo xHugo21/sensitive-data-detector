@@ -170,11 +170,12 @@ TEST_CASES = _load_dataset_cases()
     TEST_CASES,
     ids=[case[0] for case in TEST_CASES],
 )
-def test_sensitive_detection(
+@pytest.mark.asyncio
+async def test_sensitive_detection(
     orchestrator, pytestconfig, test_id, prompt, expected_entities
 ):
     start_time = time.perf_counter()
-    result = orchestrator.run(text=prompt)
+    result = await orchestrator.run(text=prompt)
     duration_s = time.perf_counter() - start_time
 
     detected_fields = result.get("detected_fields", [])

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from langgraph.graph import END, StateGraph
 
-from .config import GuardConfig
+from .config.env import GuardConfig
 from .registry import NODE_REGISTRY, ROUTER_REGISTRY
 from .types import GuardState
 from .utils import debug_ainvoke
@@ -108,7 +108,7 @@ class GuardOrchestrator:
         return graph.compile()
 
     def _load_pipeline_config(self) -> dict[str, Any]:
-        p = Path(__file__).parent / "pipeline.json"
+        p = Path(__file__).parent / "config" / "pipeline.json"
         if not p.exists():
             raise FileNotFoundError(f"Pipeline config not found at {p}")
         with open(p, "r") as f:

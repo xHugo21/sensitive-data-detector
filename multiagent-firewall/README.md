@@ -293,7 +293,7 @@ REGEX_PATTERNS = {
 
 ## Custom Pipeline Configuration
 
-The pipeline architecture is defined in `multiagent_firewall/pipeline.json`. You can modify this JSON to:
+The pipeline architecture is defined in `multiagent_firewall/config/pipeline.json`. You can modify this JSON to:
 - Remove specific detectors
 - Reorder the workflow
 - Add custom nodes via dynamic imports

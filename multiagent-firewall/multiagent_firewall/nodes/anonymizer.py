@@ -45,6 +45,17 @@ def _anonymize_text(
 ) -> tuple[str, Dict[str, str]]:
     anonymized_map: Dict[str, str] = dict(existing_map or {})
 
+    counters: Dict[str, int] = {}
+    for token in anonymized_map.values():
+        match = re.match(r"<<REDACTED:(.+)_(\d+)>>", token)
+        if match:
+            f_name = match.group(1)
+            try:
+                num = int(match.group(2))
+                counters[f_name] = max(counters.get(f_name, 0), num)
+            except ValueError:
+                pass
+
     if not text or not findings:
         return text, anonymized_map
 
@@ -59,7 +70,10 @@ def _anonymize_text(
         if value in anonymized_map:
             continue
 
-        anonymized_token = f"<<REDACTED:{field}>>"
+        count = counters.get(field, 0) + 1
+        counters[field] = count
+
+        anonymized_token = f"<<REDACTED:{field}_{count}>>"
         anonymized_map[value] = anonymized_token
 
     masked_text = _apply_mapping(text, anonymized_map)

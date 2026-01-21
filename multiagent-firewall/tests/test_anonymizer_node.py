@@ -24,11 +24,13 @@ def test_anonymize_text_masks_dlp_fields(monkeypatch, guard_config):
     )
 
     masked = result.get("anonymized_text", "")
-    assert "<<REDACTED:EMAIL>>" in masked
-    assert "<<REDACTED:NAME>>" in masked
+    assert "<<REDACTED:EMAIL_1>>" in masked
+    assert "<<REDACTED:NAME_1>>" in masked
     anonymized = result.get("metadata", {}).get("llm_anonymized_values", {})
     assert anonymized.get("enabled") is True
-    assert anonymized.get("mapping", {}).get("john@example.com") == "<<REDACTED:EMAIL>>"
+    assert (
+        anonymized.get("mapping", {}).get("john@example.com") == "<<REDACTED:EMAIL_1>>"
+    )
 
 
 def test_anonymize_text_disabled(monkeypatch, guard_config):
@@ -58,7 +60,9 @@ def test_anonymize_text_handles_llm_fields_after_dlp(guard_config):
         "normalized_text": "Email john@example.com and password secret123",
         "dlp_fields": [{"field": "EMAIL", "value": "john@example.com"}],
         "metadata": {
-            "llm_anonymized_values": {"mapping": {"john@example.com": "<<REDACTED:EMAIL>>"}}
+            "llm_anonymized_values": {
+                "mapping": {"john@example.com": "<<REDACTED:EMAIL_1>>"}
+            }
         },
         "warnings": [],
         "errors": [],
@@ -80,17 +84,15 @@ def test_anonymize_text_handles_llm_fields_after_dlp(guard_config):
 
     masked = result.get("anonymized_text", "")
     mapping = (
-        result.get("metadata", {})
-        .get("llm_anonymized_values", {})
-        .get("mapping", {})
+        result.get("metadata", {}).get("llm_anonymized_values", {}).get("mapping", {})
     )
 
-    assert "<<REDACTED:EMAIL>>" in masked
-    assert "<<REDACTED:PASSWORD>>" in masked
+    assert "<<REDACTED:EMAIL_1>>" in masked
+    assert "<<REDACTED:PASSWORD_1>>" in masked
     assert "john@example.com" not in masked
     assert "secret123" not in masked
-    assert mapping.get("john@example.com") == "<<REDACTED:EMAIL>>"
-    assert mapping.get("secret123") == "<<REDACTED:PASSWORD>>"
+    assert mapping.get("john@example.com") == "<<REDACTED:EMAIL_1>>"
+    assert mapping.get("secret123") == "<<REDACTED:PASSWORD_1>>"
 
 
 def test_anonymize_text_masks_case_insensitive_llm_values(guard_config):
@@ -113,11 +115,9 @@ def test_anonymize_text_masks_case_insensitive_llm_values(guard_config):
 
     masked = result.get("anonymized_text", "")
     mapping = (
-        result.get("metadata", {})
-        .get("llm_anonymized_values", {})
-        .get("mapping", {})
+        result.get("metadata", {}).get("llm_anonymized_values", {}).get("mapping", {})
     )
 
-    assert "<<REDACTED:FIRSTNAME>>" in masked
+    assert "<<REDACTED:FIRSTNAME_1>>" in masked
     assert "andres" not in masked.lower()
-    assert mapping.get("ANDRES") == "<<REDACTED:FIRSTNAME>>"
+    assert mapping.get("ANDRES") == "<<REDACTED:FIRSTNAME_1>>"

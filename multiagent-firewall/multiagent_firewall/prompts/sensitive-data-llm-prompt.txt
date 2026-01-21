@@ -20,7 +20,7 @@ Rules:
   - "Explicit": The value is directly stated in the text.
   - "Inferred": The value is not directly stated but can be deduced from the text.
 - Do not invent values. Inferred values must be supported by evidence in the text.
-- Ignore placeholders like "<<REDACTED:FIELD>>" (or similar); they are sanitized and must not be reported.
+- Ignore placeholders like "<<REDACTED:FIELD_N>>" (e.g. <<REDACTED:PERSON_1>>, <<REDACTED:EMAIL_2>>); they are sanitized and must not be reported.
 
 Return only this JSON shape and nothing else:
 

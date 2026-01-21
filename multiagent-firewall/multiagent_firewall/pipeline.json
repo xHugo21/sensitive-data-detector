@@ -1,0 +1,150 @@
+{
+  "nodes": [
+    {
+      "id": "read_document",
+      "action": "read_document",
+      "inject_config": true
+    },
+    {
+      "id": "llm_ocr",
+      "action": "llm_ocr_document",
+      "inject_config": true
+    },
+    {
+      "id": "normalize",
+      "action": "normalize"
+    },
+    {
+      "id": "dlp_detector",
+      "action": "run_dlp_detector"
+    },
+    {
+      "id": "ner_detector",
+      "action": "run_ner_detector",
+      "inject_config": true
+    },
+    {
+      "id": "merge_dlp_ner",
+      "action": "merge_detections"
+    },
+    {
+      "id": "anonymize_dlp_ner",
+      "action": "anonymize_text",
+      "inject_config": true,
+      "params": {
+        "findings_key": "detected_fields",
+        "text_keys": ["normalized_text"]
+      }
+    },
+    {
+      "id": "risk_dlp_ner",
+      "action": "evaluate_risk"
+    },
+    {
+      "id": "policy_dlp_ner",
+      "action": "apply_policy"
+    },
+    {
+      "id": "llm_detector",
+      "action": "run_llm_detector",
+      "inject_config": true
+    },
+    {
+      "id": "merge_final",
+      "action": "merge_detections"
+    },
+    {
+      "id": "risk_final",
+      "action": "evaluate_risk"
+    },
+    {
+      "id": "policy_final",
+      "action": "apply_policy"
+    },
+    {
+      "id": "remediation",
+      "action": "generate_remediation"
+    },
+    {
+      "id": "final_anonymize",
+      "action": "anonymize_text",
+      "inject_config": true,
+      "params": {
+        "findings_key": "detected_fields",
+        "text_keys": ["anonymized_text", "normalized_text"]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "llm_ocr",
+      "target": "normalize"
+    },
+    {
+      "source": "normalize",
+      "target": "dlp_detector"
+    },
+    {
+      "source": "normalize",
+      "target": "ner_detector"
+    },
+    {
+      "source": "dlp_detector",
+      "target": "merge_dlp_ner"
+    },
+    {
+      "source": "ner_detector",
+      "target": "merge_dlp_ner"
+    },
+    {
+      "source": "risk_dlp_ner",
+      "target": "policy_dlp_ner"
+    },
+    {
+      "source": "anonymize_dlp_ner",
+      "target": "llm_detector"
+    },
+    {
+      "source": "llm_detector",
+      "target": "merge_final"
+    },
+    {
+      "source": "risk_final",
+      "target": "policy_final"
+    },
+    {
+      "source": "policy_final",
+      "target": "remediation"
+    },
+    {
+      "source": "remediation",
+      "target": "final_anonymize"
+    },
+    {
+      "source": "final_anonymize",
+      "target": "__end__"
+    }
+  ],
+  "conditional_edges": [
+    {
+      "source": "read_document",
+      "router": "should_run_llm_ocr"
+    },
+    {
+      "source": "merge_dlp_ner",
+      "router": "route_after_dlp_ner"
+    },
+    {
+      "source": "policy_dlp_ner",
+      "router": "should_run_llm"
+    },
+    {
+      "source": "merge_final",
+      "router": "route_after_merge_final"
+    }
+  ],
+  "entry_point": {
+    "type": "conditional",
+    "router": "should_read_document"
+  }
+}

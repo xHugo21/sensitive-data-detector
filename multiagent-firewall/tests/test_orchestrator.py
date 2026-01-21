@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from multiagent_firewall.orchestrator import GuardOrchestrator
 from multiagent_firewall.nodes import policy, risk
+from multiagent_firewall.registry import NODE_REGISTRY
 from multiagent_firewall.types import GuardState
 
 
@@ -56,13 +57,17 @@ async def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
         patch(
             "multiagent_firewall.nodes.detection.LiteLLMDetector"
         ) as mock_llm_detector,
-        patch(
-            "multiagent_firewall.nodes.evaluate_risk", wraps=risk.evaluate_risk
-        ) as mock_evaluate_risk,
-        patch(
-            "multiagent_firewall.nodes.apply_policy", wraps=policy.apply_policy
-        ) as mock_apply_policy,
+        patch.dict(
+            "multiagent_firewall.registry.NODE_REGISTRY",
+            {
+                "evaluate_risk": MagicMock(wraps=risk.evaluate_risk),
+                "apply_policy": MagicMock(wraps=policy.apply_policy),
+            },
+        ),
     ):
+        mock_evaluate_risk = NODE_REGISTRY["evaluate_risk"]
+        mock_apply_policy = NODE_REGISTRY["apply_policy"]
+
         mock_llm_detector.return_value = mock_detector
 
         orchestrator = GuardOrchestrator(guard_config)
@@ -89,7 +94,9 @@ async def test_orchestrator_short_circuits_on_empty_text(
         calls.append("dlp")
         return state
 
-    with patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector", new=fake_dlp):
+    with patch.dict(
+        "multiagent_firewall.registry.NODE_REGISTRY", {"run_dlp_detector": fake_dlp}
+    ):
         orchestrator = GuardOrchestrator(guard_config)
         result = await orchestrator.run(text="")
 
@@ -110,14 +117,16 @@ async def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
     mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
-    with (
-        patch(
-            "multiagent_firewall.nodes.evaluate_risk", wraps=risk.evaluate_risk
-        ) as mock_evaluate_risk,
-        patch(
-            "multiagent_firewall.nodes.apply_policy", wraps=policy.apply_policy
-        ) as mock_apply_policy,
+    with patch.dict(
+        "multiagent_firewall.registry.NODE_REGISTRY",
+        {
+            "evaluate_risk": MagicMock(wraps=risk.evaluate_risk),
+            "apply_policy": MagicMock(wraps=policy.apply_policy),
+        },
     ):
+        mock_evaluate_risk = NODE_REGISTRY["evaluate_risk"]
+        mock_apply_policy = NODE_REGISTRY["apply_policy"]
+
         orchestrator = GuardOrchestrator(guard_config)
         result = await orchestrator.run(
             text="Reach me at test@example.com", min_block_risk="high"
@@ -151,11 +160,14 @@ async def test_orchestrator_skips_llm_when_policy_blocks(guard_config):
         calls.append("llm")
         return state
 
-    with (
-        patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector", new=fake_dlp),
-        patch("multiagent_firewall.nodes.evaluate_risk", new=fake_risk),
-        patch("multiagent_firewall.nodes.apply_policy", new=fake_policy),
-        patch("multiagent_firewall.nodes.run_llm_detector", new=fake_llm),
+    with patch.dict(
+        "multiagent_firewall.registry.NODE_REGISTRY",
+        {
+            "run_dlp_detector": fake_dlp,
+            "evaluate_risk": fake_risk,
+            "apply_policy": fake_policy,
+            "run_llm_detector": fake_llm,
+        },
     ):
         orchestrator = GuardOrchestrator(guard_config)
         result = await orchestrator.run(text="x@example.com")
@@ -244,9 +256,9 @@ async def test_orchestrator_skips_final_anonymizer_without_llm(
             state, fw_config=fw_config, findings_key=findings_key, text_keys=text_keys
         )
 
-    with patch(
-        "multiagent_firewall.orchestrator.nodes.anonymize_text",
-        side_effect=counting_anonymize,
+    with patch.dict(
+        "multiagent_firewall.registry.NODE_REGISTRY",
+        {"anonymize_text": counting_anonymize},
     ):
         orchestrator = GuardOrchestrator(guard_config)
         result = await orchestrator.run(text="Hello world")

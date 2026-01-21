@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 from ..types import GuardState
-from ..constants import (
+from ..detection_config import (
     RISK_SCORE,
     RISK_SCORE_THRESHOLDS,
 )

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from ..constants import OCR_DETECTOR_PROMPT
+from ..detection_config import OCR_DETECTOR_PROMPT
 
 from ..types import GuardState
 from .utils import (

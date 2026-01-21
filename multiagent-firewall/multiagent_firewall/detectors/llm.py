@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from ..constants import (
+from ..detection_config import (
     HIGH_RISK_FIELDS,
     LOW_RISK_FIELDS,
     MEDIUM_RISK_FIELDS,

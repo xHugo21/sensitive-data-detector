@@ -15,7 +15,7 @@ from .routers import (
     should_run_llm_ocr,
 )
 from .types import GuardState
-from .utils import debug_invoke
+from .utils import debug_ainvoke
 
 
 class GuardOrchestrator:
@@ -25,7 +25,7 @@ class GuardOrchestrator:
         self._config = config
         self._graph = self._build_graph()
 
-    def run(
+    async def run(
         self,
         text: str | None = None,
         *,
@@ -56,8 +56,8 @@ class GuardOrchestrator:
             "risk_level": "none",
         }
         if self._config.debug:
-            return debug_invoke(self._graph, initial_state)
-        return cast(GuardState, self._graph.invoke(initial_state))
+            return await debug_ainvoke(self._graph, initial_state)
+        return cast(GuardState, await self._graph.ainvoke(initial_state))
 
     def _build_graph(self):
         graph = StateGraph(GuardState)

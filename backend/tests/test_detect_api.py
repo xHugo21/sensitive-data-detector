@@ -9,7 +9,7 @@ class DummyOrchestrator:
         self.calls = []
         self.config = config
 
-    def run(self, text=None, *, file_path=None, min_block_risk=None):
+    async def run(self, text=None, *, file_path=None, min_block_risk=None):
         self.calls.append((text, file_path, min_block_risk))
         return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "low"}
 

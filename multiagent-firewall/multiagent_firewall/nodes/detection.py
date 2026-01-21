@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from ..detectors import GlinerNERDetector, LiteLLMDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
 from ..constants import KEYWORDS, REGEX_PATTERNS
@@ -7,15 +8,13 @@ from ..types import FieldList, GuardState
 from ..utils import append_error
 
 
-def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
+async def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
     """
     Run LLM-based detection
     """
     text = state.get("anonymized_text") or state.get("normalized_text") or ""
     anonymized_map = (
-        state.get("metadata", {})
-        .get("llm_anonymized_values", {})
-        .get("mapping", {})
+        state.get("metadata", {}).get("llm_anonymized_values", {}).get("mapping", {})
         or {}
     )
     reverse_map = {}
@@ -43,7 +42,7 @@ def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
             model=llm_config.model,
             client_params=llm_config.client_params,
         )
-        result = llm_detector(text)
+        result = await llm_detector.acall(text)
         fields = []
         for item in result.get("detected_fields", []):
             if not isinstance(item, dict):
@@ -128,7 +127,7 @@ def _contains_anonymized_token(
     return False
 
 
-def run_dlp_detector(state: GuardState) -> GuardState:
+async def run_dlp_detector(state: GuardState) -> GuardState:
     """
     Run DLP detection
 
@@ -138,23 +137,35 @@ def run_dlp_detector(state: GuardState) -> GuardState:
     findings: FieldList = []
     errors: list[str] = []
 
-    try:
-        regex_findings = detect_regex_patterns(text, REGEX_PATTERNS)
-        findings.extend(regex_findings)
-    except Exception as exc:
-        errors.append(f"Regex detector failed: {exc}")
+    async def _safe_run(func, *args):
+        try:
+            return await asyncio.to_thread(func, *args)
+        except Exception as exc:
+            return exc
 
-    try:
-        keyword_findings = detect_keywords(text, KEYWORDS)
-        findings.extend(keyword_findings)
-    except Exception as exc:
-        errors.append(f"Keyword detector failed: {exc}")
+    # Run internal detectors in parallel
+    results = await asyncio.gather(
+        _safe_run(detect_regex_patterns, text, REGEX_PATTERNS),
+        _safe_run(detect_keywords, text, KEYWORDS),
+        _safe_run(detect_checksums, text),
+    )
 
-    try:
-        checksum_findings = detect_checksums(text)
-        findings.extend(checksum_findings)
-    except Exception as exc:
-        errors.append(f"Checksum detector failed: {exc}")
+    regex_res, keyword_res, checksum_res = results
+
+    if isinstance(regex_res, list):
+        findings.extend(regex_res)
+    else:
+        errors.append(f"Regex detector failed: {regex_res}")
+
+    if isinstance(keyword_res, list):
+        findings.extend(keyword_res)
+    else:
+        errors.append(f"Keyword detector failed: {keyword_res}")
+
+    if isinstance(checksum_res, list):
+        findings.extend(checksum_res)
+    else:
+        errors.append(f"Checksum detector failed: {checksum_res}")
 
     update: GuardState = {"dlp_fields": findings}
     if errors:
@@ -162,7 +173,7 @@ def run_dlp_detector(state: GuardState) -> GuardState:
     return update
 
 
-def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
+async def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
     """
     Run NER-based detection
     """
@@ -175,13 +186,16 @@ def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
         return {"ner_fields": []}
 
     try:
+        # Load model first (likely cached)
         ner_detector = GlinerNERDetector(
             model=ner_config.model,
             labels=ner_config.labels,
             label_map=ner_config.label_map,
             min_score=ner_config.min_score,
         )
-        return {"ner_fields": ner_detector.detect(text)}
+        # Run inference in thread
+        findings = await asyncio.to_thread(ner_detector.detect, text)
+        return {"ner_fields": findings}
     except Exception as exc:
         return {
             "ner_fields": [],

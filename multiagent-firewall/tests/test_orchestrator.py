@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from multiagent_firewall.orchestrator import GuardOrchestrator
 from multiagent_firewall.nodes import policy, risk
 from multiagent_firewall.types import GuardState
@@ -15,39 +15,42 @@ def test_orchestrator_initialization(guard_config):
     assert orchestrator._graph is not None
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_run_basic(mock_llm_detector, guard_config):
+async def test_orchestrator_run_basic(mock_llm_detector, guard_config):
     """Test basic orchestrator run"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="Hello world")
+    result = await orchestrator.run(text="Hello world")
 
     assert isinstance(result, dict)
     assert "raw_text" in result
     assert result.get("raw_text") == "Hello world"
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_run_empty_text(mock_llm_detector, guard_config):
+async def test_orchestrator_run_empty_text(mock_llm_detector, guard_config):
     """Test orchestrator with empty text"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="")
+    result = await orchestrator.run(text="")
 
     assert result.get("raw_text") == ""
     assert "warnings" in result
 
 
-def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
+@pytest.mark.asyncio
+async def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
     """DLP misses should route straight to LLM and bypass DLP risk/policy. If LLM also finds nothing, skip risk/policy entirely."""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
 
     with (
         patch(
@@ -63,7 +66,7 @@ def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
         mock_llm_detector.return_value = mock_detector
 
         orchestrator = GuardOrchestrator(guard_config)
-        result = orchestrator.run(text="The sky is clear today.")
+        result = await orchestrator.run(text="The sky is clear today.")
 
     # When both DLP and LLM find nothing, skip risk/policy entirely
     assert mock_evaluate_risk.call_count == 0
@@ -72,32 +75,39 @@ def test_orchestrator_skips_dlp_policy_when_no_dlp_hits(guard_config):
     assert result.get("decision") == "allow"  # Default value
 
 
-@patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector")
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_short_circuits_on_empty_text(
-    mock_llm_detector, mock_dlp_detector, guard_config
+async def test_orchestrator_short_circuits_on_empty_text(
+    mock_llm_detector, guard_config
 ):
     """Empty text should still run DLP and allow."""
     mock_llm_detector.return_value = MagicMock()
-    mock_dlp_detector.side_effect = lambda state: state
-    orchestrator = GuardOrchestrator(guard_config)
 
-    result = orchestrator.run(text="")
+    calls = []
 
-    mock_dlp_detector.assert_called_once()
+    async def fake_dlp(state):
+        calls.append("dlp")
+        return state
+
+    with patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector", new=fake_dlp):
+        orchestrator = GuardOrchestrator(guard_config)
+        result = await orchestrator.run(text="")
+
+    assert "dlp" in calls
     mock_llm_detector.assert_not_called()
     assert result.get("decision") == "allow"
     assert result.get("risk_level") == "none"
     assert not result.get("detected_fields")
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
+async def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
     mock_llm_detector, guard_config
 ):
     """Skip final risk/policy when LLM does not add new fields."""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     with (
@@ -109,7 +119,7 @@ def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
         ) as mock_apply_policy,
     ):
         orchestrator = GuardOrchestrator(guard_config)
-        result = orchestrator.run(
+        result = await orchestrator.run(
             text="Reach me at test@example.com", min_block_risk="high"
         )
 
@@ -119,33 +129,38 @@ def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
     assert result.get("risk_level") == "low"
 
 
-@patch("multiagent_firewall.nodes.run_llm_detector")
-@patch("multiagent_firewall.nodes.apply_policy")
-@patch("multiagent_firewall.nodes.evaluate_risk")
-@patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector")
-def test_orchestrator_skips_llm_when_policy_blocks(
-    mock_dlp, mock_evaluate_risk, mock_apply_policy, mock_run_llm, guard_config
-):
+@pytest.mark.asyncio
+async def test_orchestrator_skips_llm_when_policy_blocks(guard_config):
     """If policy decides to block, LLM detector should be skipped."""
 
-    def fake_dlp(state: GuardState):
+    async def fake_dlp(state):
         state["dlp_fields"] = [{"type": "EMAIL", "value": "x@example.com"}]
         state["detected_fields"] = state["dlp_fields"]
         return state
 
-    mock_dlp.side_effect = fake_dlp
-    mock_evaluate_risk.side_effect = lambda state: state | {"risk_level": "high"}
+    async def fake_risk(state):
+        return state | {"risk_level": "high"}
 
-    def block_policy(state: GuardState):
+    async def fake_policy(state):
         state["decision"] = "block"
         return state
 
-    mock_apply_policy.side_effect = block_policy
+    calls = []
 
-    orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="x@example.com")
+    async def fake_llm(state, **kwargs):
+        calls.append("llm")
+        return state
 
-    mock_run_llm.assert_not_called()
+    with (
+        patch("multiagent_firewall.orchestrator.nodes.run_dlp_detector", new=fake_dlp),
+        patch("multiagent_firewall.nodes.evaluate_risk", new=fake_risk),
+        patch("multiagent_firewall.nodes.apply_policy", new=fake_policy),
+        patch("multiagent_firewall.nodes.run_llm_detector", new=fake_llm),
+    ):
+        orchestrator = GuardOrchestrator(guard_config)
+        result = await orchestrator.run(text="x@example.com")
+
+    assert "llm" not in calls
     assert result.get("decision") == "block"
 
 
@@ -157,20 +172,23 @@ def test_orchestrator_graph_structure(guard_config):
     assert graph is not None
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_run_with_sensitive_data(mock_llm_detector, guard_config):
+async def test_orchestrator_run_with_sensitive_data(mock_llm_detector, guard_config):
     """Test orchestrator with sensitive data detection"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {
-        "detected_fields": [
-            {"field": "EMAIL", "value": "test@example.com"},
-            {"field": "PASSWORD", "value": "secret123"},
-        ]
-    }
+    mock_detector.acall = AsyncMock(
+        return_value={
+            "detected_fields": [
+                {"field": "EMAIL", "value": "test@example.com"},
+                {"field": "PASSWORD", "value": "secret123"},
+            ]
+        }
+    )
     mock_llm_detector.return_value = mock_detector
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(
+    result = await orchestrator.run(
         text="My email is test@example.com and password is secret123"
     )
 
@@ -183,17 +201,18 @@ def test_orchestrator_run_with_sensitive_data(mock_llm_detector, guard_config):
     assert risk_map.get("EMAIL") == "medium"
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config):
+async def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config):
     """Final anonymization should include LLM-only detections for callers."""
     mock_detector = MagicMock()
-    mock_detector.return_value = {
-        "detected_fields": [{"field": "PASSWORD", "value": "secret123"}]
-    }
+    mock_detector.acall = AsyncMock(
+        return_value={"detected_fields": [{"field": "PASSWORD", "value": "secret123"}]}
+    )
     mock_llm_detector.return_value = mock_detector
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="Please use secret123 to proceed")
+    result = await orchestrator.run(text="Please use secret123 to proceed")
 
     masked = result.get("anonymized_text") or ""
     mapping = (
@@ -204,13 +223,14 @@ def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_config)
     assert mapping.get("secret123") == "<<REDACTED:PASSWORD>>"
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_skips_final_anonymizer_without_llm(
+async def test_orchestrator_skips_final_anonymizer_without_llm(
     mock_llm_detector, guard_config
 ):
     """Anonymizers should not run when no findings are detected."""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     call_count = {"count": 0}
@@ -229,7 +249,7 @@ def test_orchestrator_skips_final_anonymizer_without_llm(
         side_effect=counting_anonymize,
     ):
         orchestrator = GuardOrchestrator(guard_config)
-        result = orchestrator.run(text="Hello world")
+        result = await orchestrator.run(text="Hello world")
 
     # No DLP findings and no LLM findings, so no anonymizers should run
     assert call_count["count"] == 0
@@ -237,32 +257,36 @@ def test_orchestrator_skips_final_anonymizer_without_llm(
     assert "anonymized_text" not in result or result.get("anonymized_text") == ""
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_run_with_file_path(mock_llm_detector, tmp_path, guard_config):
+async def test_orchestrator_run_with_file_path(
+    mock_llm_detector, tmp_path, guard_config
+):
     """Test orchestrator with file_path parameter"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     # Create a test file
     test_file = tmp_path / "test.txt"
-    test_file.write_text(
-        "File content with SSN 123-45-6789", encoding="utf-8"
-    )
+    test_file.write_text("File content with SSN 123-45-6789", encoding="utf-8")
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(file_path=str(test_file))
+    result = await orchestrator.run(file_path=str(test_file))
 
     assert "raw_text" in result
     assert "File content with SSN" in result["raw_text"]
     assert "detected_fields" in result
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_combines_text_and_file(mock_llm_detector, tmp_path, guard_config):
+async def test_orchestrator_combines_text_and_file(
+    mock_llm_detector, tmp_path, guard_config
+):
     """Test that both text and file_path content are combined in raw_text"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     # Create a test file
@@ -270,27 +294,28 @@ def test_orchestrator_combines_text_and_file(mock_llm_detector, tmp_path, guard_
     test_file.write_text("File content", encoding="utf-8")
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="Direct text", file_path=str(test_file))
+    result = await orchestrator.run(text="Direct text", file_path=str(test_file))
 
     # Both should be present in raw_text
     assert "Direct text" in result.get("raw_text")
     assert "File content" in result.get("raw_text")
 
 
+@pytest.mark.asyncio
 @patch("multiagent_firewall.nodes.detection.LiteLLMDetector")
-def test_orchestrator_preserves_text_on_file_error(
+async def test_orchestrator_preserves_text_on_file_error(
     mock_llm_detector, tmp_path, guard_config
 ):
     """Test that direct text is preserved when file reading fails"""
     mock_detector = MagicMock()
-    mock_detector.return_value = {"detected_fields": []}
+    mock_detector.acall = AsyncMock(return_value={"detected_fields": []})
     mock_llm_detector.return_value = mock_detector
 
     # Create path to non-existent file
     missing_file = tmp_path / "missing.txt"
 
     orchestrator = GuardOrchestrator(guard_config)
-    result = orchestrator.run(text="Direct text", file_path=str(missing_file))
+    result = await orchestrator.run(text="Direct text", file_path=str(missing_file))
 
     # Direct text should be preserved even though file reading failed
     assert result.get("raw_text") == "Direct text"

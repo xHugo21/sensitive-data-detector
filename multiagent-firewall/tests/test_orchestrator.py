@@ -218,9 +218,9 @@ async def test_orchestrator_finalizes_anonymized_text(mock_llm_detector, guard_c
     mapping = (
         result.get("metadata", {}).get("llm_anonymized_values", {}).get("mapping", {})
     )
-    assert "<<REDACTED:PASSWORD>>" in masked
+    assert "<<REDACTED:PASSWORD_1>>" in masked
     assert "secret123" not in masked
-    assert mapping.get("secret123") == "<<REDACTED:PASSWORD>>"
+    assert mapping.get("secret123") == "<<REDACTED:PASSWORD_1>>"
 
 
 @pytest.mark.asyncio

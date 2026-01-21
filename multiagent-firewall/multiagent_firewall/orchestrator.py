@@ -10,7 +10,7 @@ from pathlib import Path
 from langgraph.graph import END, StateGraph
 
 from .config.env import GuardConfig
-from .registry import NODE_REGISTRY, ROUTER_REGISTRY
+from .config.registry import NODE_REGISTRY, ROUTER_REGISTRY
 from .types import GuardState
 from .utils import debug_ainvoke
 

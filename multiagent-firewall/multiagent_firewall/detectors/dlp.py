@@ -335,8 +335,6 @@ def _detect_with_phonenumbers(text: str, region: str = "US") -> List[Dict[str, A
         return findings
 
     try:
-        # PhoneNumberMatcher finds numbers in text.
-        # "lenient" can be used for stricter matching if needed, but default is usually good.
         for match in phonenumbers.PhoneNumberMatcher(text, region):
             findings.append(
                 {

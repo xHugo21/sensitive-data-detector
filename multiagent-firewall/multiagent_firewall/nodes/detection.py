@@ -55,6 +55,7 @@ async def run_llm_detector(state: GuardState, *, fw_config) -> GuardState:
                     or _is_redacted_token(value)
                     or _is_anonymized_token(value)
                     or value in anonymized_stripped
+                    or f"REDACTED:{value.upper()}" in anonymized_stripped
                     or _contains_anonymized_token(
                         value, anonymized_tokens, anonymized_stripped
                     )

@@ -105,7 +105,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 
     logs_dir = Path(__file__).parent / "run_logs"
     logs_dir.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now().strftime("%d%m%Y-%H%M%S")
     log_path = logs_dir / f"integration-summary-{timestamp}.txt"
     log_path.write_text("\n".join(summary_lines) + "\n")
 

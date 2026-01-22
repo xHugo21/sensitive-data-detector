@@ -5,6 +5,13 @@ from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
 from ..config.detection import REGEX_PATTERNS, KEYWORDS
 
+try:
+    import phonenumbers
+
+    PHONENUMBERS_AVAILABLE = True
+except ImportError:
+    PHONENUMBERS_AVAILABLE = False
+
 
 def detect_keywords(
     text: str,
@@ -231,6 +238,15 @@ def detect_regex_patterns(
     for field_name, entry in patterns.items():
         rule = _normalize_regex_rule(field_name, entry)
         pattern = rule["regex"]
+
+        if pattern == "__library:phonenumbers__":
+            if PHONENUMBERS_AVAILABLE:
+                region = rule.get("region", "US")
+                findings.extend(_detect_with_phonenumbers(text, region))
+            else:
+                print("PHONENUMBERS NOT AVAILABLE")
+            continue
+
         keywords = rule["keywords"]
         window = rule["window"]
         min_digits = rule.get("min_digits")
@@ -295,6 +311,7 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
             "keywords": [],
             "min_digits": None,
             "max_digits": None,
+            "region": None,
         }
     if isinstance(entry, Mapping):
         regex = entry.get("regex") or entry.get("pattern")
@@ -307,8 +324,29 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
             "keywords": list(entry.get("keywords") or []),
             "min_digits": entry.get("min_digits"),
             "max_digits": entry.get("max_digits"),
+            "region": entry.get("region"),
         }
     raise ValueError(f"Invalid regex entry for field {field_name}")
+
+
+def _detect_with_phonenumbers(text: str, region: str = "US") -> List[Dict[str, Any]]:
+    findings: List[Dict[str, Any]] = []
+    if not text:
+        return findings
+
+    try:
+        for match in phonenumbers.PhoneNumberMatcher(text, region):
+            findings.append(
+                {
+                    "field": "PHONENUMBER",
+                    "value": match.raw_string,
+                    "sources": ["dlp_phonenumbers"],
+                }
+            )
+    except Exception:
+        pass
+
+    return findings
 
 
 def _extract_match_value(match: re.Match[str]) -> str:

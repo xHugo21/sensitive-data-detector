@@ -279,6 +279,28 @@ Each entry defines the field, regex, and optional keyword window. When `keywords
 }
 ```
 
+#### Library-based Detectors
+Some complex fields (like phone numbers) use specialized libraries instead of regex. You can enable these by using the `__library:libname__` sentinel pattern in `detection.json`.
+
+```json
+"PHONENUMBER": {
+    "field": "PHONENUMBER",
+    "regex": "__library:phonenumbers__",
+    "region": "US"
+}
+```
+
+To add support for a new library:
+1.  Define the sentinel string in `detection.json` (e.g., `"regex": "__library:my_new_lib__"`).
+2.  In `multiagent_firewall/detectors/dlp.py`, update `detect_regex_patterns`:
+    - Intercept the sentinel string.
+    - Call your new detection logic.
+    ```python
+    if pattern == "__library:my_new_lib__":
+        findings.extend(_detect_with_my_new_lib(text))
+        continue
+    ```
+
 ### Pipeline Configuration
 
 The pipeline architecture is defined in `multiagent_firewall/config/pipeline.json`. You can modify this JSON to:

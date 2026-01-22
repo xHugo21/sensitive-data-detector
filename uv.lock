@@ -2460,6 +2460,7 @@ dependencies = [
     { name = "langchain-litellm" },
     { name = "langgraph", version = "0.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "langgraph", version = "1.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "phonenumbers" },
     { name = "typing-extensions", version = "4.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
@@ -2488,6 +2489,7 @@ requires-dist = [
     { name = "langchain-litellm" },
     { name = "langgraph" },
     { name = "pdfplumber", marker = "extra == 'file-analysis'" },
+    { name = "phonenumbers", specifier = ">=8.13.0" },
     { name = "pillow", marker = "extra == 'file-analysis'", specifier = ">=10.0.0" },
     { name = "pytesseract", marker = "extra == 'file-analysis'", specifier = ">=0.3.10" },
     { name = "typing-extensions", specifier = ">=4.7" },
@@ -3324,6 +3326,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/09/d8/cb9fda4261ce389656bec0bb0bdde905df109ad97f7ae387747ded070e8c/pdfplumber-0.11.8.tar.gz", hash = "sha256:db29b04bc8bb62f39dd444533bcf2e0ba33584bd24f5a54644f3ba30f4f22d31", size = 102724, upload-time = "2025-11-08T20:52:01.955Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/12/28/3958ed81a9be317610ab73df32f1968076751d651c84dff1bcb45b7c6c0e/pdfplumber-0.11.8-py3-none-any.whl", hash = "sha256:7dda117b8ed21bca9c8e7d7808fee2439f93c8bd6ea45989bfb1aead6dc3cad3", size = 60043, upload-time = "2025-11-08T20:52:00.652Z" },
+]
+
+[[package]]
+name = "phonenumbers"
+version = "9.0.22"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/12/8583ba0f327cebf42e4c1a63f394332f42d86a5cc16e0f578bb29d17b524/phonenumbers-9.0.22.tar.gz", hash = "sha256:eff985c65575749d1d54e07c56c3517d5243e03e08e4a6191761df9aab2278f2", size = 2297728, upload-time = "2026-01-16T06:31:02.211Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/95/a958da5ca5ae35b3a0d4a1ce88b001b4360fd6b48b97339dba2815ec10d4/phonenumbers-9.0.22-py2.py3-none-any.whl", hash = "sha256:645e66cd9a136b3b257b5f941fa97d324124114d31ad3c9f2488682f47ad7ee1", size = 2584081, upload-time = "2026-01-16T06:30:58.43Z" },
 ]
 
 [[package]]

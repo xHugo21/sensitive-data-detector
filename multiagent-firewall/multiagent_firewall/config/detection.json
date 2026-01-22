@@ -18,9 +18,8 @@
     },
     "PHONENUMBER": {
       "field": "PHONENUMBER",
-      "regex": "(?<!\\w)(?<!\\d\\.)(?<!\\.\\d)\\+?(?:\\d[\\d\\s\\-\\(\\)]{5,}\\d|\\(\\d{3}\\)\\s*\\d{3}[\\-\\s]?\\d{4})\\b(?!\\.\\d)",
-      "min_digits": 7,
-      "max_digits": 15
+      "regex": "__library:phonenumbers__",
+      "region": "US"
     },
     "USERNAME": {
       "field": "USERNAME",

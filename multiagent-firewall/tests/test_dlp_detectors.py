@@ -95,7 +95,7 @@ def test_detect_checksums_empty_text():
 
 
 def test_detect_regex_patterns_default():
-    text = "Contact me at test@example.com or +1-555-123-4567"
+    text = "Contact me at test@example.com or +1-650-253-0000"
     findings = detect_regex_patterns(text)
 
     assert len(findings) >= 2
@@ -399,7 +399,7 @@ def test_integration_medium_risk_data():
     text = """
     Contact information:
     Email: user@example.com
-    Phone: +1-555-123-4567
+    Phone: +1-650-253-0000
     Company: Acme Corp
     """
 

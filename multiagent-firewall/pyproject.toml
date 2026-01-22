@@ -12,6 +12,7 @@ dependencies = [
     "langgraph",
     "langchain-litellm",
     "typing_extensions>=4.7",
+    "phonenumbers>=8.13.0",
 ]
 
 [project.optional-dependencies]

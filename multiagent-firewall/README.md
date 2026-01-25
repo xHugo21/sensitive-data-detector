@@ -268,14 +268,26 @@ The firewall supports editing detection rules in `multiagent-firewall/multiagent
 
 #### DLP Regex Configuration
 Regex-based DLP patterns live in `detection.json` under `regex_patterns`.
-Each entry defines the field, regex, and optional keyword window. When `keywords` is non-empty, the regex match is only accepted if at least one keyword appears within `window` words of the match.
+Each entry defines the regex and optional keyword window. The field name defaults to the entry key (e.g., "CREDITCARDNUMBER"), but can be overridden using the optional `field` property.
 
 ```json
 "CREDITCARDNUMBER": {
-    "field": "CREDITCARDNUMBER",
     "regex": "\\b(?:\\d{4}[\\s\\-]?){3}\\d{4}\\b",
     "window": 4,
     "keywords": ["card", "credit card"]
+}
+```
+
+The `field` property is useful when mapping multiple patterns to a single output field:
+
+```json
+"DATE_ISO": {
+    "field": "DATE",
+    "regex": "\\b\\d{4}-\\d{2}-\\d{2}\\b"
+},
+"DATE_TEXT": {
+    "field": "DATE",
+    "regex": "\\b(?:January|February...)\\s+\\d{1,2}...\\b"
 }
 ```
 
@@ -284,7 +296,6 @@ Some complex fields (like phone numbers) use specialized libraries instead of re
 
 ```json
 "PHONENUMBER": {
-    "field": "PHONENUMBER",
     "regex": "__library:phonenumbers__",
     "region": "US"
 }
@@ -386,9 +397,9 @@ LLM_API_KEY=sk-your-actual-api-key-here
 ```
 
 This will:
-- Run the full pipeline against `ai4privacy/pii-masking-200k`
+- Run the full pipeline against `nvidia/Nemotron-PII`
 - Filter/sampler behavior controlled via env vars:
-  - `INTEGRATION_DATASET_LANGUAGES` (comma-separated, default: `en`)
+  - `INTEGRATION_DATASET_LOCALES` (comma-separated, default: `us`, other values: `intl`)
   - `INTEGRATION_DATASET_MAX_CASES` (default: `200`)
   - `INTEGRATION_DATASET_SEED` (optional; random seed is chosen when unset)
 - Write a run summary log to `integration_tests/run_logs/`

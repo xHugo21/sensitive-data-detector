@@ -6,9 +6,7 @@
   "regex_patterns": {
     "SSN": {
       "field": "SSN",
-      "regex": "\\b\\d{3}[\\s\\-]?\\d{2}[\\s\\-]?\\d{4}\\b|\\b\\d{9,11}\\b",
-      "min_digits": 9,
-      "max_digits": 11,
+      "regex": "\\b\\d{3}[\\s\\-]?\\d{2}[\\s\\-]?\\d{4}\\b",
       "window": 4,
       "keywords": ["ssn", "social security", "social security number"]
     },
@@ -16,25 +14,32 @@
       "field": "EMAIL",
       "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"
     },
-    "PHONENUMBER": {
-      "field": "PHONENUMBER",
+    "PHONE_NUMBER": {
+      "field": "PHONE_NUMBER",
       "regex": "__library:phonenumbers__",
       "region": "US"
     },
-    "USERNAME": {
-      "field": "USERNAME",
+    "FAX_NUMBER": {
+      "field": "FAX_NUMBER",
+      "regex": "__library:phonenumbers__",
+      "region": "US",
+      "window": 4,
+      "keywords": ["fax", "facsimile"]
+    },
+    "USER_NAME": {
+      "field": "USER_NAME",
       "regex": "\\b(?:[A-Za-z]{2,}[._-][A-Za-z0-9]{2,}(?:[._-][A-Za-z0-9]{2,})*|[A-Za-z]{2,}\\d{2,})\\b",
       "window": 4,
-      "keywords": ["username", "handle", "login", "user id", "userid"]
+      "keywords": ["username", "handle", "login", "user id", "userid", "user name"]
     },
-    "CREDITCARDNUMBER": {
-      "field": "CREDITCARDNUMBER",
+    "CREDIT_DEBIT_CARD": {
+      "field": "CREDIT_DEBIT_CARD",
       "regex": "\\b(?:\\d{4}[\\s\\-]?){3}\\d{4}\\b",
       "window": 4,
-      "keywords": ["card", "credit card", "cc", "visa", "mastercard"]
+      "keywords": ["card", "credit card", "debit card", "cc", "visa", "mastercard", "amex"]
     },
-    "CREDITCARDCVV": {
-      "field": "CREDITCARDCVV",
+    "CVV": {
+      "field": "CVV",
       "regex": "\\b\\d{3,4}\\b",
       "window": 4,
       "keywords": ["cvv", "cvc", "cvv2", "security code"]
@@ -43,65 +48,49 @@
       "field": "IPV4",
       "regex": "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
     },
-    "IPV6": {
-      "field": "IPV6",
-      "regex": "\\b(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\\b|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}\\b"
+    "MAC_ADDRESS": {
+      "field": "MAC_ADDRESS",
+      "regex": "\\b(?:[0-9A-Fa-f]{2}[:\\-]){5}[0-9A-Fa-f]{2}\\b"
     },
-    "IP": {
-      "field": "IP",
-      "regex": "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b|\\b(?:[A-Fa-f0-9]{1,4}:){1,7}[A-Fa-f0-9]{1,4}\\b"
-    },
-    "MAC": {
-      "field": "MAC",
-      "regex": "\\b(?:[0-9A-Fa-f]{2}[:\\-]){5}[0-9A-Fa-f]{2}\\b",
-      "window": 4,
-      "keywords": ["mac address", "mac"]
-    },
-    "IBAN": {
-      "field": "IBAN",
-      "regex": "\\b[A-Z]{2}\\d{2}[A-Z0-9]{4}\\d{7}(?:[A-Z0-9]?){0,16}\\b",
-      "window": 6,
-      "keywords": ["iban", "account", "bank"]
-    },
-    "BIC": {
-      "field": "BIC",
+    "SWIFT_BIC": {
+      "field": "SWIFT_BIC",
       "regex": "\\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\\b",
       "window": 6,
-      "keywords": ["bic", "swift"]
+      "keywords": ["bic", "swift", "swift bic"]
+    },
+    "BANK_ROUTING_NUMBER": {
+      "field": "BANK_ROUTING_NUMBER",
+      "regex": "\\b\\d{9}\\b",
+      "window": 4,
+      "keywords": ["routing", "routing number", "aba", "bank routing"]
+    },
+    "ACCOUNT_NUMBER": {
+      "field": "ACCOUNT_NUMBER",
+      "regex": "\\b[A-Z]?\\d{6,14}\\b",
+      "window": 4,
+      "keywords": ["account", "acct", "account number", "acct number"]
     },
     "URL": {
       "field": "URL",
       "regex": "\\b(?:https?|ftp)://[^\\s/$.?#].[^\\s]*\\b"
     },
-    "BITCOINADDRESS": {
-      "field": "BITCOINADDRESS",
-      "regex": "\\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\\b|bc1[a-z0-9]{39,59}\\b"
-    },
-    "ETHEREUMADDRESS": {
-      "field": "ETHEREUMADDRESS",
-      "regex": "\\b0x[a-fA-F0-9]{40}\\b"
-    },
-    "LITECOINADDRESS": {
-      "field": "LITECOINADDRESS",
-      "regex": "\\b(?:[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}|ltc1[0-9a-z]{39,59})\\b"
-    },
-    "ZIPCODE": {
-      "field": "ZIPCODE",
+    "POSTCODE": {
+      "field": "POSTCODE",
       "regex": "\\b\\d{5}(?:[\\-\\s]\\d{4})?\\b",
-      "min_digits": 5,
-      "max_digits": 9,
       "window": 4,
-      "keywords": ["zip", "zipcode", "zip code", "postal", "postcode"]
+      "keywords": ["zip", "zipcode", "zip code", "postal", "postcode", "postal code"]
     },
-    "SECONDARYADDRESS": {
-      "field": "SECONDARYADDRESS",
-      "regex": "\\b(?:Apt\\.?|Apartment|Suite|Ste\\.?|Unit|Flat|#)\\s*\\d+[A-Za-z]?\\b"
-    },
-    "VEHICLEVIN": {
-      "field": "VEHICLEVIN",
+    "VEHICLE_IDENTIFIER": {
+      "field": "VEHICLE_IDENTIFIER",
       "regex": "\\b[A-HJ-NPR-Z0-9]{17}\\b",
       "window": 6,
-      "keywords": ["vin", "vehicle"]
+      "keywords": ["vin", "vehicle", "vehicle identification"]
+    },
+    "LICENSE_PLATE": {
+      "field": "LICENSE_PLATE",
+      "regex": "\\b[A-Z]{1,3}[\\s\\-]?\\d{1,4}[\\s\\-]?[A-Z]{0,3}\\b",
+      "window": 4,
+      "keywords": ["license plate", "plate", "registration", "vrm"]
     },
     "PIN": {
       "field": "PIN",
@@ -109,49 +98,21 @@
       "window": 4,
       "keywords": ["pin", "personal identification number"]
     },
-    "PHONEIMEI": {
-      "field": "PHONEIMEI",
-      "regex": "\\b\\d{2}-\\d{6}-\\d{6}-\\d\\b|\\b\\d{15}\\b",
-      "window": 4,
-      "keywords": ["imei"]
-    },
-    "NEARBYGPSCOORDINATE": {
-      "field": "NEARBYGPSCOORDINATE",
-      "regex": "\\[\\s*-?\\d{1,3}\\.\\d+\\s*,\\s*-?\\d{1,3}\\.\\d+\\s*\\]"
-    },
-    "NEARBYGPSCOORDINATE_KEYWORD": {
-      "field": "NEARBYGPSCOORDINATE",
-      "regex": "-?\\d{1,2}\\.\\d+\\s*,\\s*-?\\d{1,3}\\.\\d+",
+    "COORDINATE": {
+      "field": "COORDINATE",
+      "regex": "-?\\d{1,3}\\.\\d+\\s*[NS]?\\s*,\\s*-?\\d{1,3}\\.\\d+\\s*[EW]?",
       "window": 6,
-      "keywords": [
-        "gps",
-        "coordinate",
-        "coordinates",
-        "coords",
-        "latitude",
-        "longitude",
-        "lat",
-        "long",
-        "location"
-      ]
+      "keywords": ["gps", "coordinate", "coordinates", "coords", "latitude", "longitude", "lat", "long", "location"]
     },
-    "DOB": {
-      "field": "DOB",
+    "DATE_OF_BIRTH": {
+      "field": "DATE_OF_BIRTH",
       "regex": "\\b(?:\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}|\\d{4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{1,2})\\b",
       "window": 6,
-      "keywords": ["dob", "date of birth", "birth", "born"]
+      "keywords": ["dob", "date of birth", "birth", "born", "birthday"]
     },
     "DATE": {
       "field": "DATE",
-      "regex": "\\b(?:\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}|\\d{4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{1,2})\\b",
-      "window": 4,
-      "keywords": ["date", "dated"]
-    },
-    "TIME": {
-      "field": "TIME",
-      "regex": "\\b(?:[01]?\\d|2[0-3]):\\d{2}(?::\\d{2})?\\b|\\b(?:[01]?\\d|2[0-3])\\s?(?:AM|PM|am|pm)\\b",
-      "window": 4,
-      "keywords": ["time"]
+      "regex": "\\b(?:\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}|\\d{4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{1,2})\\b"
     },
     "DATE_TEXT": {
       "field": "DATE",
@@ -159,52 +120,63 @@
     },
     "DATE_ISO": {
       "field": "DATE",
-      "regex": "\\b\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?)?\\b"
+      "regex": "\\b\\d{4}-\\d{2}-\\d{2}\\b"
     },
-    "USERAGENT": {
-      "field": "USERAGENT",
-      "regex": "Mozilla/5\\.0\\s*\\([^)]+\\)[^\\n]{10,}"
+    "DATE_TIME": {
+      "field": "DATE_TIME",
+      "regex": "\\b\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?\\b"
     },
-    "ACCOUNTNUMBER": {
-      "field": "ACCOUNTNUMBER",
+    "TIME": {
+      "field": "TIME",
+      "regex": "\\b(?:[01]?\\d|2[0-3]):\\d{2}(?::\\d{2})?\\b|\\b(?:[01]?\\d|2[0-3])\\s?(?:AM|PM|am|pm)\\b"
+    },
+    "MEDICAL_RECORD_NUMBER": {
+      "field": "MEDICAL_RECORD_NUMBER",
       "regex": "\\b\\d{8,12}\\b",
-      "min_digits": 8,
-      "max_digits": 12,
       "window": 4,
-      "keywords": ["account", "acct", "account number", "acct number"]
+      "keywords": ["medical record", "mrn", "patient id", "medical id"]
     },
-    "MASKEDNUMBER": {
-      "field": "MASKEDNUMBER",
-      "regex": "\\b\\d{12,19}\\b",
-      "min_digits": 12,
-      "max_digits": 19,
+    "HEALTH_PLAN_BENEFICIARY_NUMBER": {
+      "field": "HEALTH_PLAN_BENEFICIARY_NUMBER",
+      "regex": "\\b[A-Z]{2}-?\\d{10}\\b",
       "window": 4,
-      "keywords": [
-        "account",
-        "card",
-        "reference",
-        "ref",
-        "invoice",
-        "order",
-        "transaction"
-      ]
+      "keywords": ["beneficiary", "health plan", "medicare", "medicaid", "insurance id"]
     },
-    "AMOUNT": {
-      "field": "AMOUNT",
-      "regex": "\\b\\d{1,3}(?:[,\\d]{0,15})(?:\\.\\d+)?(?:[kKmMbB])?\\b",
-      "min_digits": 1,
-      "max_digits": 9,
+    "BIOMETRIC_IDENTIFIER": {
+      "field": "BIOMETRIC_IDENTIFIER",
+      "regex": "\\bBIO-\\d{10}\\b|\\b[A-Z]\\d{11}\\b",
       "window": 4,
-      "keywords": [
-        "amount",
-        "total",
-        "price",
-        "cost",
-        "charge",
-        "payment",
-        "balance",
-        "fee"
-      ]
+      "keywords": ["biometric", "fingerprint", "retina", "iris", "facial recognition"]
+    },
+    "CUSTOMER_ID": {
+      "field": "CUSTOMER_ID",
+      "regex": "\\b[A-Z]{2,4}-?\\d{6,10}\\b",
+      "window": 4,
+      "keywords": ["customer id", "client id", "member id", "customer number"]
+    },
+    "EMPLOYEE_ID": {
+      "field": "EMPLOYEE_ID",
+      "regex": "\\b\\d{2}-[A-Z]{3}-\\d{3}\\b|\\bEMP-?\\d{6,8}\\b",
+      "window": 4,
+      "keywords": ["employee id", "emp id", "staff id", "worker id"]
+    },
+    "DEVICE_IDENTIFIER": {
+      "field": "DEVICE_IDENTIFIER",
+      "regex": "\\b[a-f0-9]{16}\\b",
+      "window": 4,
+      "keywords": ["device id", "device identifier", "imei", "serial"]
+    },
+    "CERTIFICATE_LICENSE_NUMBER": {
+      "field": "CERTIFICATE_LICENSE_NUMBER",
+      "regex": "\\b[A-Z]{2}-?\\d{8}\\b|\\b\\d{8}\\b",
+      "window": 4,
+      "keywords": ["license", "certificate", "license number", "cert number", "certification"]
+    },
+    "HTTP_COOKIE": {
+      "field": "HTTP_COOKIE",
+      "regex": "\\b[A-Za-z_][A-Za-z0-9_]*=[A-Za-z0-9%._-]+(?:;\\s*[A-Za-z_][A-Za-z0-9_]*=[A-Za-z0-9%._-]+)*\\b",
+      "window": 4,
+      "keywords": ["cookie", "session", "session id"]
     }
   },
   "keywords": {
@@ -218,63 +190,86 @@
     ]
   },
   "ner_labels": {
-    "person": "FIRSTNAME",
-    "first name": "FIRSTNAME",
-    "middle name": "MIDDLENAME",
-    "last name": "LASTNAME",
-    "name": "FIRSTNAME",
-    "full name": "FIRSTNAME",
-    "given name": "FIRSTNAME",
-    "surname": "LASTNAME",
-    "family name": "LASTNAME",
-    "company": "COMPANYNAME",
-    "organization": "COMPANYNAME",
-    "employer": "COMPANYNAME",
-    "business": "COMPANYNAME",
-    "corporation": "COMPANYNAME",
-    "job title": "JOBTITLE",
-    "job area": "JOBAREA",
-    "job type": "JOBTYPE",
-    "occupation": "JOBTITLE",
-    "profession": "JOBTITLE",
-    "position": "JOBTITLE",
-    "street": "STREET",
-    "street address": "STREET",
-    "building number": "BUILDINGNUMBER",
-    "secondary address": "SECONDARYADDRESS",
+    "person": "FIRST_NAME",
+    "first name": "FIRST_NAME",
+    "first_name": "FIRST_NAME",
+    "middle name": "FIRST_NAME",
+    "last name": "LAST_NAME",
+    "last_name": "LAST_NAME",
+    "name": "FIRST_NAME",
+    "full name": "FIRST_NAME",
+    "given name": "FIRST_NAME",
+    "surname": "LAST_NAME",
+    "family name": "LAST_NAME",
+    "company": "COMPANY_NAME",
+    "company_name": "COMPANY_NAME",
+    "organization": "COMPANY_NAME",
+    "employer": "COMPANY_NAME",
+    "business": "COMPANY_NAME",
+    "corporation": "COMPANY_NAME",
+    "occupation": "OCCUPATION",
+    "job": "OCCUPATION",
+    "job title": "OCCUPATION",
+    "profession": "OCCUPATION",
+    "position": "OCCUPATION",
+    "street": "STREET_ADDRESS",
+    "street_address": "STREET_ADDRESS",
+    "street address": "STREET_ADDRESS",
+    "address": "STREET_ADDRESS",
     "city": "CITY",
     "state": "STATE",
     "county": "COUNTY",
-    "zipcode": "ZIPCODE",
-    "postal code": "ZIPCODE",
-    "address": "STREET",
+    "country": "COUNTRY",
+    "postcode": "POSTCODE",
+    "postal code": "POSTCODE",
+    "zipcode": "POSTCODE",
     "location": "CITY",
     "place": "CITY",
-    "country": "STATE",
     "region": "STATE",
     "province": "STATE",
-    "territory": "STATE",
-    "district": "COUNTY",
     "date": "DATE",
-    "birth date": "DOB",
-    "birthday": "DOB",
-    "date of birth": "DOB",
+    "date_of_birth": "DATE_OF_BIRTH",
+    "birth date": "DATE_OF_BIRTH",
+    "birthday": "DATE_OF_BIRTH",
+    "date of birth": "DATE_OF_BIRTH",
     "email": "EMAIL",
     "email address": "EMAIL",
-    "phone": "PHONENUMBER",
-    "phone number": "PHONENUMBER",
-    "telephone": "PHONENUMBER",
-    "mobile": "PHONENUMBER",
-    "money": "AMOUNT",
-    "price": "AMOUNT",
-    "cost": "AMOUNT",
-    "currency": "CURRENCY",
-    "account": "ACCOUNTNUMBER",
-    "bank account": "ACCOUNTNUMBER",
-    "card number": "CREDITCARDNUMBER",
+    "phone": "PHONE_NUMBER",
+    "phone_number": "PHONE_NUMBER",
+    "phone number": "PHONE_NUMBER",
+    "telephone": "PHONE_NUMBER",
+    "mobile": "PHONE_NUMBER",
+    "fax": "FAX_NUMBER",
+    "fax_number": "FAX_NUMBER",
+    "account": "ACCOUNT_NUMBER",
+    "account_number": "ACCOUNT_NUMBER",
+    "bank account": "ACCOUNT_NUMBER",
+    "credit_debit_card": "CREDIT_DEBIT_CARD",
+    "card number": "CREDIT_DEBIT_CARD",
     "url": "URL",
     "website": "URL",
-    "link": "URL"
+    "link": "URL",
+    "ssn": "SSN",
+    "social security": "SSN",
+    "gender": "GENDER",
+    "sex": "GENDER",
+    "age": "AGE",
+    "blood_type": "BLOOD_TYPE",
+    "blood type": "BLOOD_TYPE",
+    "education_level": "EDUCATION_LEVEL",
+    "education": "EDUCATION_LEVEL",
+    "employment_status": "EMPLOYMENT_STATUS",
+    "employment": "EMPLOYMENT_STATUS",
+    "race_ethnicity": "RACE_ETHNICITY",
+    "ethnicity": "RACE_ETHNICITY",
+    "race": "RACE_ETHNICITY",
+    "religious_belief": "RELIGIOUS_BELIEF",
+    "religion": "RELIGIOUS_BELIEF",
+    "political_view": "POLITICAL_VIEW",
+    "political": "POLITICAL_VIEW",
+    "sexuality": "SEXUALITY",
+    "sexual orientation": "SEXUALITY",
+    "language": "LANGUAGE"
   },
   "risk": {
     "scores": {
@@ -290,66 +285,60 @@
   },
   "risk_fields": {
     "high": [
-      "ACCOUNTNUMBER",
-      "BITCOINADDRESS",
-      "CREDITCARDCVV",
-      "CREDITCARDNUMBER",
-      "DOB",
-      "ETHEREUMADDRESS",
-      "IBAN",
-      "LITECOINADDRESS",
-      "NEARBYGPSCOORDINATE",
-      "PASSWORD",
-      "PHONEIMEI",
-      "PIN",
       "SSN",
-      "VEHICLEVIN"
+      "CREDIT_DEBIT_CARD",
+      "CVV",
+      "BANK_ROUTING_NUMBER",
+      "SWIFT_BIC",
+      "ACCOUNT_NUMBER",
+      "PASSWORD",
+      "PIN",
+      "DATE_OF_BIRTH",
+      "HEALTH_PLAN_BENEFICIARY_NUMBER",
+      "MEDICAL_RECORD_NUMBER",
+      "BIOMETRIC_IDENTIFIER",
+      "CUSTOMER_ID",
+      "EMPLOYEE_ID",
+      "VEHICLE_IDENTIFIER",
+      "DEVICE_IDENTIFIER",
+      "CERTIFICATE_LICENSE_NUMBER"
     ],
     "medium": [
-      "ACCOUNTNAME",
-      "AMOUNT",
-      "BIC",
-      "BUILDINGNUMBER",
-      "CITY",
-      "COMPANYNAME",
-      "COUNTY",
-      "CREDITCARDISSUER",
-      "CURRENCY",
-      "CURRENCYCODE",
-      "CURRENCYNAME",
-      "CURRENCYSYMBOL",
       "EMAIL",
-      "IP",
-      "IPV4",
-      "IPV6",
-      "JOBAREA",
-      "JOBTITLE",
-      "JOBTYPE",
-      "MAC",
-      "MASKEDNUMBER",
-      "PHONENUMBER",
-      "SECONDARYADDRESS",
+      "PHONE_NUMBER",
+      "FAX_NUMBER",
+      "STREET_ADDRESS",
+      "CITY",
       "STATE",
-      "STREET",
-      "USERAGENT",
-      "USERNAME",
-      "VEHICLEVRM",
-      "ZIPCODE"
+      "COUNTY",
+      "POSTCODE",
+      "COUNTRY",
+      "IPV4",
+      "MAC_ADDRESS",
+      "URL",
+      "HTTP_COOKIE",
+      "LICENSE_PLATE",
+      "USER_NAME",
+      "COMPANY_NAME",
+      "COORDINATE",
+      "OCCUPATION"
     ],
     "low": [
+      "FIRST_NAME",
+      "LAST_NAME",
       "AGE",
-      "DATE",
-      "EYECOLOR",
-      "FIRSTNAME",
       "GENDER",
-      "HEIGHT",
-      "LASTNAME",
-      "MIDDLENAME",
-      "ORDINALDIRECTION",
-      "PREFIX",
-      "SEX",
+      "DATE",
       "TIME",
-      "URL"
+      "DATE_TIME",
+      "BLOOD_TYPE",
+      "EDUCATION_LEVEL",
+      "EMPLOYMENT_STATUS",
+      "LANGUAGE",
+      "RACE_ETHNICITY",
+      "RELIGIOUS_BELIEF",
+      "POLITICAL_VIEW",
+      "SEXUALITY"
     ]
   }
 }

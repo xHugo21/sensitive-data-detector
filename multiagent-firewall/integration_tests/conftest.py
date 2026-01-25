@@ -69,10 +69,10 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     )
 
     # Keep in sync with integration_tests/test_end_to_end_detection.py constants.
-    dataset_name = "ai4privacy/pii-masking-200k"
-    dataset_split = "train"
-    dataset_text_field = "source_text"
-    dataset_languages = os.getenv("INTEGRATION_DATASET_LANGUAGES", "en")
+    dataset_name = "nvidia/Nemotron-PII"
+    dataset_split = "test"
+    dataset_text_field = "text"
+    dataset_locales = os.getenv("INTEGRATION_DATASET_LOCALES", "us")
     dataset_max_cases = os.getenv("INTEGRATION_DATASET_MAX_CASES", "200")
     dataset_seed = os.getenv("INTEGRATION_DATASET_SEED", "1337")
     llm_provider = os.getenv("LLM_PROVIDER", "unknown")
@@ -97,7 +97,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         f"NER_ENABLED: {ner_enabled}",
         f"NER_MIN_SCORE: {ner_min_score}",
         f"DATASET: {dataset_name} ({dataset_split}/{dataset_text_field})",
-        f"INTEGRATION_DATASET_LANGUAGES: {dataset_languages}",
+        f"INTEGRATION_DATASET_LOCALES: {dataset_locales}",
         f"INTEGRATION_DATASET_MAX_CASES: {dataset_max_cases}",
         f"INTEGRATION_DATASET_SEED: {dataset_seed}",
         f"EXIT_STATUS: {exitstatus}",

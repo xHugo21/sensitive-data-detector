@@ -7,46 +7,95 @@ from typing import List, Tuple
 import pytest
 from datasets import load_dataset
 
-DATASET_LANGUAGES_ENV_VAR = "INTEGRATION_DATASET_LANGUAGES"
+DATASET_LOCALES_ENV_VAR = "INTEGRATION_DATASET_LOCALES"
 DATASET_MAX_CASES_ENV_VAR = "INTEGRATION_DATASET_MAX_CASES"
 DATASET_SEED_ENV_VAR = "INTEGRATION_DATASET_SEED"
 
-DATASET_NAME = "ai4privacy/pii-masking-200k"
-DATASET_SPLIT = "train"
-DATASET_TEXT_FIELD = "source_text"
+DATASET_NAME = "nvidia/Nemotron-PII"
+DATASET_SPLIT = "test"
+DATASET_TEXT_FIELD = "text"
 
-DEFAULT_DATASET_LANGUAGES = "en"
+DEFAULT_DATASET_LOCALES = "us"
 DEFAULT_DATASET_MAX_CASES = 200
 DEFAULT_DATASET_SEED = 1337
 
+# Mapping from nvidia snake_case labels to our UPPERCASE convention
+LABEL_NORMALIZE: dict[str, str] = {
+    "account_number": "ACCOUNT_NUMBER",
+    "age": "AGE",
+    "bank_routing_number": "BANK_ROUTING_NUMBER",
+    "biometric_identifier": "BIOMETRIC_IDENTIFIER",
+    "blood_type": "BLOOD_TYPE",
+    "certificate_license_number": "CERTIFICATE_LICENSE_NUMBER",
+    "city": "CITY",
+    "company_name": "COMPANY_NAME",
+    "coordinate": "COORDINATE",
+    "country": "COUNTRY",
+    "county": "COUNTY",
+    "credit_debit_card": "CREDIT_DEBIT_CARD",
+    "customer_id": "CUSTOMER_ID",
+    "cvv": "CVV",
+    "date": "DATE",
+    "date_of_birth": "DATE_OF_BIRTH",
+    "date_time": "DATE_TIME",
+    "device_identifier": "DEVICE_IDENTIFIER",
+    "education_level": "EDUCATION_LEVEL",
+    "email": "EMAIL",
+    "employee_id": "EMPLOYEE_ID",
+    "employment_status": "EMPLOYMENT_STATUS",
+    "fax_number": "FAX_NUMBER",
+    "first_name": "FIRST_NAME",
+    "gender": "GENDER",
+    "health_plan_beneficiary_number": "HEALTH_PLAN_BENEFICIARY_NUMBER",
+    "http_cookie": "HTTP_COOKIE",
+    "ipv4": "IPV4",
+    "language": "LANGUAGE",
+    "last_name": "LAST_NAME",
+    "license_plate": "LICENSE_PLATE",
+    "mac_address": "MAC_ADDRESS",
+    "medical_record_number": "MEDICAL_RECORD_NUMBER",
+    "occupation": "OCCUPATION",
+    "password": "PASSWORD",
+    "phone_number": "PHONE_NUMBER",
+    "pin": "PIN",
+    "political_view": "POLITICAL_VIEW",
+    "postcode": "POSTCODE",
+    "race_ethnicity": "RACE_ETHNICITY",
+    "religious_belief": "RELIGIOUS_BELIEF",
+    "sexuality": "SEXUALITY",
+    "ssn": "SSN",
+    "state": "STATE",
+    "street_address": "STREET_ADDRESS",
+    "swift_bic": "SWIFT_BIC",
+    "time": "TIME",
+    "url": "URL",
+    "user_name": "USER_NAME",
+    "vehicle_identifier": "VEHICLE_IDENTIFIER",
+}
+
+# Type aliases for flexible matching between detected and expected types
 TYPE_ALIASES: dict[str, set[str]] = {
-    "PERSON": {"FIRSTNAME", "LASTNAME", "MIDDLENAME", "PREFIX"},
-    "NAME": {"FIRSTNAME", "LASTNAME", "MIDDLENAME"},
-    "FULLNAME": {"FIRSTNAME", "LASTNAME", "MIDDLENAME"},
-    "FIRSTNAME": {"PREFIX", "MIDDLENAME"},
-    "ADDRESS": {
-        "STREET",
-        "BUILDINGNUMBER",
-        "SECONDARYADDRESS",
-        "CITY",
-        "STATE",
-        "COUNTY",
-        "ZIPCODE",
-    },
-    "LOCATION": {"CITY", "STATE", "COUNTY", "NEARBYGPSCOORDINATE"},
-    "CITY": {"FIRSTNAME"},
-    "CREDITCARD": {"CREDITCARDNUMBER", "CREDITCARDCVV", "CREDITCARDISSUER"},
-    "BANKACCOUNT": {"ACCOUNTNUMBER", "ACCOUNTNAME", "IBAN", "BIC"},
-    "MONEY": {"AMOUNT", "CURRENCY", "CURRENCYCODE", "CURRENCYNAME", "CURRENCYSYMBOL"},
-    "CURRENCY": {"CURRENCYCODE", "CURRENCYNAME", "CURRENCYSYMBOL"},
-    "AMOUNT": {"CURRENCYSYMBOL", "CURRENCY", "CURRENCYCODE", "CURRENCYNAME"},
-    "COMPANYNAME": {"JOBAREA", "JOBTITLE"},
-    "IP": {"IPV4", "IPV6"},
-    "IPADDRESS": {"IP", "IPV4", "IPV6"},
-    "VEHICLE": {"VEHICLEVIN", "VEHICLEVRM"},
-    "DATETIME": {"DATE", "TIME", "DOB"},
-    "DATE": {"DOB"},
-    "DOB": {"DATE"},
+    "PERSON": {"FIRST_NAME", "LAST_NAME"},
+    "NAME": {"FIRST_NAME", "LAST_NAME"},
+    "FULLNAME": {"FIRST_NAME", "LAST_NAME"},
+    "ADDRESS": {"STREET_ADDRESS", "CITY", "STATE", "COUNTY", "POSTCODE", "COUNTRY"},
+    "LOCATION": {"CITY", "STATE", "COUNTY", "COUNTRY", "COORDINATE"},
+    "PHONE": {"PHONE_NUMBER", "FAX_NUMBER"},
+    "PHONENUMBER": {"PHONE_NUMBER"},
+    "PHONE_NUMBER": {"FAX_NUMBER"},
+    "CARD": {"CREDIT_DEBIT_CARD", "CVV"},
+    "IP": {"IPV4"},
+    "IPADDRESS": {"IPV4"},
+    "MAC": {"MAC_ADDRESS"},
+    "BIC": {"SWIFT_BIC"},
+    "DOB": {"DATE_OF_BIRTH"},
+    "DATE_OF_BIRTH": {"DATE"},
+    "DATE_TIME": {"DATE", "TIME"},
+    "DATE": {"DATE_TIME"},
+    "VIN": {"VEHICLE_IDENTIFIER"},
+    "VEHICLEVIN": {"VEHICLE_IDENTIFIER"},
+    "ZIP": {"POSTCODE"},
+    "ZIPCODE": {"POSTCODE"},
 }
 
 _REVERSE_ALIASES: dict[str, set[str]] = {}
@@ -65,7 +114,7 @@ def _types_match(detected_type: str, expected_type: str) -> bool:
         return True
 
     # Substring match
-    if expected_upper in detected_upper:
+    if expected_upper in detected_upper or detected_upper in expected_upper:
         return True
 
     # Alias match
@@ -81,46 +130,53 @@ def _types_match(detected_type: str, expected_type: str) -> bool:
     return False
 
 
-def _parse_languages(value: str | None) -> list[str] | None:
+def _parse_locales(value: str | None) -> list[str] | None:
     if value is None:
         return None
-    languages = [lang.strip() for lang in value.split(",") if lang.strip()]
-    return languages or None
+    locales = [loc.strip() for loc in value.split(",") if loc.strip()]
+    return locales or None
 
 
-def _parse_span_labels(span_labels: object, row_index: int) -> list[str]:
-    if span_labels is None or span_labels == "":
+def _parse_spans(spans_data: object, row_index: int) -> list[str]:
+    """Parse the spans field from nvidia dataset format.
+
+    Expected format: Python literal string or list of dicts with 'label' key.
+    Example: [{'start': 3, 'end': 8, 'text': 'Jason', 'label': 'first_name'}, ...]
+    """
+    if spans_data is None or spans_data == "" or spans_data == "[]":
         return []
-    if isinstance(span_labels, str):
+
+    if isinstance(spans_data, str):
         try:
-            spans = ast.literal_eval(span_labels)
+            spans = ast.literal_eval(spans_data)
         except (SyntaxError, ValueError) as exc:
-            raise ValueError(f"Row {row_index} has invalid span_labels: {exc}") from exc
-    elif isinstance(span_labels, list):
-        spans = span_labels
+            raise ValueError(f"Row {row_index} has invalid spans: {exc}") from exc
+    elif isinstance(spans_data, list):
+        spans = spans_data
     else:
         raise ValueError(
-            f"Row {row_index} has unsupported span_labels type: "
-            f"{type(span_labels).__name__}"
+            f"Row {row_index} has unsupported spans type: {type(spans_data).__name__}"
         )
 
     labels: list[str] = []
     seen: set[str] = set()
     for span in spans:
-        if not isinstance(span, (list, tuple)) or len(span) < 3:
+        if not isinstance(span, dict):
             continue
-        label = str(span[2]).strip()
-        if not label or label.upper() == "O":
+        label = span.get("label", "")
+        if not label:
             continue
-        if label not in seen:
-            labels.append(label)
-            seen.add(label)
+        label_str = str(label).strip().lower()
+        normalized = LABEL_NORMALIZE.get(label_str, label_str.upper())
+        if normalized not in seen:
+            labels.append(normalized)
+            seen.add(normalized)
     return labels
 
 
 def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
-    languages = _parse_languages(
-        os.getenv(DATASET_LANGUAGES_ENV_VAR, DEFAULT_DATASET_LANGUAGES)
+    locales = _parse_locales(
+        os.getenv(DATASET_LOCALES_ENV_VAR, DEFAULT_DATASET_LOCALES)
     )
 
     max_cases_raw = os.getenv(DATASET_MAX_CASES_ENV_VAR)
@@ -128,6 +184,7 @@ def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
         max_cases = DEFAULT_DATASET_MAX_CASES
     else:
         max_cases = int(max_cases_raw)
+
     seed_raw = os.getenv(DATASET_SEED_ENV_VAR)
     if seed_raw is None or not seed_raw.strip():
         seed = random.randint(0, 2**32 - 1)
@@ -137,8 +194,8 @@ def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
 
     dataset = load_dataset(DATASET_NAME, split=DATASET_SPLIT)
 
-    if languages:
-        dataset = dataset.filter(lambda row: row.get("language") in languages)
+    if locales:
+        dataset = dataset.filter(lambda row: row.get("locale") in locales)
 
     if max_cases and max_cases > 0 and len(dataset) > max_cases:
         dataset = dataset.shuffle(seed=seed).select(range(max_cases))
@@ -148,12 +205,12 @@ def _load_dataset_cases() -> List[Tuple[str, str, List[str]]]:
         prompt = row.get(DATASET_TEXT_FIELD)
         if prompt is None:
             raise ValueError(f"Row {index} is missing '{DATASET_TEXT_FIELD}'.")
-        expected_entities = _parse_span_labels(row.get("span_labels"), index)
-        row_id = row.get("id")
-        if row_id is None:
+        expected_entities = _parse_spans(row.get("spans"), index)
+        uid = row.get("uid")
+        if uid is None:
             test_id = f"row_{index:06d}"
         else:
-            test_id = f"row_{int(row_id):06d}"
+            test_id = f"uid_{uid[:8]}"
         cases.append((test_id, prompt, expected_entities))
 
     if not cases:

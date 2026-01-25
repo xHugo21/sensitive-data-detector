@@ -18,7 +18,7 @@ async def test_run_llm_detector_success(mock_llm_detector, guard_config):
         return_value={
             "detected_fields": [
                 {"field": "EMAIL", "value": "test@example.com"},
-                {"field": "FIRSTNAME", "value": "John"},
+                {"field": "FIRST_NAME", "value": "John"},
             ]
         }
     )
@@ -39,7 +39,7 @@ async def test_run_llm_detector_success(mock_llm_detector, guard_config):
     )
     assert [f["field"] for f in result.get("llm_fields", [])] == [
         "EMAIL",
-        "FIRSTNAME",
+        "FIRST_NAME",
     ]
 
 
@@ -97,7 +97,7 @@ async def test_run_llm_detector_normalizes_source_labels(
                     "value": "test@example.com",
                     "sources": ["Explicit"],
                 },
-                {"field": "LASTNAME", "value": "Doe", "sources": ["Inferred"]},
+                {"field": "LAST_NAME", "value": "Doe", "sources": ["Inferred"]},
             ]
         }
     )
@@ -115,7 +115,7 @@ async def test_run_llm_detector_normalizes_source_labels(
     assert sources == [["llm_explicit"], ["llm_inferred"]]
     assert [f["field"] for f in result.get("llm_fields", [])] == [
         "EMAIL",
-        "LASTNAME",
+        "LAST_NAME",
     ]
 
 

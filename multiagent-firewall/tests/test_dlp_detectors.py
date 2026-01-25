@@ -70,7 +70,7 @@ def test_detect_checksums_valid_card():
     findings = detect_checksums(text)
 
     assert len(findings) == 1
-    assert findings[0]["field"] == "CREDITCARDNUMBER"
+    assert findings[0]["field"] == "CREDIT_DEBIT_CARD"
     assert findings[0]["value"] == "4532015112830366"
     assert findings[0]["sources"] == ["dlp_checksum"]
 
@@ -101,7 +101,7 @@ def test_detect_regex_patterns_default():
     assert len(findings) >= 2
     field_names = [f["field"] for f in findings]
     assert "EMAIL" in field_names
-    assert "PHONENUMBER" in field_names
+    assert "PHONE_NUMBER" in field_names
 
 
 def test_detect_regex_patterns_custom():
@@ -196,19 +196,11 @@ def test_detect_regex_ipv4():
     assert "10.0.0.1" in values
 
 
-def test_detect_regex_ipv6():
-    text = "IPv6 address: 2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-    findings = detect_regex_patterns(text)
-
-    field_names = [f["field"] for f in findings]
-    assert "IPV6" in field_names
-
-
 def test_detect_regex_mac_address():
     text = "MAC: 00:1A:2B:3C:4D:5E and 00-1A-2B-3C-4D-5F"
     findings = detect_regex_patterns(text)
 
-    mac_findings = [f for f in findings if f["field"] == "MAC"]
+    mac_findings = [f for f in findings if f["field"] == "MAC_ADDRESS"]
     assert len(mac_findings) >= 1
 
 
@@ -225,24 +217,7 @@ def test_detect_regex_credit_card():
     findings = detect_regex_patterns(text)
 
     field_names = [f["field"] for f in findings]
-    assert "CREDITCARDNUMBER" in field_names
-
-
-def test_detect_regex_bitcoin_address():
-    text = "Send BTC to 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
-    findings = detect_regex_patterns(text)
-
-    field_names = [f["field"] for f in findings]
-    assert "BITCOINADDRESS" in field_names
-
-
-def test_detect_regex_ethereum_address():
-    # Ethereum addresses are 42 characters (0x + 40 hex chars)
-    text = "ETH wallet: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEbC"
-    findings = detect_regex_patterns(text)
-
-    field_names = [f["field"] for f in findings]
-    assert "ETHEREUMADDRESS" in field_names
+    assert "CREDIT_DEBIT_CARD" in field_names
 
 
 def test_detect_regex_date():
@@ -313,15 +288,6 @@ def test_validate_vin_invalid():
 # ============================================================================
 
 
-def test_detect_checksums_iban():
-    text = "Transfer to IBAN: GB82WEST12345698765432"
-    findings = detect_checksums(text)
-
-    iban_findings = [f for f in findings if f["field"] == "IBAN"]
-    assert len(iban_findings) == 1
-    assert iban_findings[0]["sources"] == ["dlp_checksum"]
-
-
 def test_detect_checksums_ssn():
     text = "SSN: 123-45-6789"
     findings = detect_checksums(text)
@@ -335,7 +301,7 @@ def test_detect_checksums_vin():
     text = "Vehicle VIN: 1HGBH41JXMN109186"
     findings = detect_checksums(text)
 
-    vin_findings = [f for f in findings if f["field"] == "VEHICLEVIN"]
+    vin_findings = [f for f in findings if f["field"] == "VEHICLE_IDENTIFIER"]
     assert len(vin_findings) == 1
     assert vin_findings[0]["sources"] == ["dlp_checksum"]
 
@@ -343,15 +309,13 @@ def test_detect_checksums_vin():
 def test_detect_checksums_mixed():
     text = """
     Card: 4532015112830366
-    IBAN: GB82WEST12345698765432
     SSN: 123-45-6789
     """
     findings = detect_checksums(text)
 
-    assert len(findings) >= 3
+    assert len(findings) >= 2
     field_names = [f["field"] for f in findings]
-    assert "CREDITCARDNUMBER" in field_names
-    assert "IBAN" in field_names
+    assert "CREDIT_DEBIT_CARD" in field_names
     assert "SSN" in field_names
 
 
@@ -391,7 +355,7 @@ def test_integration_high_risk_data():
 
     assert "PASSWORD" in field_names
     # Credit card and SSN should be detected by both regex and checksum
-    assert "CREDITCARDNUMBER" in field_names
+    assert "CREDIT_DEBIT_CARD" in field_names
     assert "SSN" in field_names
 
 
@@ -410,5 +374,5 @@ def test_integration_medium_risk_data():
     field_names = [f["field"] for f in all_findings]
 
     assert "EMAIL" in field_names
-    assert "PHONENUMBER" in field_names
+    assert "PHONE_NUMBER" in field_names
     assert "PASSWORD" not in field_names

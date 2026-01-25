@@ -161,7 +161,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
 
     # Credit card detection (Luhn algorithm)
-    card_pattern = _extract_regex_pattern(REGEX_PATTERNS, "CREDITCARDNUMBER")
+    card_pattern = _extract_regex_pattern(REGEX_PATTERNS, "CREDIT_DEBIT_CARD")
     if card_pattern:
         potential_cards = re.findall(card_pattern, text)
         for card in potential_cards:
@@ -169,7 +169,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
             if luhn_checksum(card_clean):
                 findings.append(
                     {
-                        "field": "CREDITCARDNUMBER",
+                        "field": "CREDIT_DEBIT_CARD",
                         "value": card,
                         "sources": ["dlp_checksum"],
                     }
@@ -206,14 +206,14 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                 )
 
     # VIN detection (check digit algorithm)
-    vin_pattern = _extract_regex_pattern(REGEX_PATTERNS, "VEHICLEVIN")
+    vin_pattern = _extract_regex_pattern(REGEX_PATTERNS, "VEHICLE_IDENTIFIER")
     if vin_pattern:
         potential_vins = re.findall(vin_pattern, text.upper())
         for vin in potential_vins:
             if validate_vin(vin):
                 findings.append(
                     {
-                        "field": "VEHICLEVIN",
+                        "field": "VEHICLE_IDENTIFIER",
                         "value": vin,
                         "sources": ["dlp_checksum"],
                     }

@@ -74,40 +74,48 @@ LABEL_NORMALIZE: dict[str, str] = {
 }
 
 # Type aliases for flexible matching between detected and expected types
-# Keys and values should be normalized (UPPERCASE, no underscores) for matching
+# Field names now preserve underscores (e.g., PHONE_NUMBER, FIRST_NAME)
 TYPE_ALIASES: dict[str, set[str]] = {
-    "PERSON": {"FIRSTNAME", "LASTNAME"},
-    "NAME": {"FIRSTNAME", "LASTNAME"},
-    "FULLNAME": {"FIRSTNAME", "LASTNAME"},
-    "FIRSTNAME": {"LASTNAME"},  # Full name detected as first name can match last name
-    "LASTNAME": {"FIRSTNAME"},  # Full name detected as last name can match first name
-    "ADDRESS": {"STREETADDRESS", "CITY", "STATE", "COUNTY", "POSTCODE", "COUNTRY"},
+    # Name variations
+    "PERSON": {"FIRST_NAME", "LAST_NAME"},
+    "NAME": {"FIRST_NAME", "LAST_NAME"},
+    "FULLNAME": {"FIRST_NAME", "LAST_NAME"},
+    "FIRST_NAME": {"LAST_NAME"},  # Full name detected as first name can match last name
+    "LAST_NAME": {"FIRST_NAME"},  # Full name detected as last name can match first name
+    # Address variations
+    "ADDRESS": {"STREET_ADDRESS", "CITY", "STATE", "COUNTY", "POSTCODE", "COUNTRY"},
     "LOCATION": {"CITY", "STATE", "COUNTY", "COUNTRY", "COORDINATE"},
-    "PHONE": {"PHONENUMBER", "FAXNUMBER"},
-    "PHONENUMBER": {"FAXNUMBER"},
-    "FAXNUMBER": {"PHONENUMBER"},
-    "CARD": {"CREDITDEBITCARD", "CVV"},
+    "STREET_ADDRESS": {"CITY"},
+    # Phone variations
+    "PHONE": {"PHONE_NUMBER", "FAX_NUMBER"},
+    "PHONE_NUMBER": {"FAX_NUMBER"},
+    "FAX_NUMBER": {"PHONE_NUMBER"},
+    # Card/financial variations
+    "CARD": {"CREDIT_DEBIT_CARD", "CVV"},
+    "SWIFT_BIC": {"BIC", "BANK_ROUTING_NUMBER"},
+    "BIC": {"SWIFT_BIC"},
+    # IP/network variations
     "IP": {"IPV4", "IPV6"},
-    "IPADDRESS": {"IPV4", "IPV6"},
-    "IPV4": {"IPV6"},  # If we detect IPv4 and expected IPv6 (or vice versa)
-    "MAC": {"MACADDRESS"},
-    "BIC": {"SWIFTBIC"},
-    "SWIFTBIC": {"BIC", "BANKROUTINGNUMBER"},
-    "DOB": {"DATEOFBIRTH", "DATE"},
-    "DATEOFBIRTH": {"DATE"},
-    "DATETIME": {"DATE", "TIME"},
-    "DATE": {"DATETIME", "DATEOFBIRTH"},
-    "VIN": {"VEHICLEIDENTIFIER"},
-    "VEHICLEVIN": {"VEHICLEIDENTIFIER"},
+    "IP_ADDRESS": {"IPV4", "IPV6"},
+    "IPV4": {"IPV6"},
+    "MAC": {"MAC_ADDRESS"},
+    # Date/time variations
+    "DOB": {"DATE_OF_BIRTH", "DATE"},
+    "DATE_OF_BIRTH": {"DATE"},
+    "DATE_TIME": {"DATE", "TIME"},
+    "DATE": {"DATE_TIME", "DATE_OF_BIRTH"},
+    # Vehicle variations
+    "VIN": {"VEHICLE_IDENTIFIER"},
+    "VEHICLE_VIN": {"VEHICLE_IDENTIFIER"},
+    # Postal variations
     "ZIP": {"POSTCODE"},
     "ZIPCODE": {"POSTCODE"},
-    "POSTCODE": {"ZIPCODE", "STATE"},  # Sometimes postcodes are detected as state
-    "STATE": {"POSTCODE"},  # Sometimes state codes look like postcodes
-    "USERNAME": {"USER_NAME"},
-    "SEXUALITY": {"GENDER"},  # Sometimes sexuality/gender overlap in detection
+    "POSTCODE": {"ZIPCODE", "STATE"},
+    "STATE": {"POSTCODE"},
+    # Demographic variations
+    "SEXUALITY": {"GENDER"},
     "GENDER": {"SEXUALITY"},
-    "OCCUPATION": {"EMPLOYMENTSTATUS"},
-    "STREETADDRESS": {"ADDRESS", "CITY"},
+    "OCCUPATION": {"EMPLOYMENT_STATUS"},
 }
 
 _REVERSE_ALIASES: dict[str, set[str]] = {}
@@ -116,43 +124,28 @@ for _detected, _expected_set in TYPE_ALIASES.items():
         _REVERSE_ALIASES.setdefault(_expected, set()).add(_detected)
 
 
-def _normalize_type(type_name: str) -> str:
-    """Normalize type name by uppercasing and removing underscores."""
-    return type_name.upper().replace("_", "")
-
-
 def _types_match(detected_type: str, expected_type: str) -> bool:
     """Check if detected type matches expected type with alias support."""
     detected_upper = detected_type.upper()
     expected_upper = expected_type.upper()
-    detected_norm = _normalize_type(detected_type)
-    expected_norm = _normalize_type(expected_type)
 
-    # Exact match (with or without underscores)
-    if detected_upper == expected_upper or detected_norm == expected_norm:
+    # Exact match
+    if detected_upper == expected_upper:
         return True
 
-    # Substring match (normalized)
-    if expected_norm in detected_norm or detected_norm in expected_norm:
+    # Substring match (e.g., "PHONE_NUMBER" in "FAX_NUMBER" or vice versa)
+    if expected_upper in detected_upper or detected_upper in expected_upper:
         return True
 
-    # Alias match (check both original and normalized)
-    for alias_key in [detected_upper, detected_norm]:
-        if alias_key in TYPE_ALIASES:
-            alias_values = TYPE_ALIASES[alias_key]
-            if expected_upper in alias_values or expected_norm in {
-                _normalize_type(v) for v in alias_values
-            }:
-                return True
+    # Alias match
+    if detected_upper in TYPE_ALIASES:
+        if expected_upper in TYPE_ALIASES[detected_upper]:
+            return True
 
-    # Reverse alias (check both original and normalized)
-    for alias_key in [expected_upper, expected_norm]:
-        if alias_key in _REVERSE_ALIASES:
-            reverse_values = _REVERSE_ALIASES[alias_key]
-            if detected_upper in reverse_values or detected_norm in {
-                _normalize_type(v) for v in reverse_values
-            }:
-                return True
+    # Reverse alias
+    if expected_upper in _REVERSE_ALIASES:
+        if detected_upper in _REVERSE_ALIASES[expected_upper]:
+            return True
 
     return False
 

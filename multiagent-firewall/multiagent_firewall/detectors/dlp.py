@@ -242,7 +242,7 @@ def detect_regex_patterns(
         if pattern == "__library:phonenumbers__":
             if PHONENUMBERS_AVAILABLE:
                 region = rule.get("region", "US")
-                findings.extend(_detect_with_phonenumbers(text, region))
+                findings.extend(_detect_with_phonenumbers(text, region, rule["field"]))
             else:
                 print("PHONENUMBERS NOT AVAILABLE")
             continue
@@ -329,7 +329,9 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
     raise ValueError(f"Invalid regex entry for field {field_name}")
 
 
-def _detect_with_phonenumbers(text: str, region: str = "US") -> List[Dict[str, Any]]:
+def _detect_with_phonenumbers(
+    text: str, region: str = "US", field_name: str = "PHONE_NUMBER"
+) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
     if not text:
         return findings
@@ -338,7 +340,7 @@ def _detect_with_phonenumbers(text: str, region: str = "US") -> List[Dict[str, A
         for match in phonenumbers.PhoneNumberMatcher(text, region):
             findings.append(
                 {
-                    "field": "PHONENUMBER",
+                    "field": field_name,
                     "value": match.raw_string,
                     "sources": ["dlp_phonenumbers"],
                 }

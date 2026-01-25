@@ -275,10 +275,19 @@ async def test_sensitive_detection(
         if not any(_types_match(detected, expected) for expected in expected_entities)
     }
     # Collect source statistics
-    source_counts = {}
+    source_stats = {}
     for field in detected_fields:
+        field_type = str(field.get("type", field.get("field", ""))).upper()
+        is_tp = any(
+            _types_match(field_type, expected) for expected in expected_entities
+        )
+
+        stat_key = "tp" if is_tp else "fp"
+
         for source in field.get("sources", []):
-            source_counts[source] = source_counts.get(source, 0) + 1
+            if source not in source_stats:
+                source_stats[source] = {"tp": 0, "fp": 0}
+            source_stats[source][stat_key] += 1
 
     case_pass = (not expected_entities and not detected_fields) or (
         matched_expected == len(expected_entities)
@@ -290,7 +299,7 @@ async def test_sensitive_detection(
             "fn": len(expected_entities) - matched_expected,
             "case_pass": case_pass,
             "duration_s": duration_s,
-            "source_counts": source_counts,
+            "source_stats": source_stats,
         }
     )
 

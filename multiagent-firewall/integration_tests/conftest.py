@@ -59,12 +59,20 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     p95_time = _percentile(durations, 0.95)
 
     # Aggregate source counts
-    total_source_counts = {}
+    total_source_stats = {}
     for entry in metrics:
-        for source, count in entry.get("source_counts", {}).items():
-            total_source_counts[source] = total_source_counts.get(source, 0) + count
+        for source, counts in entry.get("source_stats", {}).items():
+            if source not in total_source_stats:
+                total_source_stats[source] = {"tp": 0, "fp": 0}
+            total_source_stats[source]["tp"] += counts["tp"]
+            total_source_stats[source]["fp"] += counts["fp"]
 
-    sources_str = ", ".join(f"{k}: {v}" for k, v in sorted(total_source_counts.items()))
+    sources_parts = []
+    for k, v in sorted(total_source_stats.items()):
+        total = v["tp"] + v["fp"]
+        sources_parts.append(f"{k}: {total} (TP: {v['tp']}, FP: {v['fp']})")
+
+    sources_str = ", ".join(sources_parts)
 
     terminalreporter.section("Integration metrics", sep="-")
     terminalreporter.write_line(f"Cases: {total_cases}  Pass: {case_passes}")

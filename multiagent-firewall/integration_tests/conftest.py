@@ -58,11 +58,20 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     median_time = statistics.median(durations) if durations else None
     p95_time = _percentile(durations, 0.95)
 
+    # Aggregate source counts
+    total_source_counts = {}
+    for entry in metrics:
+        for source, count in entry.get("source_counts", {}).items():
+            total_source_counts[source] = total_source_counts.get(source, 0) + count
+
+    sources_str = ", ".join(f"{k}: {v}" for k, v in sorted(total_source_counts.items()))
+
     terminalreporter.section("Integration metrics", sep="-")
     terminalreporter.write_line(f"Cases: {total_cases}  Pass: {case_passes}")
     terminalreporter.write_line(f"Fields detected: TP: {tp}  FP: {fp}  FN: {fn}")
     terminalreporter.write_line(f"Precision: {precision}  Recall: {recall}  F1: {f1}")
     terminalreporter.write_line(f"Case pass rate: {case_pass_rate}")
+    terminalreporter.write_line(f"Sources: {sources_str}")
     terminalreporter.write_line(
         "Latency (mean/median/p95): "
         f"{_format_ms(mean_time)} / {_format_ms(median_time)} / {_format_ms(p95_time)}"
@@ -87,6 +96,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         f"Fields detected: TP: {tp}  FP: {fp}  FN: {fn}",
         f"Precision: {precision}  Recall: {recall}  F1: {f1}",
         f"Case pass rate: {case_pass_rate}",
+        f"Sources: {sources_str}",
         "Latency (mean/median/p95): "
         f"{_format_ms(mean_time)} / {_format_ms(median_time)} / {_format_ms(p95_time)}",
         "",

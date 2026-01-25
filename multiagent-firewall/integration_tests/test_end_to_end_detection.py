@@ -274,6 +274,12 @@ async def test_sensitive_detection(
         for detected in detected_types
         if not any(_types_match(detected, expected) for expected in expected_entities)
     }
+    # Collect source statistics
+    source_counts = {}
+    for field in detected_fields:
+        for source in field.get("sources", []):
+            source_counts[source] = source_counts.get(source, 0) + 1
+
     case_pass = (not expected_entities and not detected_fields) or (
         matched_expected == len(expected_entities)
     )
@@ -284,6 +290,7 @@ async def test_sensitive_detection(
             "fn": len(expected_entities) - matched_expected,
             "case_pass": case_pass,
             "duration_s": duration_s,
+            "source_counts": source_counts,
         }
     )
 

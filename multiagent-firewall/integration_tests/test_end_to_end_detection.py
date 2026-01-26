@@ -247,7 +247,7 @@ TEST_CASES = _load_dataset_cases()
     TEST_CASES,
     ids=[case[0] for case in TEST_CASES],
 )
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sensitive_detection(
     orchestrator, pytestconfig, test_id, prompt, expected_entities
 ):

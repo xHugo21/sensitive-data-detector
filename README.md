@@ -71,11 +71,7 @@ Install [uv](https://docs.astral.sh/uv/#installation) (modern Python package man
 The backend package simplifies the connection between the `proxy` and `extension` modules.
 
 ```bash
-cd backend
-
-uv sync
-
-uv run python -m app.main
+cd backend && uv sync && uv run python -m app.main
 ```
 
 > [!NOTE]

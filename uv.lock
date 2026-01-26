@@ -346,7 +346,7 @@ version = "0.1.0"
 source = { editable = "backend" }
 dependencies = [
     { name = "fastapi" },
-    { name = "multiagent-firewall" },
+    { name = "multiagent-firewall", extra = ["file-analysis", "ner"] },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
@@ -360,7 +360,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
-    { name = "multiagent-firewall", editable = "multiagent-firewall" },
+    { name = "multiagent-firewall", extras = ["ner", "file-analysis"], editable = "multiagent-firewall" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "uvicorn", extras = ["standard"] },

@@ -73,45 +73,35 @@ LABEL_NORMALIZE: dict[str, str] = {
 }
 
 # Type aliases for flexible matching between detected and expected types
-# Field names now preserve underscores (e.g., PHONE_NUMBER, FIRST_NAME)
 TYPE_ALIASES: dict[str, set[str]] = {
-    # Name variations
     "PERSON": {"FIRST_NAME", "LAST_NAME"},
     "NAME": {"FIRST_NAME", "LAST_NAME"},
     "FULLNAME": {"FIRST_NAME", "LAST_NAME"},
-    "FIRST_NAME": {"LAST_NAME"},  # Full name detected as first name can match last name
-    "LAST_NAME": {"FIRST_NAME"},  # Full name detected as last name can match first name
-    # Address variations
+    "FIRST_NAME": {"LAST_NAME"},
+    "LAST_NAME": {"FIRST_NAME"},
     "ADDRESS": {"STREET_ADDRESS", "CITY", "STATE", "COUNTY", "POSTCODE", "COUNTRY"},
     "LOCATION": {"CITY", "STATE", "COUNTY", "COUNTRY", "COORDINATE"},
     "STREET_ADDRESS": {"CITY"},
-    # Phone variations
     "PHONE": {"PHONE_NUMBER", "FAX_NUMBER"},
     "PHONE_NUMBER": {"FAX_NUMBER"},
     "FAX_NUMBER": {"PHONE_NUMBER"},
-    # Card/financial variations
     "CARD": {"CREDIT_DEBIT_CARD", "CVV"},
     "SWIFT_BIC": {"BIC", "BANK_ROUTING_NUMBER"},
     "BIC": {"SWIFT_BIC"},
-    # IP/network variations
     "IP": {"IPV4", "IPV6"},
     "IP_ADDRESS": {"IPV4", "IPV6"},
     "IPV4": {"IPV6"},
     "MAC": {"MAC_ADDRESS"},
-    # Date/time variations
     "DOB": {"DATE_OF_BIRTH", "DATE"},
     "DATE_OF_BIRTH": {"DATE"},
     "DATE_TIME": {"DATE", "TIME"},
     "DATE": {"DATE_TIME", "DATE_OF_BIRTH"},
-    # Vehicle variations
     "VIN": {"VEHICLE_IDENTIFIER"},
     "VEHICLE_VIN": {"VEHICLE_IDENTIFIER"},
-    # Postal variations
     "ZIP": {"POSTCODE"},
     "ZIPCODE": {"POSTCODE"},
     "POSTCODE": {"ZIPCODE", "STATE"},
     "STATE": {"POSTCODE"},
-    # Demographic variations
     "SEXUALITY": {"GENDER"},
     "GENDER": {"SEXUALITY"},
     "OCCUPATION": {"EMPLOYMENT_STATUS"},
@@ -132,7 +122,7 @@ def _types_match(detected_type: str, expected_type: str) -> bool:
     if detected_upper == expected_upper:
         return True
 
-    # Substring match (e.g., "PHONE_NUMBER" in "FAX_NUMBER" or vice versa)
+    # Substring match
     if expected_upper in detected_upper or detected_upper in expected_upper:
         return True
 
@@ -157,11 +147,7 @@ def _parse_locales(value: str | None) -> list[str] | None:
 
 
 def _parse_spans(spans_data: object, row_index: int) -> list[str]:
-    """Parse the spans field from nvidia dataset format.
-
-    Expected format: Python literal string or list of dicts with 'label' key.
-    Example: [{'start': 3, 'end': 8, 'text': 'Jason', 'label': 'first_name'}, ...]
-    """
+    """Parse the spans field from nvidia dataset format."""
     if spans_data is None or spans_data == "" or spans_data == "[]":
         return []
 

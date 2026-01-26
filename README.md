@@ -23,16 +23,16 @@ flowchart TB
     subgraph Browser["🌐 Browser Usage"]
         USER1[User on Web LLM Chatbot]
         EXT[Extension]
-        CHATGPT[LLM Chatbot Website]
+        LLMCHATBOT[LLM Chatbot Website]
         
         USER1 -->|text / file| EXT
         EXT -->|warns about detection results| USER1
-        EXT -.->|forwards when safe or allowed by the user| CHATGPT
+        EXT -.->|forwards when safe or allowed by the user| LLMCHATBOT
     end
-    subgraph SystemWide["💻 System-Wide Usage"]
+    subgraph SystemWide["💻 API Usage"]
         USER2[User on CLI/IDE/App]
         PROXY[Proxy]
-        LLMAPI[LLM API Providers<br/><small>OpenAI, Claude, etc.</small>]
+        LLMAPI[LLM API Providers]
         
         USER2 -->|LLM API calls| PROXY
         PROXY -->|403 block or allow| USER2
@@ -56,19 +56,14 @@ flowchart TB
     linkStyle default stroke:#000,stroke-width:2px
 ```
 
----
-
-## 🛠️ Set up and usage
+## 🛠️ Set up 
 
 ### 1. uv
 Install [uv](https://docs.astral.sh/uv/#installation) (modern Python package manager):
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
 ### 2. Configure package options
 - `backend`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
+- `multiagent-firewall`: Customize detection pipeline via `multiagent-firewall/config/pipeline.json` and detection options via `multiagent-firewall/config/detection.json`. More details in `multiagent-firewall/README.md`
 - `proxy`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
 - `extension`: Modify `extension/src/config.js`
 
@@ -95,7 +90,7 @@ uv run python -m app.main
 2. Toggle on "Developer mode"
 3. Click "Load unpacked" → choose path to `sensitive-data-detector/extension/`
 
-The extension will intercept web chatbots interactions (ChatGPT, Gemini...) and provide feedback to the user regarding any potential sensitive information leakage
+The extension will intercept web chatbots interactions (ChatGPT, Gemini...) and provide feedback to the user regarding any potential sensitive information leakage based on the configured options.
 
 ### 4b. Run proxy
 
@@ -103,25 +98,6 @@ Detailed information on how to run the proxy package under `proxy/README.md`
 
 The proxy will act as a middleman between the user and any listed endpoint under `proxy/.env`
 
-> [!IMPORTANT]
-> Ensure the host and ports of each package don't overlap with any other opened ports on your machine and that each package properly points to the backend port
-
----
-
-## 🧪 Tests
-Each package has its own test suite that can be run with the following commands
-```bash
-uv sync --project <package> --group test
-uv run --project <package> --group test bash -lc "PYTHONPATH=<package> pytest <package>/tests"
-```
-
-Or, from each package directory:
-```bash
-uv sync
-uv run pytest
-```
-
 ## 📜 License
 
-This project is under the MIT license.
-Check the file LICENSE for more details.
+MIT license.

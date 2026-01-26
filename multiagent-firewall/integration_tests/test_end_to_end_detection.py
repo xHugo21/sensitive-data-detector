@@ -17,7 +17,6 @@ DATASET_TEXT_FIELD = "text"
 
 DEFAULT_DATASET_LOCALES = "us"
 DEFAULT_DATASET_MAX_CASES = 200
-DEFAULT_DATASET_SEED = 1337
 
 # Mapping from nvidia snake_case labels to our UPPERCASE convention
 LABEL_NORMALIZE: dict[str, str] = {

@@ -250,6 +250,12 @@ TEST_CASES = _load_dataset_cases()
 async def test_sensitive_detection(
     orchestrator, pytestconfig, test_id, prompt, expected_entities
 ):
+    if (
+        hasattr(pytestconfig, "_integration_run_params")
+        and "seed" not in pytestconfig._integration_run_params
+    ):
+        pytestconfig._integration_run_params["seed"] = os.getenv(DATASET_SEED_ENV_VAR)
+
     start_time = time.perf_counter()
     result = await orchestrator.run(text=prompt)
     duration_s = time.perf_counter() - start_time

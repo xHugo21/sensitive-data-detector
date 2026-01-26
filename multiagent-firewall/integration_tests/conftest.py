@@ -13,6 +13,7 @@ from multiagent_firewall.orchestrator import GuardOrchestrator
 
 def pytest_configure(config):
     config._integration_metrics = []
+    config._integration_run_params = {}
 
 
 def _format_rate(numerator: int, denominator: int) -> str:
@@ -91,7 +92,9 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     dataset_text_field = "text"
     dataset_locales = os.getenv("INTEGRATION_DATASET_LOCALES", "us")
     dataset_max_cases = os.getenv("INTEGRATION_DATASET_MAX_CASES", "200")
-    dataset_seed = os.getenv("INTEGRATION_DATASET_SEED", "random")
+    dataset_seed = config._integration_run_params.get("seed") or os.getenv(
+        "INTEGRATION_DATASET_SEED", "random"
+    )
     llm_provider = os.getenv("LLM_PROVIDER", "unknown")
     llm_model = os.getenv("LLM_MODEL", "unknown")
     force_llm_detector = os.getenv("FORCE_LLM_DETECTOR", "false")

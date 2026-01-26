@@ -13,8 +13,8 @@ _system_reminder_re = re.compile(
 
 
 def _normalize_field_name(name: str) -> str:
-    """Normalize a field label for matching (case/format-insensitive)."""
-    return (name or "").strip().upper().replace("-", "").replace("_", "")
+    """Normalize a field label for matching (case-insensitive, preserves underscores)."""
+    return (name or "").strip().upper().replace("-", "_")
 
 
 _ALLOWED_FIELDS_NORMALIZED = {

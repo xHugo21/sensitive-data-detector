@@ -161,7 +161,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
 
     # Credit card detection (Luhn algorithm)
-    card_pattern = _extract_regex_pattern(REGEX_PATTERNS, "CREDITCARDNUMBER")
+    card_pattern = _extract_regex_pattern(REGEX_PATTERNS, "CREDIT_DEBIT_CARD")
     if card_pattern:
         potential_cards = re.findall(card_pattern, text)
         for card in potential_cards:
@@ -169,7 +169,7 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
             if luhn_checksum(card_clean):
                 findings.append(
                     {
-                        "field": "CREDITCARDNUMBER",
+                        "field": "CREDIT_DEBIT_CARD",
                         "value": card,
                         "sources": ["dlp_checksum"],
                     }
@@ -206,14 +206,14 @@ def detect_checksums(text: str) -> List[Dict[str, Any]]:
                 )
 
     # VIN detection (check digit algorithm)
-    vin_pattern = _extract_regex_pattern(REGEX_PATTERNS, "VEHICLEVIN")
+    vin_pattern = _extract_regex_pattern(REGEX_PATTERNS, "VEHICLE_IDENTIFIER")
     if vin_pattern:
         potential_vins = re.findall(vin_pattern, text.upper())
         for vin in potential_vins:
             if validate_vin(vin):
                 findings.append(
                     {
-                        "field": "VEHICLEVIN",
+                        "field": "VEHICLE_IDENTIFIER",
                         "value": vin,
                         "sources": ["dlp_checksum"],
                     }
@@ -242,7 +242,7 @@ def detect_regex_patterns(
         if pattern == "__library:phonenumbers__":
             if PHONENUMBERS_AVAILABLE:
                 region = rule.get("region", "US")
-                findings.extend(_detect_with_phonenumbers(text, region))
+                findings.extend(_detect_with_phonenumbers(text, region, rule["field"]))
             else:
                 print("PHONENUMBERS NOT AVAILABLE")
             continue
@@ -329,7 +329,9 @@ def _normalize_regex_rule(field_name: str, entry: object) -> Dict[str, Any]:
     raise ValueError(f"Invalid regex entry for field {field_name}")
 
 
-def _detect_with_phonenumbers(text: str, region: str = "US") -> List[Dict[str, Any]]:
+def _detect_with_phonenumbers(
+    text: str, region: str = "US", field_name: str = "PHONE_NUMBER"
+) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
     if not text:
         return findings
@@ -338,7 +340,7 @@ def _detect_with_phonenumbers(text: str, region: str = "US") -> List[Dict[str, A
         for match in phonenumbers.PhoneNumberMatcher(text, region):
             findings.append(
                 {
-                    "field": "PHONENUMBER",
+                    "field": field_name,
                     "value": match.raw_string,
                     "sources": ["dlp_phonenumbers"],
                 }

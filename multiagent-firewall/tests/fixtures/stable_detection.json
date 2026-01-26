@@ -1,0 +1,84 @@
+{
+  "prompts": {
+    "llm_detector": "sensitive-data-llm-prompt.txt",
+    "ocr_detector": "ocr-llm-prompt.txt"
+  },
+  "regex_patterns": {
+    "SSN": {
+      "regex": "\\b\\d{3}[\\s\\-]?\\d{2}[\\s\\-]?\\d{4}\\b",
+      "window": 4,
+      "keywords": ["ssn", "social security"]
+    },
+    "EMAIL": {
+      "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"
+    },
+    "PHONE_NUMBER": {
+      "regex": "__library:phonenumbers__",
+      "region": "US"
+    },
+    "CREDIT_DEBIT_CARD": {
+      "regex": "\\b(?:\\d{4}[\\s\\-]?){3}\\d{4}\\b",
+      "window": 4,
+      "keywords": ["card", "credit card"]
+    },
+    "IPV4": {
+      "regex": "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
+    },
+    "MAC_ADDRESS": {
+      "regex": "\\b(?:[0-9A-Fa-f]{2}[:\\-]){5}[0-9A-Fa-f]{2}\\b"
+    },
+    "URL": {
+      "regex": "\\b(?:https?|ftp)://[^\\s/$.?#].[^\\s]*\\b"
+    },
+    "VEHICLE_IDENTIFIER": {
+      "regex": "\\b[A-HJ-NPR-Z0-9]{17}\\b",
+      "window": 6,
+      "keywords": ["vin", "vehicle"]
+    },
+    "DATE": {
+      "regex": "\\b(?:\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}|\\d{4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{1,2})\\b"
+    }
+  },
+  "keywords": {
+    "PASSWORD": [
+      "-----BEGIN PRIVATE KEY-----"
+    ]
+  },
+  "ner_labels": {
+    "person": "FIRST_NAME",
+    "first name": "FIRST_NAME",
+    "last name": "LAST_NAME"
+  },
+  "risk": {
+    "scores": {
+      "high": 6,
+      "medium": 2,
+      "low": 1
+    },
+    "thresholds": {
+      "high": 6,
+      "medium": [4, 5],
+      "low": [1, 3]
+    }
+  },
+  "risk_fields": {
+    "high": [
+      "SSN",
+      "CREDIT_DEBIT_CARD",
+      "PASSWORD",
+      "VEHICLE_IDENTIFIER"
+    ],
+    "medium": [
+      "EMAIL",
+      "PHONE_NUMBER",
+      "MAC_ADDRESS",
+      "URL",
+      "IPV4"
+    ],
+    "low": [
+      "DATE",
+      "FIRST_NAME",
+      "LAST_NAME"
+    ]
+  }
+}

@@ -13,6 +13,7 @@ from multiagent_firewall.orchestrator import GuardOrchestrator
 
 def pytest_configure(config):
     config._integration_metrics = []
+    config._integration_run_params = {}
 
 
 def _format_rate(numerator: int, denominator: int) -> str:
@@ -58,23 +59,42 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     median_time = statistics.median(durations) if durations else None
     p95_time = _percentile(durations, 0.95)
 
+    # Aggregate source counts
+    total_source_stats = {}
+    for entry in metrics:
+        for source, counts in entry.get("source_stats", {}).items():
+            if source not in total_source_stats:
+                total_source_stats[source] = {"tp": 0, "fp": 0}
+            total_source_stats[source]["tp"] += counts["tp"]
+            total_source_stats[source]["fp"] += counts["fp"]
+
+    sources_parts = []
+    for k, v in sorted(total_source_stats.items()):
+        total = v["tp"] + v["fp"]
+        sources_parts.append(f"{k}: {total} (TP: {v['tp']}, FP: {v['fp']})")
+
+    sources_str = ", ".join(sources_parts)
+
     terminalreporter.section("Integration metrics", sep="-")
     terminalreporter.write_line(f"Cases: {total_cases}  Pass: {case_passes}")
     terminalreporter.write_line(f"Fields detected: TP: {tp}  FP: {fp}  FN: {fn}")
     terminalreporter.write_line(f"Precision: {precision}  Recall: {recall}  F1: {f1}")
     terminalreporter.write_line(f"Case pass rate: {case_pass_rate}")
+    terminalreporter.write_line(f"Sources: {sources_str}")
     terminalreporter.write_line(
         "Latency (mean/median/p95): "
         f"{_format_ms(mean_time)} / {_format_ms(median_time)} / {_format_ms(p95_time)}"
     )
 
     # Keep in sync with integration_tests/test_end_to_end_detection.py constants.
-    dataset_name = "ai4privacy/pii-masking-200k"
-    dataset_split = "train"
-    dataset_text_field = "source_text"
-    dataset_languages = os.getenv("INTEGRATION_DATASET_LANGUAGES", "en")
+    dataset_name = "nvidia/Nemotron-PII"
+    dataset_split = "test"
+    dataset_text_field = "text"
+    dataset_locales = os.getenv("INTEGRATION_DATASET_LOCALES", "us")
     dataset_max_cases = os.getenv("INTEGRATION_DATASET_MAX_CASES", "200")
-    dataset_seed = os.getenv("INTEGRATION_DATASET_SEED", "1337")
+    dataset_seed = config._integration_run_params.get("seed") or os.getenv(
+        "INTEGRATION_DATASET_SEED", "random"
+    )
     llm_provider = os.getenv("LLM_PROVIDER", "unknown")
     llm_model = os.getenv("LLM_MODEL", "unknown")
     force_llm_detector = os.getenv("FORCE_LLM_DETECTOR", "false")
@@ -87,6 +107,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         f"Fields detected: TP: {tp}  FP: {fp}  FN: {fn}",
         f"Precision: {precision}  Recall: {recall}  F1: {f1}",
         f"Case pass rate: {case_pass_rate}",
+        f"Sources: {sources_str}",
         "Latency (mean/median/p95): "
         f"{_format_ms(mean_time)} / {_format_ms(median_time)} / {_format_ms(p95_time)}",
         "",
@@ -97,7 +118,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         f"NER_ENABLED: {ner_enabled}",
         f"NER_MIN_SCORE: {ner_min_score}",
         f"DATASET: {dataset_name} ({dataset_split}/{dataset_text_field})",
-        f"INTEGRATION_DATASET_LANGUAGES: {dataset_languages}",
+        f"INTEGRATION_DATASET_LOCALES: {dataset_locales}",
         f"INTEGRATION_DATASET_MAX_CASES: {dataset_max_cases}",
         f"INTEGRATION_DATASET_SEED: {dataset_seed}",
         f"EXIT_STATUS: {exitstatus}",

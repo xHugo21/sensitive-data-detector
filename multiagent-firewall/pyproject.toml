@@ -45,4 +45,8 @@ markers = [
 ]
 filterwarnings = [
     "ignore:Pydantic serializer warnings:UserWarning:pydantic.main",
+    "ignore:.*resume_download.*:FutureWarning",
+    "ignore:.*SwigPy.*:DeprecationWarning",
+    "ignore:.*sentencepiece tokenizer.*:UserWarning",
+    "ignore:.*Sentence of length.*truncated.*:UserWarning",
 ]

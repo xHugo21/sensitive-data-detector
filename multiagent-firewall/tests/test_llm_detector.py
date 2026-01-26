@@ -139,4 +139,4 @@ def test_inject_sensitive_fields_includes_all_risk_sets():
     block = llm._build_sensitive_fields_block()
     assert "- PASSWORD" in block
     assert "- EMAIL" in block
-    assert "- FIRSTNAME" in block
+    assert "- FIRST_NAME" in block

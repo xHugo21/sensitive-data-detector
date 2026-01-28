@@ -181,7 +181,7 @@ def test_normalize_code(mock_detector_init):
 @patch(
     "multiagent_firewall.detectors.code_similarity.CodeSimilarityDetector._build_index"
 )
-@patch("multiagent_firewall.detectors.code_similarity.fuzz")
+@patch("multiagent_firewall.detectors.code_similarity.fuzz", create=True)
 def test_find_matches_in_repo(
     mock_fuzz, mock_build_index, mock_ensure_repo, mock_detector_init
 ):

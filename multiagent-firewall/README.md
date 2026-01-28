@@ -20,8 +20,10 @@ flowchart TD
 
     Normalize --> DLP[dlp_detector<br/>Regex, Keyword, Checksum]
     Normalize --> NER[ner_detector<br/>GLiNER NER]
+    Normalize --> CodeSim[code_similarity_detector<br/>Proprietary Code Detection]
     DLP --> MergeDLP[merge_dlp_ner<br/>Merge detections]
     NER --> MergeDLP
+    CodeSim --> MergeDLP
     MergeDLP --> HasPreLLM{Any DLP/NER findings?}
 
     HasPreLLM -->|Yes| RiskDLP[risk_dlp_ner<br/>Risk evaluation]
@@ -60,6 +62,7 @@ flowchart TD
     style LLM fill:#f0e6ff,stroke:#333,color:#000
     style DLP fill:#e6ffe6,stroke:#333,color:#000
     style NER fill:#e6ffe6,stroke:#333,color:#000
+    style CodeSim fill:#e6ffe6,stroke:#333,color:#000
     style Remediation fill:#ffe6e6,stroke:#333,color:#000
     style MergeDLP fill:#fff9e6,stroke:#333,color:#000
     style MergeFinal fill:#fff9e6,stroke:#333,color:#000
@@ -247,6 +250,27 @@ NER_MODEL=urchade/gliner_multi-v2.1      # GLiNER model name or path (See urchad
 NER_MIN_SCORE=0.7            # Minimum score threshold (default: 0.5)
 ```
 Label mapping is defined in `multiagent-firewall/multiagent_firewall/config/detection.json` as `ner_labels`.
+
+#### Code Analysis Configuration (Optional)
+Code analysis enables detection of proprietary code snippets by comparing user input against private Git repositories. Install the optional dependency group:
+
+```bash
+uv sync --extra code-analysis
+```
+
+```bash
+CODE_ANALYSIS_ENABLED=true                    # Enable code similarity detector (default: false)
+CODE_ANALYSIS_REPO_URL=https://github.com/org/repo1.git,https://github.com/org/repo2.git  # Comma-separated Git URLs
+CODE_ANALYSIS_AUTH_TOKEN=ghp_xxx              # GitHub PAT for private repos (optional for public)
+CODE_ANALYSIS_SIMILARITY_THRESHOLD=0.85       # Match threshold 0.0-1.0 (default: 0.85)
+CODE_ANALYSIS_REFRESH_INTERVAL=3600           # Seconds between repo pulls (default: 3600)
+CODE_ANALYSIS_CACHE_DIR=/tmp/code-similarity-cache  # Local clone directory
+CODE_ANALYSIS_MIN_SNIPPET_LENGTH=50           # Minimum chars to analyze (default: 50)
+```
+
+Compares against supported file extensions specified in `code_similarity.py`
+
+Detected matches are flagged as `PROPRIETARY_CODE` with high risk.
 
 #### Blocking Policy
 ```bash

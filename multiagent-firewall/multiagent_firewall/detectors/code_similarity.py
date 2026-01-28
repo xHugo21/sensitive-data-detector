@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-import os
+import re
 import shutil
 import tempfile
 import time
@@ -69,6 +69,80 @@ IGNORE_DIRS = {
 }
 
 MAX_FILE_SIZE = 1024 * 1024  # 1MB
+
+# Regex patterns for extracting code blocks
+_FENCED_CODE_BLOCK_RE = re.compile(
+    r"```(?:\w+)?\s*\n(.*?)```", re.DOTALL | re.MULTILINE
+)
+_INDENTED_CODE_BLOCK_RE = re.compile(r"(?:^|\n)((?:(?:    |\t).+\n?)+)", re.MULTILINE)
+
+# Heuristics for identifying code-like content
+_CODE_INDICATORS = (
+    r"^\s*(?:def|class|function|const|let|var|import|from|return|if|for|while)\b",
+    r"[{}\[\]();]",
+    r"^\s*#include\b",
+    r"^\s*package\b",
+    r"^\s*public\s+(?:class|static|void)",
+    r"=\s*[\"'].*[\"']\s*;?\s*$",
+    r"^\s*@\w+",  # decorators/annotations
+)
+_CODE_INDICATOR_RES = [re.compile(p, re.MULTILINE) for p in _CODE_INDICATORS]
+
+
+def _looks_like_code(text: str, threshold: float = 0.3) -> bool:
+    """Heuristic check if text looks like code based on syntax indicators."""
+    lines = [ln for ln in text.split("\n") if ln.strip()]
+    if not lines:
+        return False
+    code_line_count = 0
+    for line in lines:
+        for pattern in _CODE_INDICATOR_RES:
+            if pattern.search(line):
+                code_line_count += 1
+                break
+    return (code_line_count / len(lines)) >= threshold
+
+
+def _extract_code_segments(text: str, min_length: int = 30) -> List[str]:
+    """
+    Extract code segments from mixed prose+code input.
+
+    Extraction priority:
+    1. Fenced code blocks (```...```)
+    2. Indented code blocks (4 spaces or tab)
+    3. Sliding window over remaining text to find code-like chunks
+    """
+    segments: List[str] = []
+    remaining = text
+
+    # 1. Extract fenced code blocks
+    for match in _FENCED_CODE_BLOCK_RE.finditer(text):
+        block = match.group(1).strip()
+        if len(block) >= min_length:
+            segments.append(block)
+    remaining = _FENCED_CODE_BLOCK_RE.sub("", remaining)
+
+    # 2. Extract indented code blocks
+    for match in _INDENTED_CODE_BLOCK_RE.finditer(remaining):
+        block = match.group(1).strip()
+        if len(block) >= min_length and _looks_like_code(block):
+            segments.append(block)
+    remaining = _INDENTED_CODE_BLOCK_RE.sub("", remaining)
+
+    # 3. Find code-like chunks in remaining text using paragraph splitting
+    paragraphs = re.split(r"\n\s*\n", remaining)
+    for para in paragraphs:
+        para = para.strip()
+        # Require higher threshold and more lines for unfenced code
+        lines = [ln for ln in para.split("\n") if ln.strip()]
+        if (
+            len(para) >= min_length
+            and len(lines) >= 3
+            and _looks_like_code(para, threshold=0.5)
+        ):
+            segments.append(para)
+
+    return segments
 
 
 @dataclass
@@ -279,6 +353,7 @@ class CodeSimilarityDetector:
         return matches
 
     def _find_matches(self, text: str) -> List[CodeMatch]:
+        """Find matches for a single text segment."""
         if len(text.strip()) < self._min_snippet_length:
             return []
 
@@ -295,9 +370,34 @@ class CodeSimilarityDetector:
         all_matches.sort(key=lambda m: m.similarity, reverse=True)
         return all_matches[:5]
 
+    def _find_all_matches(self, text: str) -> List[CodeMatch]:
+        """
+        Extract code segments from mixed content and find matches for each.
+
+        Falls back to full-text matching if no segments are extracted.
+        """
+        segments = _extract_code_segments(text, min_length=self._min_snippet_length)
+
+        if not segments:
+            return self._find_matches(text)
+
+        all_matches: List[CodeMatch] = []
+        seen_files: set[tuple[str, str]] = set()
+
+        for segment in segments:
+            segment_matches = self._find_matches(segment)
+            for match in segment_matches:
+                key = (match.repo_url, match.file_path)
+                if key not in seen_files:
+                    seen_files.add(key)
+                    all_matches.append(match)
+
+        all_matches.sort(key=lambda m: m.similarity, reverse=True)
+        return all_matches[:5]
+
     def detect(self, text: str) -> List[Dict[str, Any]]:
         try:
-            matches = self._find_matches(text)
+            matches = self._find_all_matches(text)
         except Exception:
             return []
 

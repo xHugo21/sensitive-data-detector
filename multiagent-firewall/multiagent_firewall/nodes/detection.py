@@ -210,8 +210,11 @@ async def run_code_similarity_detector(state: GuardState, *, fw_config) -> Guard
 
     Compares the input text against indexed files from a Git repository
     to detect proprietary code snippets.
+
+    Uses raw_text (not normalized_text) to preserve code structure
+    (indentation, newlines, fenced blocks) needed for segment extraction.
     """
-    text = state.get("normalized_text") or ""
+    text = state.get("raw_text") or ""
     if not text:
         return {"code_similarity_fields": []}
 

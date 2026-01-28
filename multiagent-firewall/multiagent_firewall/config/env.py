@@ -49,11 +49,23 @@ class NERConfig:
 
 
 @dataclass(frozen=True)
+class CodeAnalysisConfig:
+    enabled: bool = False
+    repo_url: str = ""
+    auth_token: str | None = None
+    similarity_threshold: float = 85.0
+    refresh_interval: int = 3600
+    cache_dir: str | None = None
+    min_snippet_length: int = 50
+
+
+@dataclass(frozen=True)
 class GuardConfig:
     llm: LLMConfig
     llm_ocr: LLMConfig | None = None
     ocr: OCRConfig = field(default_factory=OCRConfig)
     ner: NERConfig = field(default_factory=NERConfig)
+    code_analysis: CodeAnalysisConfig = field(default_factory=CodeAnalysisConfig)
     debug: bool = False
     force_llm_detector: bool = False
 
@@ -115,6 +127,31 @@ class GuardConfig:
         )
         ner_label_map = dict(NER_LABELS)
 
+        # Code analysis configuration
+        code_analysis_enabled = _str_to_bool(os.getenv("CODE_ANALYSIS_ENABLED"), False)
+        code_analysis_repo_url = os.getenv("CODE_ANALYSIS_REPO_URL", "")
+        code_analysis_auth_token = os.getenv("CODE_ANALYSIS_AUTH_TOKEN")
+        code_analysis_similarity_threshold = _parse_float(
+            os.getenv("CODE_ANALYSIS_SIMILARITY_THRESHOLD"),
+            0.85,
+            min_value=0.0,
+        )
+        code_analysis_refresh_interval_str = os.getenv(
+            "CODE_ANALYSIS_REFRESH_INTERVAL", "3600"
+        )
+        try:
+            code_analysis_refresh_interval = int(code_analysis_refresh_interval_str)
+        except ValueError:
+            code_analysis_refresh_interval = 3600
+        code_analysis_cache_dir = os.getenv("CODE_ANALYSIS_CACHE_DIR")
+        code_analysis_min_snippet_length_str = os.getenv(
+            "CODE_ANALYSIS_MIN_SNIPPET_LENGTH", "50"
+        )
+        try:
+            code_analysis_min_snippet_length = int(code_analysis_min_snippet_length_str)
+        except ValueError:
+            code_analysis_min_snippet_length = 50
+
         return cls(
             llm=llm_config,
             llm_ocr=llm_ocr_config,
@@ -130,6 +167,15 @@ class GuardConfig:
                 labels=tuple(NER_LABELS.keys()),
                 label_map=ner_label_map,
                 min_score=ner_min_score,
+            ),
+            code_analysis=CodeAnalysisConfig(
+                enabled=code_analysis_enabled,
+                repo_url=code_analysis_repo_url,
+                auth_token=code_analysis_auth_token,
+                similarity_threshold=code_analysis_similarity_threshold,
+                refresh_interval=code_analysis_refresh_interval,
+                cache_dir=code_analysis_cache_dir,
+                min_snippet_length=code_analysis_min_snippet_length,
             ),
             debug=debug_mode,
             force_llm_detector=force_llm_detector,

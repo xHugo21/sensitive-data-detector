@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from ..detectors import GlinerNERDetector, LiteLLMDetector
+from ..detectors import GlinerNERDetector, LiteLLMDetector, CodeSimilarityDetector
 from ..detectors.dlp import detect_checksums, detect_keywords, detect_regex_patterns
 from ..config.detection import KEYWORDS, REGEX_PATTERNS
 from ..types import FieldList, GuardState
@@ -201,4 +201,45 @@ async def run_ner_detector(state: GuardState, *, fw_config) -> GuardState:
         return {
             "ner_fields": [],
             "errors": [f"NER detector failed: {exc}"],
+        }
+
+
+async def run_code_similarity_detector(state: GuardState, *, fw_config) -> GuardState:
+    """
+    Run code similarity detection against a private repository.
+
+    Compares the input text against indexed files from a Git repository
+    to detect proprietary code snippets.
+    """
+    text = state.get("normalized_text") or ""
+    if not text:
+        return {"code_similarity_fields": []}
+
+    code_config = getattr(fw_config, "code_analysis", None)
+    if not code_config or not code_config.enabled:
+        return {"code_similarity_fields": []}
+
+    if not code_config.repo_url:
+        return {"code_similarity_fields": []}
+
+    try:
+        detector = CodeSimilarityDetector(
+            repo_url=code_config.repo_url,
+            auth_token=code_config.auth_token,
+            similarity_threshold=code_config.similarity_threshold,
+            refresh_interval=code_config.refresh_interval,
+            cache_dir=code_config.cache_dir,
+            min_snippet_length=code_config.min_snippet_length,
+        )
+        findings = await asyncio.to_thread(detector.detect, text)
+        return {"code_similarity_fields": findings}
+    except ImportError as exc:
+        return {
+            "code_similarity_fields": [],
+            "errors": [f"Code similarity detector dependencies not installed: {exc}"],
+        }
+    except Exception as exc:
+        return {
+            "code_similarity_fields": [],
+            "errors": [f"Code similarity detector failed: {exc}"],
         }

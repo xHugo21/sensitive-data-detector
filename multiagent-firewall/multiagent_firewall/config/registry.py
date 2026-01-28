@@ -9,6 +9,7 @@ NODE_REGISTRY = {
     "normalize": nodes.normalize,
     "run_dlp_detector": nodes.run_dlp_detector,
     "run_ner_detector": nodes.run_ner_detector,
+    "run_code_similarity_detector": nodes.run_code_similarity_detector,
     "merge_detections": nodes.merge_detections,
     "anonymize_text": nodes.anonymize_text,
     "evaluate_risk": nodes.evaluate_risk,

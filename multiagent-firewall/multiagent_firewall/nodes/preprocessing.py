@@ -54,10 +54,10 @@ def normalize(state: GuardState) -> GuardState:
 
 
 def merge_detections(state: GuardState) -> GuardState:
-    """Merge LLM + DLP + NER detections, de-duplicate, and compute per-field risk."""
+    """Merge LLM + DLP + NER + Code Similarity detections, de-duplicate, and compute per-field risk."""
     merged: FieldList = []
     seen: dict[tuple[str, str], int] = {}
-    for key in ("llm_fields", "dlp_fields", "ner_fields"):
+    for key in ("llm_fields", "dlp_fields", "ner_fields", "code_similarity_fields"):
         for item in state.get(key, []) or []:
             if not isinstance(item, dict):
                 continue
@@ -93,6 +93,8 @@ def _field_risk(item: dict) -> str:
     """Assign a risk label based on the canonical field name."""
     name = item.get("field") or item.get("type") or ""
     field = str(name).strip()
+    if field == "PROPRIETARY_CODE":
+        return "high"
     if field == "OTHER":
         return "high"
     if field in HIGH_RISK_FIELDS:

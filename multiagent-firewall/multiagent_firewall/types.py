@@ -31,6 +31,7 @@ class GuardState(TypedDict, total=False):
     llm_fields: FieldList
     dlp_fields: FieldList
     ner_fields: FieldList
+    code_similarity_fields: FieldList
     detected_fields: FieldList
 
     # DECISION

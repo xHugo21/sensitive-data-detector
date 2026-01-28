@@ -24,6 +24,10 @@ file-analysis = [
 ner = [
     "gliner>=0.1.15",
 ]
+code-analysis = [
+    "rapidfuzz>=3.0.0",
+    "GitPython>=3.1.0",
+]
 
 [dependency-groups]
 test = [

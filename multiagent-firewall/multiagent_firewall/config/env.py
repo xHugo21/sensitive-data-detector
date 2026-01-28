@@ -51,7 +51,7 @@ class NERConfig:
 @dataclass(frozen=True)
 class CodeAnalysisConfig:
     enabled: bool = False
-    repo_url: str = ""
+    repo_urls: tuple[str, ...] = tuple()
     auth_token: str | None = None
     similarity_threshold: float = 85.0
     refresh_interval: int = 3600
@@ -129,7 +129,10 @@ class GuardConfig:
 
         # Code analysis configuration
         code_analysis_enabled = _str_to_bool(os.getenv("CODE_ANALYSIS_ENABLED"), False)
-        code_analysis_repo_url = os.getenv("CODE_ANALYSIS_REPO_URL", "")
+        code_analysis_repo_url_str = os.getenv("CODE_ANALYSIS_REPO_URL", "")
+        code_analysis_repo_urls = tuple(
+            url.strip() for url in code_analysis_repo_url_str.split(",") if url.strip()
+        )
         code_analysis_auth_token = os.getenv("CODE_ANALYSIS_AUTH_TOKEN")
         code_analysis_similarity_threshold = _parse_float(
             os.getenv("CODE_ANALYSIS_SIMILARITY_THRESHOLD"),
@@ -170,7 +173,7 @@ class GuardConfig:
             ),
             code_analysis=CodeAnalysisConfig(
                 enabled=code_analysis_enabled,
-                repo_url=code_analysis_repo_url,
+                repo_urls=code_analysis_repo_urls,
                 auth_token=code_analysis_auth_token,
                 similarity_threshold=code_analysis_similarity_threshold,
                 refresh_interval=code_analysis_refresh_interval,

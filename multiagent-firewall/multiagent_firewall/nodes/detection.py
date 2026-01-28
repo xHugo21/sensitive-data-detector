@@ -219,12 +219,12 @@ async def run_code_similarity_detector(state: GuardState, *, fw_config) -> Guard
     if not code_config or not code_config.enabled:
         return {"code_similarity_fields": []}
 
-    if not code_config.repo_url:
+    if not code_config.repo_urls:
         return {"code_similarity_fields": []}
 
     try:
         detector = CodeSimilarityDetector(
-            repo_url=code_config.repo_url,
+            repo_urls=code_config.repo_urls,
             auth_token=code_config.auth_token,
             similarity_threshold=code_config.similarity_threshold,
             refresh_interval=code_config.refresh_interval,

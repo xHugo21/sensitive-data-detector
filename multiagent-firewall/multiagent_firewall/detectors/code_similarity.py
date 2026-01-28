@@ -76,6 +76,7 @@ class CodeMatch:
     file_path: str
     similarity: float
     matched_snippet: str
+    repo_url: str
 
 
 @dataclass
@@ -86,7 +87,7 @@ class RepoIndex:
 
 class CodeSimilarityDetector:
     """
-    Detects proprietary code by comparing input against a private Git repository.
+    Detects proprietary code by comparing input against private Git repositories.
 
     Uses fuzzy string matching (rapidfuzz) to find similar code blocks.
     """
@@ -94,7 +95,7 @@ class CodeSimilarityDetector:
     def __init__(
         self,
         *,
-        repo_url: str,
+        repo_urls: List[str] | tuple[str, ...],
         auth_token: str | None = None,
         similarity_threshold: float = 85.0,
         refresh_interval: int = 3600,
@@ -112,7 +113,7 @@ class CodeSimilarityDetector:
                 "Install with: pip install rapidfuzz"
             )
 
-        self._repo_url = repo_url
+        self._repo_urls = list(repo_urls)
         self._auth_token = auth_token
 
         # Ensure threshold is in 0-100 range for rapidfuzz
@@ -125,60 +126,58 @@ class CodeSimilarityDetector:
         self._min_snippet_length = min_snippet_length
 
         if cache_dir:
-            self._cache_dir = Path(cache_dir)
+            self._base_cache_dir = Path(cache_dir)
         else:
-            repo_hash = hashlib.md5(repo_url.encode()).hexdigest()[:12]
-            self._cache_dir = (
-                Path(tempfile.gettempdir()) / f"code-similarity-{repo_hash}"
-            )
+            self._base_cache_dir = Path(tempfile.gettempdir()) / "code-similarity-cache"
 
-        self._index: RepoIndex | None = None
+        self._indexes: Dict[str, RepoIndex] = {}
 
-    def _get_authenticated_url(self) -> str:
+    def _get_authenticated_url(self, repo_url: str) -> str:
         if not self._auth_token:
-            return self._repo_url
+            return repo_url
 
-        if self._repo_url.startswith("https://"):
-            if "github.com" in self._repo_url:
-                return self._repo_url.replace(
-                    "https://", f"https://{self._auth_token}@"
-                )
-            elif "gitlab.com" in self._repo_url:
-                return self._repo_url.replace(
+        if repo_url.startswith("https://"):
+            if "github.com" in repo_url:
+                return repo_url.replace("https://", f"https://{self._auth_token}@")
+            elif "gitlab.com" in repo_url:
+                return repo_url.replace(
                     "https://", f"https://oauth2:{self._auth_token}@"
                 )
             else:
-                return self._repo_url.replace(
-                    "https://", f"https://{self._auth_token}@"
-                )
-        return self._repo_url
+                return repo_url.replace("https://", f"https://{self._auth_token}@")
+        return repo_url
 
-    def _ensure_repo(self) -> Path:
-        repo_path = self._cache_dir / "repo"
-        auth_url = self._get_authenticated_url()
+    def _get_repo_cache_path(self, repo_url: str) -> Path:
+        repo_hash = hashlib.md5(repo_url.encode()).hexdigest()[:12]
+        return self._base_cache_dir / repo_hash
+
+    def _ensure_repo(self, repo_url: str) -> Path:
+        repo_dir = self._get_repo_cache_path(repo_url)
+        repo_path = repo_dir / "repo"
+        auth_url = self._get_authenticated_url(repo_url)
 
         if repo_path.exists():
             try:
                 repo = Repo(repo_path)
                 if (
-                    time.time() - self._get_last_pull_time(repo_path)
+                    time.time() - self._get_last_pull_time(repo_dir)
                     > self._refresh_interval
                 ):
                     repo.remotes.origin.pull()
-                    self._set_last_pull_time(repo_path)
+                    self._set_last_pull_time(repo_dir)
             except GitCommandError:
                 shutil.rmtree(repo_path, ignore_errors=True)
                 Repo.clone_from(auth_url, repo_path)
-                self._set_last_pull_time(repo_path)
+                self._set_last_pull_time(repo_dir)
         else:
             repo_path.parent.mkdir(parents=True, exist_ok=True)
             Repo.clone_from(auth_url, repo_path)
-            self._set_last_pull_time(repo_path)
+            self._set_last_pull_time(repo_dir)
 
         return repo_path
 
-    def _get_last_pull_time(self, repo_path: Path) -> float:
-        marker = repo_path.parent / ".last_pull"
+    def _get_last_pull_time(self, repo_dir: Path) -> float:
+        marker = repo_dir / ".last_pull"
         if marker.exists():
             try:
                 return float(marker.read_text().strip())
@@ -186,8 +185,8 @@ class CodeSimilarityDetector:
                 pass
         return 0.0
 
-    def _set_last_pull_time(self, repo_path: Path) -> None:
-        marker = repo_path.parent / ".last_pull"
+    def _set_last_pull_time(self, repo_dir: Path) -> None:
+        marker = repo_dir / ".last_pull"
         marker.write_text(str(time.time()))
 
     def _should_index_file(self, file_path: Path) -> bool:
@@ -225,15 +224,19 @@ class CodeSimilarityDetector:
         index.last_updated = time.time()
         return index
 
-    def _get_index(self) -> RepoIndex:
-        repo_path = self._ensure_repo()
+    def _get_index(self, repo_url: str) -> RepoIndex:
+        repo_path = self._ensure_repo(repo_url)
 
-        if self._index is None or (
-            time.time() - self._index.last_updated > self._refresh_interval
+        current_index = self._indexes.get(repo_url)
+
+        if current_index is None or (
+            time.time() - current_index.last_updated > self._refresh_interval
         ):
-            self._index = self._build_index(repo_path)
+            new_index = self._build_index(repo_path)
+            self._indexes[repo_url] = new_index
+            return new_index
 
-        return self._index
+        return current_index
 
     def _normalize_code(self, code: str) -> str:
         lines = code.split("\n")
@@ -248,16 +251,11 @@ class CodeSimilarityDetector:
                 normalized_lines.append(stripped)
         return "\n".join(normalized_lines)
 
-    def _find_matches(self, text: str) -> List[CodeMatch]:
-        if len(text.strip()) < self._min_snippet_length:
-            return []
-
-        index = self._get_index()
+    def _find_matches_in_repo(
+        self, text: str, repo_url: str, normalized_input: str
+    ) -> List[CodeMatch]:
+        index = self._get_index(repo_url)
         matches: List[CodeMatch] = []
-        normalized_input = self._normalize_code(text)
-
-        if len(normalized_input) < self._min_snippet_length:
-            return []
 
         for file_path, content in index.files.items():
             normalized_content = self._normalize_code(content)
@@ -275,11 +273,27 @@ class CodeSimilarityDetector:
                         similarity=similarity,
                         matched_snippet=content[:snippet_end]
                         + ("..." if len(content) > snippet_end else ""),
+                        repo_url=repo_url,
                     )
                 )
+        return matches
 
-        matches.sort(key=lambda m: m.similarity, reverse=True)
-        return matches[:5]
+    def _find_matches(self, text: str) -> List[CodeMatch]:
+        if len(text.strip()) < self._min_snippet_length:
+            return []
+
+        normalized_input = self._normalize_code(text)
+        if len(normalized_input) < self._min_snippet_length:
+            return []
+
+        all_matches: List[CodeMatch] = []
+
+        for repo_url in self._repo_urls:
+            repo_matches = self._find_matches_in_repo(text, repo_url, normalized_input)
+            all_matches.extend(repo_matches)
+
+        all_matches.sort(key=lambda m: m.similarity, reverse=True)
+        return all_matches[:5]
 
     def detect(self, text: str) -> List[Dict[str, Any]]:
         try:
@@ -293,11 +307,12 @@ class CodeSimilarityDetector:
             findings.append(
                 {
                     "field": "PROPRIETARY_CODE",
-                    "value": f"[similarity: {match.similarity:.1f}%] {match.file_path}",
+                    "value": f"[similarity: {match.similarity:.1f}%] {match.file_path} (Repo: {match.repo_url})",
                     "sources": [f"code_similarity:{match.file_path}"],
                     "metadata": {
                         "similarity": match.similarity,
                         "file_path": match.file_path,
+                        "repo_url": match.repo_url,
                         "matched_snippet": match.matched_snippet,
                     },
                 }

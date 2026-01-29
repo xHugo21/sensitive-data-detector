@@ -62,9 +62,9 @@ flowchart TB
 Install [uv](https://docs.astral.sh/uv/#installation) (modern Python package manager):
 
 ### 2. Configure package options
-- `backend`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
-- `multiagent-firewall`: Customize detection pipeline via `multiagent-firewall/config/pipeline.json` and detection options via `multiagent-firewall/config/detection.json`. More details in `multiagent-firewall/README.md`
-- `proxy`: Copy `backend/.env.example` to `backend/.env` and configure to your liking.
+- `backend`: Copy `backend/.env.example` to `backend/.env` (server settings).
+- `multiagent-firewall`: Copy `multiagent-firewall/.env.example` to `multiagent-firewall/.env` (LLM, OCR, NER settings). Customize detection pipeline via `multiagent-firewall/config/pipeline.json` and detection options via `multiagent-firewall/config/detection.json`.
+- `proxy`: Copy `proxy/.env.example` to `proxy/.env` and configure to your liking.
 - `extension`: Modify `extension/src/config.js`
 
 ### 3. Run backend server

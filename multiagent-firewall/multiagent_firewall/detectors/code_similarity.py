@@ -151,6 +151,7 @@ class CodeMatch:
     similarity: float
     matched_snippet: str
     repo_url: str
+    input_segment: str = ""
 
 
 @dataclass
@@ -348,6 +349,7 @@ class CodeSimilarityDetector:
                         matched_snippet=content[:snippet_end]
                         + ("..." if len(content) > snippet_end else ""),
                         repo_url=repo_url,
+                        input_segment=text,
                     )
                 )
         return matches
@@ -407,8 +409,8 @@ class CodeSimilarityDetector:
             findings.append(
                 {
                     "field": "PROPRIETARY_CODE",
-                    "value": f"[similarity: {match.similarity:.1f}%] {match.file_path} (Repo: {match.repo_url})",
-                    "sources": [f"code_similarity:{match.file_path}"],
+                    "value": match.input_segment or match.matched_snippet,
+                    "sources": ["code_similarity"],
                     "metadata": {
                         "similarity": match.similarity,
                         "file_path": match.file_path,

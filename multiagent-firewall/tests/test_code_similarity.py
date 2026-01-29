@@ -223,6 +223,7 @@ def test_detect_returns_findings(mock_find_all_matches, mock_detector_init):
         similarity=95.0,
         matched_snippet="def secret():...",
         repo_url="https://github.com/test/repo.git",
+        input_segment="some code",
     )
     mock_find_all_matches.return_value = [mock_match]
 
@@ -231,9 +232,9 @@ def test_detect_returns_findings(mock_find_all_matches, mock_detector_init):
     assert len(findings) == 1
     finding = findings[0]
     assert finding["field"] == "PROPRIETARY_CODE"
-    assert "src/secret.py" in finding["value"]
+    assert finding["value"] == "some code"
     assert finding["metadata"]["similarity"] == 95.0
-    assert finding["sources"] == ["code_similarity:src/secret.py"]
+    assert finding["sources"] == ["code_similarity"]
 
 
 # --- Tests for Node Wrapper ---

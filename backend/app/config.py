@@ -1,8 +1,20 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from multiagent_firewall.config import GuardConfig
 
 load_dotenv()
+
+# Load firewall environment variables from the sibling directory
+try:
+    MULTIAGENT_FIREWALL_ENV_PATH = (
+        Path(__file__).resolve().parent.parent.parent / "multiagent-firewall" / ".env"
+    )
+    if MULTIAGENT_FIREWALL_ENV_PATH.exists():
+        load_dotenv(dotenv_path=MULTIAGENT_FIREWALL_ENV_PATH)
+except Exception:
+    # Fallback or ignore if file structure is different (e.g. installed as package)
+    pass
 
 PORT = int(os.getenv("PORT", "8000"))
 

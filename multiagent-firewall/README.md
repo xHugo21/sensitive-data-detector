@@ -192,6 +192,13 @@ result = orchestrator.run(file_path="/path/to/screenshot.png", min_block_risk="l
 
 ### Environment Variables
 
+Configuration is loaded from environment variables or a `.env` file in the package root (`multiagent-firewall/.env`).
+Copy `.env.example` to get started:
+
+```bash
+cp .env.example .env
+```
+
 #### LLM Configuration (Required)
 ```bash
 LLM_PROVIDER=openai          # LLM provider (openai, ollama, etc.)

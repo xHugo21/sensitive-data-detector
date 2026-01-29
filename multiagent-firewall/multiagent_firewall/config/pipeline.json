@@ -24,6 +24,11 @@
       "inject_config": true
     },
     {
+      "id": "code_similarity_detector",
+      "action": "run_code_similarity_detector",
+      "inject_config": true
+    },
+    {
       "id": "merge_dlp_ner",
       "action": "merge_detections"
     },
@@ -89,11 +94,19 @@
       "target": "ner_detector"
     },
     {
+      "source": "normalize",
+      "target": "code_similarity_detector"
+    },
+    {
       "source": "dlp_detector",
       "target": "merge_dlp_ner"
     },
     {
       "source": "ner_detector",
+      "target": "merge_dlp_ner"
+    },
+    {
+      "source": "code_similarity_detector",
       "target": "merge_dlp_ner"
     },
     {

@@ -281,7 +281,7 @@ Detected matches are flagged as `PROPRIETARY_CODE` with high risk.
 
 #### Blocking Policy
 ```bash
-MIN_BLOCK_LEVEL=medium        # Options: low, medium, high
+MIN_BLOCK_LEVEL=low        # Options: low, medium, high
 ```
 `MIN_BLOCK_LEVEL` is applied per invocation (pass `min_block_level` to `GuardOrchestrator.run`); it defaults to `low` (most restrictive) if omitted.
 

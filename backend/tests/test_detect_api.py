@@ -9,8 +9,8 @@ class DummyOrchestrator:
         self.calls = []
         self.config = config
 
-    async def run(self, text=None, *, file_path=None, min_block_risk=None):
-        self.calls.append((text, file_path, min_block_risk))
+    async def run(self, text=None, *, file_path=None, min_block_level=None):
+        self.calls.append((text, file_path, min_block_level))
         return {"detected_fields": [{"field": "EMAIL"}], "risk_level": "low"}
 
 
@@ -18,7 +18,7 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
     """Test detect endpoint with text parameter"""
     dummy = DummyOrchestrator("dummy-config")
     monkeypatch.setattr(detect_route, "GUARD_CONFIG", "dummy-config")
-    monkeypatch.setattr(detect_route, "MIN_BLOCK_RISK", "medium")
+    monkeypatch.setattr(detect_route, "DEFAULT_BLOCK_LEVEL", "medium")
     monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda config: dummy)
 
     client = TestClient(app)
@@ -32,11 +32,26 @@ def test_detect_endpoint_with_text_uses_orchestrator(monkeypatch):
     assert call_threshold == "medium"
 
 
+def test_detect_endpoint_with_min_block_level_override(monkeypatch):
+    """Test detect endpoint with explicit min_block_level parameter"""
+    dummy = DummyOrchestrator("dummy-config")
+    monkeypatch.setattr(detect_route, "GUARD_CONFIG", "dummy-config")
+    monkeypatch.setattr(detect_route, "DEFAULT_BLOCK_LEVEL", "high")
+    monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda config: dummy)
+
+    client = TestClient(app)
+    resp = client.post("/detect", data={"text": "hello", "min_block_level": "low"})
+
+    assert resp.status_code == 200
+    call_text, call_file, call_threshold = dummy.calls[0]
+    assert call_threshold == "low"
+
+
 def test_detect_endpoint_with_file(monkeypatch, tmp_path):
     """Test detect endpoint with file upload"""
     dummy = DummyOrchestrator("dummy-config")
     monkeypatch.setattr(detect_route, "GUARD_CONFIG", "dummy-config")
-    monkeypatch.setattr(detect_route, "MIN_BLOCK_RISK", "medium")
+    monkeypatch.setattr(detect_route, "DEFAULT_BLOCK_LEVEL", "medium")
     monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda config: dummy)
 
     client = TestClient(app)

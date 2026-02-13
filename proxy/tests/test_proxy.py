@@ -149,4 +149,7 @@ def test_ask_backend_posts_to_configured_url(
 
         call_args = mock_client.return_value.__enter__.return_value.post.call_args
         assert call_args[0][0] == mock_url
-        assert call_args[1]["data"] == {"text": "test text"}
+        assert call_args[1]["data"] == {
+            "text": "test text",
+            "min_block_level": config.MIN_BLOCK_LEVEL,
+        }

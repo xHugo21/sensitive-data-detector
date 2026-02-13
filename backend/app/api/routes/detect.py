@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 from app.utils import debug_log
 from multiagent_firewall import GuardOrchestrator
-from app.config import GUARD_CONFIG, MIN_BLOCK_RISK
+from app.config import GUARD_CONFIG, DEFAULT_BLOCK_LEVEL
 
 router = APIRouter()
 
@@ -13,6 +13,7 @@ router = APIRouter()
 async def detect(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    min_block_level: Optional[str] = Form(None),
 ):
     """
     Unified detection endpoint that accepts either text or file.
@@ -20,11 +21,15 @@ async def detect(
     Args:
         text: Direct text input
         file: File upload (PDF, TXT, etc.)
+        min_block_level: Minimum risk level to trigger blocking actions
 
     Returns:
         Detection results with risk level, detected fields, and remediation
     """
     try:
+        # Use provided level or fallback to global default
+        block_level = min_block_level or DEFAULT_BLOCK_LEVEL
+
         # Validate that at least one input is provided
         if not text and not file:
             return {
@@ -46,7 +51,7 @@ async def detect(
             # Use orchestrator with file_path
             result = await GuardOrchestrator(GUARD_CONFIG).run(
                 file_path=tmp_path,
-                min_block_risk=MIN_BLOCK_RISK,
+                min_block_level=block_level,
             )
 
             # Add snippet of extracted text
@@ -65,7 +70,7 @@ async def detect(
         debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
         result = await GuardOrchestrator(GUARD_CONFIG).run(
             text=text,
-            min_block_risk=MIN_BLOCK_RISK,
+            min_block_level=block_level,
         )
 
         debug_log(

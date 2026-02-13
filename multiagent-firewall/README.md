@@ -89,7 +89,7 @@ orchestrator = GuardOrchestrator(config)
 # Detect sensitive data in text
 result = orchestrator.run(
   text="My SOCIALSECURITYNUMBER is 123-45-6789",
-  min_block_risk="low"
+  min_block_level="low"
 )
 
 print(f"Decision: {result['decision']}")
@@ -136,7 +136,7 @@ so some fields are optional depending on the input and routing:
 {
     "raw_text": str,              # Input text or extracted file text
     "file_path": str | None,      # Provided file path (if any)
-    "min_block_risk": str,        # Normalized threshold (none/low/medium/high)
+    "min_block_level": str,       # Normalized threshold (low/medium/high). Default: low
     "llm_provider": str,          # Provider from config
     "normalized_text": str,       # Preprocessed text used by detectors
     "anonymized_text": str,       # Redacted text (only when findings exist)
@@ -187,7 +187,7 @@ from multiagent_firewall import GuardConfig, GuardOrchestrator
 config = GuardConfig.from_env()
 orchestrator = GuardOrchestrator(config)
 
-result = orchestrator.run(file_path="/path/to/screenshot.png", min_block_risk="low")
+result = orchestrator.run(file_path="/path/to/screenshot.png", min_block_level="low")
 ```
 
 ### Environment Variables
@@ -281,9 +281,9 @@ Detected matches are flagged as `PROPRIETARY_CODE` with high risk.
 
 #### Blocking Policy
 ```bash
-MIN_BLOCK_RISK=medium        # Options: low, medium, high
+MIN_BLOCK_LEVEL=low        # Options: low, medium, high
 ```
-`MIN_BLOCK_RISK` is applied per invocation (pass `min_block_risk` to `GuardOrchestrator.run`); it defaults to `medium` if omitted.
+`MIN_BLOCK_LEVEL` is applied per invocation (pass `min_block_level` to `GuardOrchestrator.run`); it defaults to `low` (most restrictive) if omitted.
 
 ### Detection Configuration
 

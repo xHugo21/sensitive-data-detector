@@ -17,10 +17,10 @@ def _risk_value(name: str | None) -> int:
 
 def apply_policy(state: GuardState) -> GuardState:
     risk_level = state.get("risk_level")
-    threshold = state.get("min_block_risk") or "medium"
+    threshold = state.get("min_block_level") or "low"
 
     risk_value = _risk_value(risk_level)
-    threshold_value = _risk_value(threshold) or _RISK_ORDER["medium"]
+    threshold_value = _risk_value(threshold) or _RISK_ORDER["low"]
 
     if risk_value >= threshold_value and risk_value > 0:
         state["decision"] = "block"

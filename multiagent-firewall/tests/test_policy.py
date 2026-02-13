@@ -10,10 +10,8 @@ class TestApplyPolicy:
         """Test that block decision is set when risk meets or exceeds threshold."""
         state = {
             "risk_level": "high",
-            "min_block_risk": "medium",
-            "detected_fields": [
-                {"field": "SSN", "value": "123-45-6789"}
-            ],
+            "min_block_level": "medium",
+            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
         }
         result = apply_policy(state)
         assert result["decision"] == "block"
@@ -22,7 +20,7 @@ class TestApplyPolicy:
         """Test block when risk level exactly matches threshold."""
         state = {
             "risk_level": "medium",
-            "min_block_risk": "medium",
+            "min_block_level": "medium",
             "detected_fields": [{"field": "EMAIL", "value": "test@example.com"}],
         }
         result = apply_policy(state)
@@ -32,7 +30,7 @@ class TestApplyPolicy:
         """Test warn decision when fields detected but risk below threshold."""
         state = {
             "risk_level": "low",
-            "min_block_risk": "medium",
+            "min_block_level": "medium",
             "detected_fields": [{"field": "EMAIL", "value": "test@example.com"}],
         }
         result = apply_policy(state)
@@ -42,7 +40,7 @@ class TestApplyPolicy:
         """Test warn when medium risk with high threshold."""
         state = {
             "risk_level": "medium",
-            "min_block_risk": "high",
+            "min_block_level": "high",
             "detected_fields": [{"field": "PHONENUMBER", "value": "123-456-7890"}],
         }
         result = apply_policy(state)
@@ -52,7 +50,7 @@ class TestApplyPolicy:
         """Test allow decision when no fields are detected."""
         state = {
             "risk_level": "none",
-            "min_block_risk": "medium",
+            "min_block_level": "medium",
             "detected_fields": [],
         }
         result = apply_policy(state)
@@ -62,30 +60,28 @@ class TestApplyPolicy:
         """Test allow when risk is none even with threshold."""
         state = {
             "risk_level": "none",
-            "min_block_risk": "low",
+            "min_block_level": "low",
             "detected_fields": [],
         }
         result = apply_policy(state)
         assert result["decision"] == "allow"
 
-    def test_default_threshold_is_medium(self):
-        """Test that default threshold is medium when not specified."""
+    def test_default_threshold_is_low(self):
+        """Test that default threshold is low when not specified."""
         state = {
             "risk_level": "low",
             "detected_fields": [{"field": "EMAIL", "value": "test@example.com"}],
         }
         result = apply_policy(state)
-        # Low risk with medium threshold (default) should warn
-        assert result["decision"] == "warn"
+        # Low risk with low threshold (default) should block
+        assert result["decision"] == "block"
 
     def test_block_overrides_warn_when_threshold_met(self):
         """Test that block takes precedence over warn."""
         state = {
             "risk_level": "high",
-            "min_block_risk": "high",
-            "detected_fields": [
-                {"field": "SSN", "value": "123-45-6789"}
-            ],
+            "min_block_level": "high",
+            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
         }
         result = apply_policy(state)
         assert result["decision"] == "block"
@@ -260,9 +256,7 @@ class TestGenerateRemediation:
         """Test that block message focuses on redaction before resubmitting."""
         state = {
             "decision": "block",
-            "detected_fields": [
-                {"field": "SSN", "value": "123-45-6789"}
-            ],
+            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
         }
         result = generate_remediation(state)
 
@@ -277,10 +271,8 @@ class TestPolicyIntegration:
         """Test complete flow for block decision."""
         state = {
             "risk_level": "high",
-            "min_block_risk": "medium",
-            "detected_fields": [
-                {"field": "SSN", "value": "123-45-6789"}
-            ],
+            "min_block_level": "low",
+            "detected_fields": [{"field": "SSN", "value": "123-45-6789"}],
         }
 
         # Apply policy
@@ -297,7 +289,7 @@ class TestPolicyIntegration:
         """Test complete flow for warn decision."""
         state = {
             "risk_level": "low",
-            "min_block_risk": "high",
+            "min_block_level": "high",
             "detected_fields": [{"field": "EMAIL", "value": "test@example.com"}],
         }
 
@@ -316,7 +308,7 @@ class TestPolicyIntegration:
         """Test complete flow for allow decision."""
         state = {
             "risk_level": "none",
-            "min_block_risk": "medium",
+            "min_block_level": "low",
             "detected_fields": [],
         }
 

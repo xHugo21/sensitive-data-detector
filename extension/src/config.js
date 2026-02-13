@@ -5,5 +5,6 @@
 
   sg.config = {
     API_BASE,
+    MIN_BLOCK_LEVEL: "medium",
   };
 })(typeof window !== "undefined" ? window : globalThis);

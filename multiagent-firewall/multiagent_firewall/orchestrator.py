@@ -29,7 +29,7 @@ class GuardOrchestrator:
         text: str | None = None,
         *,
         file_path: str | None = None,
-        min_block_risk: str | None = None,
+        min_block_level: str | None = None,
     ) -> GuardState:
         """
         Run the detection pipeline.
@@ -37,7 +37,7 @@ class GuardOrchestrator:
         Args:
             text: Direct text input
             file_path: Path to file on disk (automatically detects images)
-            min_block_risk: Minimum risk level ("none", "low", "medium", "high") required to trigger blocking actions
+            min_block_level: Minimum risk level ("none", "low", "medium", "high") required to trigger blocking actions
 
         Returns:
             GuardState with detection results
@@ -45,7 +45,7 @@ class GuardOrchestrator:
         initial_state: GuardState = {
             "raw_text": text or "",
             "file_path": file_path,
-            "min_block_risk": _normalize_risk(min_block_risk),
+            "min_block_level": _normalize_risk(min_block_level),
             "llm_provider": self._config.llm.provider,
             "force_llm_detector": self._config.force_llm_detector,
             "metadata": {},
@@ -130,8 +130,8 @@ class GuardOrchestrator:
 def _normalize_risk(value: str | None) -> str:
     allowed = {"none", "low", "medium", "high"}
     if value is None:
-        return "medium"
+        return "low"
     normalized = value.strip().lower()
     if normalized not in allowed:
-        return "medium"
+        return "low"
     return normalized

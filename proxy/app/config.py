@@ -29,6 +29,7 @@ BACKEND_URL = os.getenv(
     "http://127.0.0.1:8000/detect",
 ).rstrip("/")
 BACKEND_TIMEOUT_SECONDS = _parse_float(os.getenv("BACKEND_TIMEOUT_SECONDS"), 30.0)
+MIN_BLOCK_LEVEL = os.getenv("MIN_BLOCK_LEVEL", "low")
 
 PROXY_HOST = os.getenv("PROXY_HOST", "127.0.0.1")
 PROXY_PORT = _parse_int(os.getenv("PROXY_PORT"), 8080)
@@ -36,10 +37,10 @@ PROXY_PORT = _parse_int(os.getenv("PROXY_PORT"), 8080)
 INTERCEPTED_HOSTS = _parse_list(
     os.getenv("INTERCEPTED_HOSTS"),
     [
-        "api.openai.com",           # OpenAI GPT-4, GPT-4 Vision
-        "api.anthropic.com",        # Claude (Anthropic)
-        "api.githubcopilot.com",    # GitHub Copilot
-        "api.groq.com",             # Groq
+        "api.openai.com",  # OpenAI GPT-4, GPT-4 Vision
+        "api.anthropic.com",  # Claude (Anthropic)
+        "api.githubcopilot.com",  # GitHub Copilot
+        "api.groq.com",  # Groq
         "generativelanguage.googleapis.com",  # Google Gemini
     ],
 )
@@ -47,11 +48,11 @@ INTERCEPTED_HOSTS = _parse_list(
 INTERCEPTED_PATHS = _parse_list(
     os.getenv("INTERCEPTED_PATHS"),
     [
-        "/v1/chat/completions",     # OpenAI, Groq, Copilot
-        "/v1/completions",          # OpenAI legacy
-        "/v1/engines/",             # OpenAI legacy
-        "/v1/messages",             # Anthropic Claude
-        "/chat/completions",        # GitHub Copilot
-        "/completions",             # Generic completions
+        "/v1/chat/completions",  # OpenAI, Groq, Copilot
+        "/v1/completions",  # OpenAI legacy
+        "/v1/engines/",  # OpenAI legacy
+        "/v1/messages",  # Anthropic Claude
+        "/chat/completions",  # GitHub Copilot
+        "/completions",  # Generic completions
     ],
 )

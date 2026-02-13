@@ -62,11 +62,17 @@
   async function detectText(text) {
     const formData = new FormData();
     formData.append("text", text);
+    if (sg.config.MIN_BLOCK_LEVEL) {
+      formData.append("min_block_level", sg.config.MIN_BLOCK_LEVEL);
+    }
 
     return requestDetect(formData);
   }
 
   async function detectFile(formData) {
+    if (sg.config.MIN_BLOCK_LEVEL && !formData.has("min_block_level")) {
+      formData.append("min_block_level", sg.config.MIN_BLOCK_LEVEL);
+    }
     return requestDetect(formData);
   }
 

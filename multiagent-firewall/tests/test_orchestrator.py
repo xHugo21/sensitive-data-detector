@@ -130,7 +130,7 @@ async def test_orchestrator_reuses_dlp_decision_when_llm_adds_nothing(
 
         orchestrator = GuardOrchestrator(guard_config)
         result = await orchestrator.run(
-            text="Reach me at test@example.com", min_block_risk="high"
+            text="Reach me at test@example.com", min_block_level="high"
         )
 
     assert mock_evaluate_risk.call_count == 1  # Only DLP path
@@ -202,7 +202,8 @@ async def test_orchestrator_run_with_sensitive_data(mock_llm_detector, guard_con
 
     orchestrator = GuardOrchestrator(guard_config)
     result = await orchestrator.run(
-        text="My email is test@example.com and password is secret123"
+        text="My email is test@example.com and password is secret123",
+        min_block_level="high",
     )
 
     assert "detected_fields" in result

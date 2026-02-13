@@ -16,7 +16,7 @@ class GuardState(TypedDict, total=False):
     # INPUT
     file_path: NotRequired[str | None]
     raw_text: str
-    min_block_risk: NotRequired[str | None]
+    min_block_level: NotRequired[str | None]
     llm_provider: NotRequired[str]
     force_llm_detector: NotRequired[bool]
 

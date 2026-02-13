@@ -117,12 +117,17 @@ body {
   color: var(--muted);
 }
 
-.state[data-state="on"] {
-  color: #9be7c7;
+.state[data-level="low"] {
+  color: #9be7c7; /* Green */
 }
 
-.state[data-state="off"] {
-  color: #ffb4a6;
+.state[data-level="medium"] {
+  color: #f6e05e; /* Yellow */
+}
+
+.state[data-level="high"],
+.state[data-level="unknown"] {
+  color: #ffb4a6; /* Red */
 }
 
 .switch {

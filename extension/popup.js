@@ -11,7 +11,7 @@
   function setBlockLevelUI(level) {
     const displayLevel = level ? level.charAt(0).toUpperCase() + level.slice(1) : "Unknown";
     blockLevelValue.textContent = displayLevel;
-    blockLevelValue.dataset.state = "on"; // Always green-ish since it's active
+    blockLevelValue.dataset.level = level || "unknown";
   }
 
   function setSiteStatus(text, supportState) {

@@ -2,17 +2,16 @@
 (function initPopup(root) {
   const sg = (root.SG = root.SG || {});
 
-  const toggle = document.getElementById("toggle-detection");
-  const detectionState = document.getElementById("detection-state");
+  const blockLevelValue = document.getElementById("block-level-value");
   const siteStatus = document.getElementById("site-status");
-  if (!toggle || !detectionState || !siteStatus) {
+  if (!blockLevelValue || !siteStatus) {
     return;
   }
 
-  function setDetectionUI(enabled) {
-    toggle.checked = !!enabled;
-    detectionState.textContent = enabled ? "Enabled" : "Disabled";
-    detectionState.dataset.state = enabled ? "on" : "off";
+  function setBlockLevelUI(level) {
+    const displayLevel = level ? level.charAt(0).toUpperCase() + level.slice(1) : "Unknown";
+    blockLevelValue.textContent = displayLevel;
+    blockLevelValue.dataset.state = "on"; // Always green-ish since it's active
   }
 
   function setSiteStatus(text, supportState) {
@@ -53,21 +52,8 @@
     });
   }
 
-  const initialState = sg.settings?.getState?.();
-  if (initialState) {
-    setDetectionUI(initialState.detectionEnabled);
-  } else {
-    setDetectionUI(true);
-  }
-
-  sg.settings?.subscribe?.((state) => {
-    setDetectionUI(state.detectionEnabled);
-  });
-
-  toggle.addEventListener("change", () => {
-    if (!sg.settings?.setDetectionEnabled) return;
-    sg.settings.setDetectionEnabled(toggle.checked);
-  });
+  // Display current block level from config
+  setBlockLevelUI(sg.config?.MIN_BLOCK_LEVEL);
 
   updatePlatformStatus();
 })(typeof window !== "undefined" ? window : globalThis);

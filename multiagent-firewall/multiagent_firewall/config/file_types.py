@@ -13,7 +13,6 @@ class FileTypeDefinition:
         self.category = category
         self.extensions = set(config["extensions"])
         self.mime_types = set(config["mime_types"])
-        self.parser = config["parser"]
 
     def is_extension_supported(self, ext: str) -> bool:
         """Check if file extension is supported."""

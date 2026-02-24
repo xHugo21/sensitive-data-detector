@@ -2,23 +2,15 @@
   "file_types": {
     "pdf": {
       "extensions": [".pdf"],
-      "mime_types": ["application/pdf"],
-      "parser": "pdf"
+      "mime_types": ["application/pdf"]
     },
     "image": {
       "extensions": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp"],
-      "mime_types": ["image/png", "image/jpeg", "image/gif", "image/bmp", "image/tiff", "image/webp"],
-      "parser": "ocr"
+      "mime_types": ["image/png", "image/jpeg", "image/gif", "image/bmp", "image/tiff", "image/webp"]
     },
     "text": {
-      "extensions": [".txt", ".md", ".csv"],
-      "mime_types": ["text/plain", "text/markdown", "text/csv"],
-      "parser": "text"
-    },
-    "code": {
-      "extensions": [".js", ".py", ".java", ".cpp", ".c", ".html", ".css", ".json", ".xml", ".yaml", ".yml", ".sh", ".sql"],
-      "mime_types": ["text/plain", "application/json", "application/xml", "text/x-python", "text/javascript"],
-      "parser": "text"
+      "extensions": [".txt", ".md", ".csv", ".js", ".py", ".java", ".cpp", ".c", ".html", ".css", ".json", ".xml", ".yaml", ".yml", ".sh", ".sql"],
+      "mime_types": ["text/plain", "text/markdown", "text/csv", "application/json", "application/xml", "text/x-python", "text/javascript"]
     }
   },
   "file_validation": {

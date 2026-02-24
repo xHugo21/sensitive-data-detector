@@ -98,7 +98,7 @@ def read_text_file(file_path: str) -> str | None:
 
 def extract_text_from_file(file_path: str) -> str | None:
     """
-    Extract text from file based on extension.
+    Extract text from file based on category from FileTypeConfig.
     """
     try:
         file_path = sanitize_file_path(file_path)
@@ -106,10 +106,13 @@ def extract_text_from_file(file_path: str) -> str | None:
         if not os.path.exists(file_path):
             return None
 
-        if file_path.lower().endswith(".pdf"):
+        # Use FileTypeConfig to determine file category
+        file_type_def = FILE_TYPE_CONFIG.get_by_extension(file_path)
+
+        if file_type_def and file_type_def.category == "pdf":
             return read_pdf(file_path)
         else:
-            # Try as plain text for all other formats
+            # Try as plain text for text/unknown formats
             return read_text_file(file_path)
     except Exception:
         return None
@@ -143,9 +146,9 @@ def read_document(state: GuardState, *, fw_config) -> GuardState:
     """
     Document ingestion node: Extracts text from file if file_path provided.
 
-    - For images: Run OCR detector if available
-    - For PDFs: Extract text using pdfplumber
-    - For other files: Read as plain text
+    - images: Run OCR detector if available or fallback to VLM
+    - PDFs: Extract text using pdfplumber
+    - text files: Read as plain text
     """
     if "raw_text" not in state:
         state["raw_text"] = ""
@@ -162,13 +165,19 @@ def read_document(state: GuardState, *, fw_config) -> GuardState:
             append_error(state, f"File not found: {file_path}")
             return state
 
-        # Detect file type and handle accordingly
-        if is_image_file(file_path_clean):
-            # Handle image files with OCR
-            if "metadata" not in state:
-                state["metadata"] = {}
-            state["metadata"]["file_type"] = "image"
+        if "metadata" not in state:
+            state["metadata"] = {}
 
+        file_type_def = FILE_TYPE_CONFIG.get_by_extension(file_path_clean)
+
+        if not file_type_def:
+            append_error(state, f"Unsupported file type: {file_path}")
+            return state
+
+        category = file_type_def.category
+        state["metadata"]["file_type"] = category
+
+        if category == "image":
             if not _has_ocr_support():
                 append_warning(
                     state,
@@ -206,9 +215,9 @@ def read_document(state: GuardState, *, fw_config) -> GuardState:
                         state,
                         f"Image file detected but no OCR detector available: {file_path}",
                     )
-        else:
-            # Handle PDF and text files
-            if file_path_clean.lower().endswith(".pdf") and not _has_pdf_support():
+
+        elif category == "pdf":
+            if not _has_pdf_support():
                 append_warning(
                     state,
                     "PDF file detected but PDF support is not installed. "
@@ -221,20 +230,25 @@ def read_document(state: GuardState, *, fw_config) -> GuardState:
             if text is None:
                 append_error(state, f"Failed to extract text from file: {file_path}")
             else:
-                # Append to existing raw_text
                 existing_text = state.get("raw_text", "")
                 if existing_text and text:
                     state["raw_text"] = f"{existing_text}\n{text}"
                 elif text:
                     state["raw_text"] = text
 
-            # Set file type metadata
-            if "metadata" not in state:
-                state["metadata"] = {}
-            if file_path_clean.lower().endswith(".pdf"):
-                state["metadata"]["file_type"] = "pdf"
+        elif category == "text":
+            text = extract_text_from_file(file_path_clean)
+
+            if text is None:
+                append_error(state, f"Failed to extract text from file: {file_path}")
             else:
-                state["metadata"]["file_type"] = "text"
+                existing_text = state.get("raw_text", "")
+                if existing_text and text:
+                    state["raw_text"] = f"{existing_text}\n{text}"
+                elif text:
+                    state["raw_text"] = text
+        else:
+            append_error(state, f"Unknown file category: {category}")
 
     except Exception as e:
         append_error(state, f"Document extraction error: {str(e)}")

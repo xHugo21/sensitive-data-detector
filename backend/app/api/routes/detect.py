@@ -9,6 +9,7 @@ from app.utils import debug_log
 from multiagent_firewall import GuardOrchestrator
 from multiagent_firewall.config import FILE_TYPE_CONFIG
 from multiagent_firewall.utils import (
+    CHUNK_SIZE_BYTES,
     FileValidationError,
     sanitize_filename,
     validate_file_size,
@@ -61,7 +62,7 @@ async def _validate_and_save_uploaded_file(
             file,
             tmp_path,
             FILE_TYPE_CONFIG.global_max_size_bytes,
-            FILE_TYPE_CONFIG.chunk_size_bytes,
+            CHUNK_SIZE_BYTES,
         )
     except FileValidationError as e:
         raise HTTPException(status_code=413, detail=str(e))
@@ -80,18 +81,15 @@ async def _validate_and_save_uploaded_file(
                 detail=f"Unsupported file type: {ext}",
             )
 
-        if FILE_TYPE_CONFIG.require_mime_validation:
-            try:
-                detected_mime = validate_mime_type(tmp_path, file_type_def.mime_types)
-                debug_log(
-                    f"[SensitiveDataDetectorBackend] Detected MIME: {detected_mime}"
-                )
-            except FileValidationError as e:
-                tmp_path.unlink()
-                raise HTTPException(
-                    status_code=400,
-                    detail="File validation failed: invalid file format",
-                )
+        try:
+            detected_mime = validate_mime_type(tmp_path, file_type_def.mime_types)
+            debug_log(f"[SensitiveDataDetectorBackend] Detected MIME: {detected_mime}")
+        except FileValidationError as e:
+            tmp_path.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail="File validation failed: invalid file format",
+            )
 
         metadata = {
             "file_size_bytes": file_size,

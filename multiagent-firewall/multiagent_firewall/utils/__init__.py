@@ -13,6 +13,7 @@ from __future__ import annotations
 from .core import append_error, append_warning, debug_ainvoke
 from .exceptions import FileValidationError
 from .validation import (
+    CHUNK_SIZE_BYTES,
     sanitize_filename,
     validate_file_size,
     validate_mime_type,
@@ -26,6 +27,7 @@ __all__ = [
     "append_error",
     "append_warning",
     # Validation utilities
+    "CHUNK_SIZE_BYTES",
     "FileValidationError",
     "validate_file_size",
     "validate_mime_type",

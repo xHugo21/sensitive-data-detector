@@ -8,6 +8,10 @@ from .exceptions import FileValidationError
 
 logger = logging.getLogger(__name__)
 
+# Hardcoded chunk size for file streaming (8KB)
+# Small enough to prevent memory issues, large enough for efficiency
+CHUNK_SIZE_BYTES = 8 * 1024
+
 
 async def validate_file_size(
     file_obj,

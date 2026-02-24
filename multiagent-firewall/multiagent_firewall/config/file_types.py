@@ -69,8 +69,6 @@ class FileTypeConfig:
 
         validation = config.get("file_validation", {})
         self.global_max_size_mb = validation.get("global_max_size_mb", 50)
-        self.chunk_size_kb = validation.get("chunk_size_kb", 8)
-        self.require_mime_validation = validation.get("require_mime_validation", True)
 
     def get_by_extension(self, filename: str) -> FileTypeDefinition | None:
         """Get file type definition by filename extension."""
@@ -91,11 +89,6 @@ class FileTypeConfig:
     def global_max_size_bytes(self) -> int:
         """Get global max file size in bytes."""
         return self.global_max_size_mb * 1024 * 1024
-
-    @property
-    def chunk_size_bytes(self) -> int:
-        """Get chunk size for streaming in bytes."""
-        return self.chunk_size_kb * 1024
 
     @property
     def all_supported_extensions(self) -> set[str]:

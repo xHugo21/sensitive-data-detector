@@ -148,11 +148,14 @@ class SensitiveDataDetector:
         if not image_data.get("data"):
             return None
 
-        # Decode base64 to bytes
         try:
-            image_bytes = base64.b64decode(image_data["data"])
+            image_bytes = base64.b64decode(image_data["data"], validate=True)
         except Exception:
-            return None
+            return {
+                "error": "Invalid base64 image data",
+                "risk_level": "unknown",
+                "detected_fields": [],
+            }
 
         # Determine file extension from mime type
         mime_type = image_data.get("mime_type", "image/png")

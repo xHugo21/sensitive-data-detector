@@ -20,6 +20,7 @@ file-analysis = [
     "pdfplumber",
     "pytesseract>=0.3.10",
     "pillow>=10.0.0",
+    "filetype>=1.2.0",
 ]
 ner = [
     "gliner>=0.1.15",

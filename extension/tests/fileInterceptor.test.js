@@ -77,8 +77,6 @@ function setup({ resultFactory }) {
 
   const analyzeCalls = [];
   globalThis.SG.fileAnalyzer = {
-    isSupportedFile: () => true,
-    getFileInfo: () => ({ type: "text", label: "Text File" }),
     analyzeFile: async (file) => {
       analyzeCalls.push(file);
       return resultFactory(file);

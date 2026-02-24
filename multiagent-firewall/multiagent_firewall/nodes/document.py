@@ -1,17 +1,24 @@
 from __future__ import annotations
 
 import importlib.util
+import logging
 import os
 import sys
 import warnings
+from pathlib import Path
 from urllib.parse import urlparse, unquote
 
 from ..detectors import TesseractOCRDetector, LLMOCRDetector
 from ..types import GuardState
-from ..utils import append_error, append_warning
+from ..utils import (
+    append_error,
+    append_warning,
+    FileValidationError,
+    validate_file_size,
+)
+from ..config import FILE_TYPE_CONFIG
 
-# Supported image file extensions for automatic OCR detection
-IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp"}
+logger = logging.getLogger(__name__)
 FILE_ANALYSIS_EXTRA = "multiagent-firewall[file-analysis]"
 
 
@@ -45,27 +52,58 @@ def _has_ocr_support() -> bool:
 
 def is_image_file(file_path: str) -> bool:
     """
-    Check if file is an image based on extension.
+    Check if file is an image using FileTypeConfig.
     """
-    _, ext = os.path.splitext(file_path)
-    return ext.lower() in IMAGE_EXTENSIONS
+    image_config = FILE_TYPE_CONFIG.categories.get("image")
+    if not image_config or not image_config.enabled:
+        return False
+    return image_config.is_extension_supported(Path(file_path).suffix)
 
 
 def read_pdf(file_path: str) -> str | None:
     """
-    Extract text from PDF file using pdfplumber.
+    Extract text from PDF file with size and page limits.
     """
     try:
         import pdfplumber
 
+        path = Path(file_path)
+
+        # Get PDF file type config
+        pdf_config = FILE_TYPE_CONFIG.categories.get("pdf")
+        if not pdf_config:
+            return None
+
+        # Validate file size (50MB global limit already enforced by backend)
+        # This is defense-in-depth for direct firewall usage
+        try:
+            validate_file_size(path, FILE_TYPE_CONFIG.global_max_size_bytes)
+        except FileValidationError as e:
+            logger.warning(f"PDF size validation failed: {e}")
+            return None
+
         text = ""
         with pdfplumber.open(file_path) as pdf:
-            for page in pdf.pages:
+            total_pages = len(pdf.pages)
+
+            # Check page count limit
+            if pdf_config.max_pages and total_pages > pdf_config.max_pages:
+                logger.warning(
+                    f"PDF has {total_pages} pages, exceeding limit of {pdf_config.max_pages}. "
+                    f"Processing first {pdf_config.max_pages} pages only."
+                )
+                max_pages = pdf_config.max_pages
+            else:
+                max_pages = total_pages
+
+            for page in pdf.pages[:max_pages]:
                 extracted_text = page.extract_text()
                 if extracted_text:
                     text += extracted_text + "\n"
+
         return text.strip()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"PDF extraction failed: {e}")
         return None
 
 

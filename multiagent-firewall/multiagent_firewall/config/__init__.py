@@ -17,6 +17,7 @@ from .detection import (
     REGEX_PATTERNS,
     RISK_SCORE,
     RISK_SCORE_THRESHOLDS,
+    FILE_TYPE_CONFIG,
 )
 from .env import (
     GuardConfig,
@@ -37,6 +38,7 @@ __all__ = [
     "REGEX_PATTERNS",
     "RISK_SCORE",
     "RISK_SCORE_THRESHOLDS",
+    "FILE_TYPE_CONFIG",
     # Env
     "GuardConfig",
     "LLMConfig",

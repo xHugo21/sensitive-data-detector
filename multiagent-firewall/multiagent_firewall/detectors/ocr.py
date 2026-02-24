@@ -47,8 +47,30 @@ class TesseractOCRDetector:
         try:
             import pytesseract
             from PIL import Image
+            from ..config import FILE_TYPE_CONFIG
+            from ..utils import FileValidationError
+            import warnings
+
+            path = Path(file_path)
+
+            # Get image config
+            image_config = FILE_TYPE_CONFIG.categories.get("image")
+            if not image_config:
+                return ""
 
             image = Image.open(file_path)
+
+            # Validate pixel count
+            if image_config.max_pixels:
+                total_pixels = image.width * image.height
+                if total_pixels > image_config.max_pixels:
+                    max_mp = image_config.max_pixels / 1_000_000
+                    actual_mp = total_pixels / 1_000_000
+                    warnings.warn(
+                        f"Image size {actual_mp:.1f}MP exceeds limit of {max_mp:.1f}MP",
+                        RuntimeWarning,
+                    )
+                    return ""
 
             ocr_data = pytesseract.image_to_data(
                 image,
@@ -116,7 +138,28 @@ class LLMOCRDetector:
         try:
             import base64
             import mimetypes
+            import warnings
+            from PIL import Image
             from langchain_core.messages import HumanMessage, SystemMessage
+            from ..config import FILE_TYPE_CONFIG
+
+            # Get image config and validate pixel count
+            image_config = FILE_TYPE_CONFIG.categories.get("image")
+            if not image_config:
+                return ""
+
+            # Validate pixel count before encoding
+            img = Image.open(file_path)
+            if image_config.max_pixels:
+                total_pixels = img.width * img.height
+                if total_pixels > image_config.max_pixels:
+                    max_mp = image_config.max_pixels / 1_000_000
+                    actual_mp = total_pixels / 1_000_000
+                    warnings.warn(
+                        f"Image size {actual_mp:.1f}MP exceeds limit of {max_mp:.1f}MP",
+                        RuntimeWarning,
+                    )
+                    return ""
 
             mime_type, _ = mimetypes.guess_type(file_path)
 

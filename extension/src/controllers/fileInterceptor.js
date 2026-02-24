@@ -120,12 +120,8 @@
     const files = Array.from(input.files || []);
     if (!files.length) return;
 
-    const supportedFiles = files.filter((file) =>
-      sg.fileAnalyzer.isSupportedFile(file.name),
-    );
-
     const inFlight = sg.alertStore.isInFlight(input);
-    if (!inFlight && supportedFiles.length === 0) return;
+    if (!inFlight && files.length === 0) return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -141,25 +137,24 @@
     let backendError = null;
 
     try {
-      const previewFile = supportedFiles[0];
-      const previewInfo = sg.fileAnalyzer.getFileInfo(previewFile.name);
+      const previewFile = files[0];
       console.log(
-        `[SensitiveDataDetectorExtension] Detected ${previewInfo.label} file upload: ${previewFile.name}`,
+        `[SensitiveDataDetectorExtension] Detected file upload: ${previewFile.name}`,
       );
 
       // Show loading state
       sg.loadingState.show({
         message:
-          supportedFiles.length > 1
+          files.length > 1
             ? "Analyzing files..."
-            : `Analyzing ${previewInfo.label.toLowerCase()}...`,
+            : "Analyzing file...",
       });
       loadingShown = true;
 
       let blocked = null;
       let warned = null;
 
-      for (const file of supportedFiles) {
+      for (const file of files) {
         const result = await sg.fileAnalyzer.analyzeFile(file);
         if (result?.extracted_snippet) {
           console.log(
@@ -185,8 +180,7 @@
       durationMs = now() - startedAt;
 
       if (blocked) {
-        const fileInfo = sg.fileAnalyzer.getFileInfo(blocked.file.name);
-        const displayName = `${fileInfo.label}: ${blocked.file.name}`;
+        const displayName = blocked.file.name;
         const sanitizedText =
           typeof blocked.result?.anonymized_text === "string"
             ? blocked.result.anonymized_text.trim()
@@ -210,8 +204,7 @@
       }
 
       if (warned) {
-        const fileInfo = sg.fileAnalyzer.getFileInfo(warned.file.name);
-        const displayName = `${fileInfo.label}: ${warned.file.name}`;
+        const displayName = warned.file.name;
         allowUpload(input, files);
         sg.panel.render(warned.result, displayName, {
           durationMs,
@@ -227,10 +220,7 @@
     } catch (err) {
       backendError = err;
       durationMs = now() - startedAt;
-      const fallbackFile = supportedFiles[0] || files[0];
-      const fileInfo = fallbackFile
-        ? sg.fileAnalyzer.getFileInfo(fallbackFile.name)
-        : { label: "File" };
+      const fallbackFile = files[0];
       console.error(
         `[SensitiveDataDetectorExtension] Error analyzing ${
           fallbackFile?.name || "file"
@@ -238,16 +228,14 @@
         err,
       );
 
-      // Optionally show error to user
+      // Show error to user (backend will return error for unsupported file types)
       sg.panel.render(
         {
           risk_level: "unknown",
           detected_fields: [],
           error: `Failed to analyze file: ${err.message}`,
         },
-        fallbackFile
-          ? `${fileInfo.label}: ${fallbackFile.name}`
-          : "File upload",
+        fallbackFile ? fallbackFile.name : "File upload",
         {
           durationMs,
           mode: "warn",

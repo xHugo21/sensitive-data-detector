@@ -1,4 +1,37 @@
 {
+  "file_types": {
+    "pdf": {
+      "extensions": [".pdf"],
+      "mime_types": ["application/pdf"],
+      "parser": "pdf",
+      "max_pages": 500,
+      "enabled": true
+    },
+    "image": {
+      "extensions": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp"],
+      "mime_types": ["image/png", "image/jpeg", "image/gif", "image/bmp", "image/tiff", "image/webp"],
+      "parser": "ocr",
+      "max_pixels": 10000000,
+      "enabled": true
+    },
+    "text": {
+      "extensions": [".txt", ".md", ".csv"],
+      "mime_types": ["text/plain", "text/markdown", "text/csv"],
+      "parser": "text",
+      "enabled": true
+    },
+    "code": {
+      "extensions": [".js", ".py", ".java", ".cpp", ".c", ".html", ".css", ".json", ".xml", ".yaml", ".yml", ".sh", ".sql"],
+      "mime_types": ["text/plain", "application/json", "application/xml", "text/x-python", "text/javascript"],
+      "parser": "text",
+      "enabled": true
+    }
+  },
+  "file_validation": {
+    "global_max_size_mb": 50,
+    "chunk_size_kb": 8,
+    "require_mime_validation": true
+  },
   "prompts": {
     "llm_detector": "sensitive-data-llm-prompt.txt",
     "ocr_detector": "ocr-llm-prompt.txt"

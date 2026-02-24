@@ -124,7 +124,6 @@ class LLMOCRDetector:
         try:
             import base64
             import mimetypes
-            from PIL import Image
             from langchain_core.messages import HumanMessage, SystemMessage
             from ..config import FILE_TYPE_CONFIG
 
@@ -132,9 +131,6 @@ class LLMOCRDetector:
             image_config = FILE_TYPE_CONFIG.categories.get("image")
             if not image_config:
                 return ""
-
-            # Open image for encoding
-            img = Image.open(file_path)
 
             mime_type, _ = mimetypes.guess_type(file_path)
 

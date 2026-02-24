@@ -64,5 +64,5 @@ jobs:
         with:
           path: ~/.cache/uv
           key: ${{ runner.os }}-uv-multiagent-${{ hashFiles('uv.lock') }}
-      - run: uv sync --project multiagent-firewall --group test
+      - run: uv sync --project multiagent-firewall --group test --extra file-analysis --extra ner --extra code-analysis
       - run: PYTHONPATH=multiagent-firewall uv run --project multiagent-firewall --group test pytest multiagent-firewall/tests

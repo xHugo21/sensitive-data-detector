@@ -47,6 +47,14 @@ class TesseractOCRDetector:
         try:
             import pytesseract
             from PIL import Image
+            from ..config import FILE_TYPE_CONFIG
+
+            path = Path(file_path)
+
+            # Get image config
+            image_config = FILE_TYPE_CONFIG.categories.get("image")
+            if not image_config:
+                return ""
 
             image = Image.open(file_path)
 
@@ -117,6 +125,12 @@ class LLMOCRDetector:
             import base64
             import mimetypes
             from langchain_core.messages import HumanMessage, SystemMessage
+            from ..config import FILE_TYPE_CONFIG
+
+            # Get image config
+            image_config = FILE_TYPE_CONFIG.categories.get("image")
+            if not image_config:
+                return ""
 
             mime_type, _ = mimetypes.guess_type(file_path)
 

@@ -78,7 +78,7 @@ def test_detect_endpoint_requires_input():
     client = TestClient(app)
     resp = client.post("/detect", data={})
 
-    assert resp.status_code == 200
+    assert resp.status_code == 400
     body = resp.json()
-    assert "error" in body
-    assert "text or file must be provided" in body["error"].lower()
+    assert "detail" in body
+    assert "text or file" in body["detail"].lower()

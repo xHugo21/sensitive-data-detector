@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .file_types import FileTypeConfig
+
 _CONFIG_PATH = Path(__file__).parent / "detection.json"
 
 
@@ -49,3 +51,6 @@ RISK_SCORE_THRESHOLDS: dict[str, Any] = {
 HIGH_RISK_FIELDS: set[str] = set(_config["risk_fields"]["high"])
 MEDIUM_RISK_FIELDS: set[str] = set(_config["risk_fields"]["medium"])
 LOW_RISK_FIELDS: set[str] = set(_config["risk_fields"]["low"])
+
+# File type configuration
+FILE_TYPE_CONFIG = FileTypeConfig(_config)

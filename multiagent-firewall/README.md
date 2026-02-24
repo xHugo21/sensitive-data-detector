@@ -292,10 +292,82 @@ The firewall supports editing detection rules in `multiagent-firewall/multiagent
 - `regex_patterns`: regex-based DLP patterns, with optional keyword windows
 - `keywords`: keyword-based DLP phrases
 - `ner_labels`: NER label → field mapping
+- `file_types`: Supported file type categories with extensions, MIME types, parsers, and limits
+- `file_validation`: Global file security settings (size limits, pixel limits, page limits)
 - `risk`:
   - `scores`: scoring weights of each field level
   - `thresholds`: threshold to calculate global risk value based on the sum of all detected fields
 - `risk_fields`: Sets of fields classified as `high`, `medium`, or `low` risk
+
+#### File Type Configuration
+File type support is centrally configured in `detection.json` under `file_types`. This ensures the backend and firewall stay in sync:
+
+```json
+{
+  "file_types": {
+    "pdf": {
+      "extensions": [".pdf"],
+      "mime_types": ["application/pdf"],
+      "parser": "pdfplumber",
+      "max_pages": 500
+    },
+    "image": {
+      "extensions": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff", ".webp"],
+      "mime_types": ["image/png", "image/jpeg", "image/gif", "image/bmp", "image/tiff", "image/webp"],
+      "parser": "ocr",
+      "max_pixels": 10000000
+    },
+    "text": {
+      "extensions": [".txt", ".md", ".csv", ".json", ".xml", ".yaml", ".yml", ".html", ".css"],
+      "mime_types": ["text/plain", "text/markdown", "text/csv", "application/json", "text/xml", "text/yaml", "text/html", "text/css"],
+      "parser": "text"
+    },
+    "code": {
+      "extensions": [".py", ".js", ".java", ".cpp", ".c", ".sh", ".sql"],
+      "mime_types": ["text/x-python", "text/javascript", "text/x-java", "text/x-c++", "text/x-c", "text/x-sh", "application/sql"],
+      "parser": "text"
+    }
+  },
+  "file_validation": {
+    "max_file_size_mb": 50,
+    "max_image_pixels": 10000000,
+    "max_pdf_pages": 500
+  }
+}
+```
+
+To add support for new file types:
+1. Add the extension and MIME type to the appropriate category in `file_types`
+2. Specify the parser: `pdfplumber` for PDFs, `ocr` for images, `text` for text-based files
+3. Set category-specific limits if needed (e.g., `max_pages` for PDFs, `max_pixels` for images)
+
+#### Security Features
+The firewall includes comprehensive security protections for file uploads:
+
+**File Size Limits**
+- Global 50MB limit prevents DoS attacks via large file uploads
+- Enforced using streaming uploads to avoid loading entire files into memory
+- Configurable via `file_validation.max_file_size_mb` in `detection.json`
+
+**MIME Type Validation**
+- Uses the `filetype` library to verify file contents match their extension
+- Prevents spoofing attacks (e.g., executable disguised as PDF)
+- Validates against allowed MIME types defined in `file_types`
+
+**Path Traversal Protection**
+- User filenames are replaced with cryptographically secure random names
+- All file paths are validated to ensure they stay within the upload directory
+- Prevents directory traversal attacks (`../../etc/passwd`)
+
+**Resource Limits**
+- PDF files limited to 500 pages (configurable via `max_pdf_pages`)
+- Images limited to 10 megapixels (configurable via `max_image_pixels`)
+- Prevents resource exhaustion during parsing/OCR
+
+**Safe File Cleanup**
+- Temporary files are cleaned up even when validation fails
+- Uses try/finally blocks with specific exception handling
+- Logs cleanup errors without exposing internal paths
 
 #### DLP Regex Configuration
 Regex-based DLP patterns live in `detection.json` under `regex_patterns`.

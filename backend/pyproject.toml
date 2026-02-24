@@ -13,7 +13,7 @@ dependencies = [
     "uvicorn[standard]",
     "python-multipart",
     "python-dotenv",
-    "multiagent-firewall[ner,file-analysis]",
+    "multiagent-firewall[ner,file-analysis,code-analysis]",
 ]
 
 [dependency-groups]

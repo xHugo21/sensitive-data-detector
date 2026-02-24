@@ -1,4 +1,12 @@
 {
+  "file_types": {
+    "pdf": [".pdf"],
+    "image": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp"],
+    "text": [".txt", ".md", ".csv", ".js", ".py", ".java", ".cpp", ".c", ".html", ".css", ".json", ".xml", ".yaml", ".yml", ".sh", ".sql"]
+  },
+  "file_validation": {
+    "global_max_size_mb": 50
+  },
   "prompts": {
     "llm_detector": "sensitive-data-llm-prompt.txt",
     "ocr_detector": "ocr-llm-prompt.txt"

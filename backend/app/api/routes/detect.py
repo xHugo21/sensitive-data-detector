@@ -84,6 +84,13 @@ async def _validate_and_save_uploaded_file(
         try:
             detected_mime = validate_mime_type(tmp_path, file_type_def.mime_types)
             debug_log(f"[SensitiveDataDetectorBackend] Detected MIME: {detected_mime}")
+        except ImportError as e:
+            tmp_path.unlink()
+            logger.error(f"File analysis dependencies not installed: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="File upload feature unavailable. Server missing required dependencies (file-analysis extras).",
+            )
         except FileValidationError as e:
             tmp_path.unlink()
             raise HTTPException(

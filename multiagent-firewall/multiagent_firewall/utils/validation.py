@@ -83,13 +83,15 @@ def validate_mime_type(
 
     Raises:
         FileValidationError: If MIME type is not allowed or cannot be determined
-        ImportError: If filetype library is not installed (falls back to warning)
+        ImportError: If filetype library is not installed (install file-analysis extras)
     """
     try:
         import filetype
-    except ImportError:
-        logger.warning("filetype library not installed, skipping MIME validation")
-        return "application/octet-stream"
+    except ImportError as e:
+        raise ImportError(
+            "filetype library is required for MIME validation. "
+            "Install it with: uv sync --extra file-analysis"
+        ) from e
 
     kind = filetype.guess(str(file_path))
 

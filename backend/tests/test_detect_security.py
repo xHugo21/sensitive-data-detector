@@ -374,3 +374,34 @@ def test_error_response_structure(client):
     json_resp = resp.json()
     assert "detail" in json_resp
     assert isinstance(json_resp["detail"], str)
+
+
+def test_missing_filetype_library_returns_503(client, monkeypatch):
+    """
+    If filetype library is not installed (file-analysis extras missing),
+    file uploads should return 503 Service Unavailable
+    """
+    from app.api.routes import detect as detect_route
+
+    # Mock validate_mime_type to raise ImportError (simulating missing filetype)
+    def mock_validate_mime_type(file_path, allowed_mimes):
+        raise ImportError(
+            "filetype library is required for MIME validation. "
+            "Install it with: pip install 'multiagent-firewall[file-analysis]'"
+        )
+
+    monkeypatch.setattr(detect_route, "validate_mime_type", mock_validate_mime_type)
+
+    content = b"test content"
+    file = io.BytesIO(content)
+
+    resp = client.post(
+        "/detect",
+        files={"file": ("test.txt", file, "text/plain")},
+    )
+
+    assert resp.status_code == 503
+    json_resp = resp.json()
+    assert "detail" in json_resp
+    assert "unavailable" in json_resp["detail"].lower()
+    assert "dependencies" in json_resp["detail"].lower()

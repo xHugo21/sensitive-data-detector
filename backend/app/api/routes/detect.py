@@ -140,11 +140,19 @@ async def detect(
                 status_code=400, detail="Either text or file must be provided"
             )
 
-        if file:
-            tmp_path, metadata = await _validate_and_save_uploaded_file(file)
+        tmp_path = None
+        file_metadata = None
 
-            try:
+        if file:
+            tmp_path, file_metadata = await _validate_and_save_uploaded_file(file)
+
+        try:
+            if tmp_path:
+                debug_log(
+                    f"[SensitiveDataDetectorBackend] Processing text + file: {tmp_path}"
+                )
                 result = await GuardOrchestrator(GUARD_CONFIG).run(
+                    text=text,
                     file_path=str(tmp_path),
                     min_block_level=block_level,
                 )
@@ -153,29 +161,30 @@ async def detect(
                     result["extracted_snippet"] = result["raw_text"][
                         :MAX_SNIPPET_LENGTH
                     ]
-                result.update(metadata)
+                if file_metadata:
+                    result.update(file_metadata)
 
-                return result
+            else:
+                debug_log("[SensitiveDataDetectorBackend] Processing text only:", text)
+                result = await GuardOrchestrator(GUARD_CONFIG).run(
+                    text=text,
+                    min_block_level=block_level,
+                )
 
-            finally:
+            debug_log(
+                "[SensitiveDataDetectorBackend] Detected fields:",
+                result.get("detected_fields", []),
+            )
+            return result
+
+        finally:
+            if tmp_path:
                 try:
                     tmp_path.unlink()
                 except FileNotFoundError:
-                    pass  # Already deleted
+                    pass
                 except OSError as e:
                     logger.warning(f"Failed to cleanup temp file: {e}")
-
-        debug_log("[SensitiveDataDetectorBackend] Processing text:", text)
-        result = await GuardOrchestrator(GUARD_CONFIG).run(
-            text=text,
-            min_block_level=block_level,
-        )
-
-        debug_log(
-            "[SensitiveDataDetectorBackend] Detected fields:",
-            result.get("detected_fields", []),
-        )
-        return result
 
     except HTTPException:
         raise

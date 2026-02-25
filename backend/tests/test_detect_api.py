@@ -73,6 +73,34 @@ def test_detect_endpoint_with_file(monkeypatch, tmp_path):
     assert call_threshold == "medium"
 
 
+def test_detect_endpoint_with_text_and_file(monkeypatch, tmp_path):
+    """Test detect endpoint with BOTH text and file upload"""
+    dummy = DummyOrchestrator("dummy-config")
+    monkeypatch.setattr(detect_route, "GUARD_CONFIG", "dummy-config")
+    monkeypatch.setattr(detect_route, "DEFAULT_BLOCK_LEVEL", "medium")
+    monkeypatch.setattr(detect_route, "GuardOrchestrator", lambda config: dummy)
+
+    client = TestClient(app)
+    file_path = tmp_path / "sample.txt"
+    file_path.write_text("file text content", encoding="utf-8")
+
+    with file_path.open("rb") as f:
+        resp = client.post(
+            "/detect",
+            data={"text": "user provided text"},
+            files={"file": ("sample.txt", f, "text/plain")},
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert dummy.calls
+    call_text, call_file_path, call_threshold = dummy.calls[0]
+    # Both text and file should be passed to orchestrator
+    assert call_text == "user provided text"
+    assert call_file_path is not None
+    assert call_threshold == "medium"
+
+
 def test_detect_endpoint_requires_input():
     """Test that detect endpoint requires either text or file"""
     client = TestClient(app)
